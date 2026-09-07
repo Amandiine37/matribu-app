@@ -1267,7 +1267,7 @@ const Connexion = {
       "</div></div>"
       : "";
 
-    return this.entete("L'organisation de la maison, à partager en famille.") +
+    return this.entete("La maison, c'est l'affaire de tous.") +
       demenagement +
       avertissement +
       (derniere
