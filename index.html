@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ma Tribu</title>
+<meta name="description" content="Organisation familiale : taches menageres, courses, menus de la semaine, pense-betes et points a echanger contre des cadeaux.">
+<meta name="theme-color" content="#4E7A6A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+
+<!-- Filet de securite : attrape les erreurs AVANT que le reste ne soit chargé,
+     pour ne jamais laisser une page blanche sans explication. -->
+<script>
+window.__erreursDemarrage = [];
+function __noterErreur(texte) {
+  window.__erreursDemarrage.push(texte);
+  if (window.__signalerPanne) window.__signalerPanne();
+}
+window.addEventListener("error", function (e) {
+  if (e.target && e.target.tagName === "SCRIPT") {
+    __noterErreur("Fichier manquant ou illisible : " + (e.target.src || "").split("/").pop());
+    return;
+  }
+  __noterErreur(e.message + (e.filename ? " (" + e.filename.split("/").pop() + ", ligne " + e.lineno + ")" : ""));
+}, true);
+window.addEventListener("unhandledrejection", function (e) {
+  var r = e.reason || {};
+  __noterErreur([r.code, r.message || String(e.reason)].filter(Boolean).join(" — "));
+});
+/* Si au bout de 8 secondes rien ne s'affiche, on explique au lieu de rester blanc. */
+setTimeout(function () {
+  var app = document.getElementById("ecran-app");
+  var chargement = document.getElementById("chargement");
+  if (!chargement || !app || !app.hidden) return;
+  if (window.__signalerPanne) { window.__signalerPanne(); return; }
+  chargement.innerHTML =
+    '<div class="logo-tribu">🏡</div><h1>Ça coince</h1>' +
+    '<p class="intro">L\'application n\'a pas réussi à démarrer.</p>' +
+    '<div class="carte"><div class="carte-titre">Détail technique</div>' +
+    '<p style="font-size:.78rem;line-height:1.5;word-break:break-word;margin:0">' +
+    (window.__erreursDemarrage.join(" | ") || "Aucun message. Fichier app.js absent ou bloqué ?") +
+    '</p></div>' +
+    '<button class="btn principal plein" onclick="location.reload()">Recharger la page</button>' +
+    '<p class="aide centre" style="margin-top:1rem">Faites une capture d\'écran de ce message.</p>';
+}, 8000);
+</script>
+
+<script src="firebase-config.js"></script>
+</head>
+<body>
+
+<!-- ============ Ecran de connexion (rempli par app.js) ============ -->
+<div class="connexion" id="ecran-connexion">
+  <div id="chargement">
+    <div class="logo-tribu">🏡</div>
+    <h1>Ma Tribu</h1>
+    <p class="intro">Chargement…</p>
+  </div>
+</div>
+
+<!-- ============ Application ============ -->
+<div class="app" id="ecran-app" hidden>
+
+  <header class="topbar">
+    <button class="avatar" id="btn-profil" title="Mon profil" data-action="menu-profil">🙂</button>
+    <button class="topbar-titre" id="btn-entete" data-action="aller" data-vue="accueil">
+      <b id="titre-vue">Accueil</b>
+      <span id="sous-titre-vue"></span>
+    </button>
+    <button class="pastille-points" id="btn-points" title="Mes points" data-action="aller" data-vue="points">
+      <span>🌟</span><span id="mes-points">0</span>
+    </button>
+  </header>
+
+  <main>
+    <section class="vue" id="vue-accueil"></section>
+    <section class="vue" id="vue-taches"></section>
+    <section class="vue" id="vue-courses"></section>
+    <section class="vue" id="vue-menus"></section>
+    <section class="vue" id="vue-notes"></section>
+    <section class="vue" id="vue-points"></section>
+    <section class="vue" id="vue-recettes"></section>
+    <section class="vue" id="vue-admin"></section>
+  </main>
+
+  <button class="fab" id="fab" hidden>+</button>
+
+  <nav class="nav">
+    <!-- Les onglets sont construits par l'application : un administrateur
+         peut en masquer (Administration > Onglets visibles). -->
+    <div class="nav-inner" id="nav-inner"></div>
+  </nav>
+
+</div>
+
+<!-- ============ Feuille modale + toast ============ -->
+<div class="voile" id="voile">
+  <div class="feuille" id="feuille" role="dialog" aria-modal="true"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="recettes.js"></script>
+<script src="vues.js"></script>
+<script src="formulaires.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

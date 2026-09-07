@@ -1,0 +1,602 @@
+/* Ma Tribu — feuille de style unique.
+   Palette chaleureuse : creme + sauge + terracotta, mode sombre inclus. */
+
+:root{
+  --bg:#F2EFE6;
+  --bg-flou:rgba(242,239,230,.80);
+  --surface:#FCFAF4;
+  --surface-flou:rgba(252,250,244,.84);
+  --surface-2:#F5F1E6;
+  --ink:#2C2A24;
+  --ink-muted:#736E62;
+  --border:#E2DCCB;
+  --accent:#4E7A6A;
+  --accent-strong:#3C6154;
+  --accent-soft:#E4EDE8;
+  --accent-ink:#FFFFFF;
+  --warm:#C4703F;
+  --warm-soft:#F7E7DB;
+  --gold:#9C7314;
+  --gold-soft:#F8EFD5;
+  --danger:#B14A3E;
+  --danger-soft:#F8E4E0;
+  --ok:#3F7A55;
+  --radius:16px;
+  --radius-sm:11px;
+  --shadow:0 1px 2px rgba(44,42,36,.06), 0 6px 18px rgba(44,42,36,.07);
+  --shadow-lg:0 4px 12px rgba(44,42,36,.10), 0 18px 40px rgba(44,42,36,.14);
+  --font-display:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151917;
+    --bg-flou:rgba(21,25,23,.80);
+    --surface:#1E2421;
+    --surface-flou:rgba(30,36,33,.84);
+    --surface-2:#262D29;
+    --ink:#E9E7DD;
+    --ink-muted:#9AA39A;
+    --border:#333B36;
+    --accent:#7FB39C;
+    --accent-strong:#9BCAB5;
+    --accent-soft:#25332D;
+    --accent-ink:#10201A;
+    --warm:#DE9061;
+    --warm-soft:#37271E;
+    --gold:#D9AE4A;
+    --gold-soft:#332D1B;
+    --danger:#E08571;
+    --danger-soft:#3A241F;
+    --ok:#6FBF8B;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 20px rgba(0,0,0,.4);
+    --shadow-lg:0 6px 16px rgba(0,0,0,.45), 0 20px 44px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151917; --bg-flou:rgba(21,25,23,.80); --surface:#1E2421;
+  --surface-flou:rgba(30,36,33,.84); --surface-2:#262D29; --ink:#E9E7DD; --ink-muted:#9AA39A;
+  --border:#333B36; --accent:#7FB39C; --accent-strong:#9BCAB5; --accent-soft:#25332D;
+  --accent-ink:#10201A; --warm:#DE9061; --warm-soft:#37271E; --gold:#D9AE4A;
+  --gold-soft:#332D1B; --danger:#E08571; --danger-soft:#3A241F; --ok:#6FBF8B;
+  --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 20px rgba(0,0,0,.4);
+  --shadow-lg:0 6px 16px rgba(0,0,0,.45), 0 20px 44px rgba(0,0,0,.5);
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit;}
+button{cursor:pointer;}
+[hidden]{display:none !important;}
+
+.app{
+  max-width:540px;
+  margin:0 auto;
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+}
+
+/* ---------- Barre du haut ---------- */
+.topbar{
+  display:flex; align-items:center; gap:.6rem;
+  padding:calc(.9rem + env(safe-area-inset-top)) 1rem .7rem;
+  position:sticky; top:0; z-index:20;
+  background:var(--bg-flou);
+  backdrop-filter:saturate(150%) blur(14px);
+  -webkit-backdrop-filter:saturate(150%) blur(14px);
+}
+.avatar{
+  width:40px;height:40px;border-radius:13px;border:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.25rem;flex-shrink:0;
+  background:var(--accent-soft);
+  box-shadow:inset 0 0 0 2px var(--border);
+}
+.avatar.sm{width:30px;height:30px;border-radius:10px;font-size:1rem;}
+.avatar.xs{width:24px;height:24px;border-radius:8px;font-size:.8rem;}
+.topbar-titre{flex:1;min-width:0;text-align:left;background:none;border:none;padding:0;}
+.topbar-titre b{display:block;font-family:var(--font-display);font-size:1.1rem;line-height:1.2;}
+.topbar-titre span{display:block;font-size:.75rem;color:var(--ink-muted);}
+.pastille-points{
+  display:flex;align-items:center;gap:.3rem;
+  background:var(--gold-soft);color:var(--gold);
+  border:none;
+  padding:.45rem .72rem;border-radius:999px;
+  font-weight:700;font-size:.9rem;
+}
+
+/* ---------- Contenu ---------- */
+/* De la place sous le contenu : la barre du bas fait ~88px et le bouton « + »
+   flotte par-dessus. Sans cette marge, il cachait la dernière ligne des listes. */
+main{flex:1;padding:0 1rem calc(152px + env(safe-area-inset-bottom));}
+.vue{display:none;}
+.vue.active{display:block;animation:apparait .22s ease;}
+@keyframes apparait{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+h2.titre-section{
+  font-family:var(--font-display);font-size:1.35rem;margin:.4rem 0 .9rem;font-weight:600;
+}
+.sous-titre{
+  display:flex;align-items:center;justify-content:space-between;gap:.6rem;
+  margin:1.4rem 0 .55rem;
+}
+.sous-titre h3{
+  margin:0;font-size:.75rem;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-muted);font-weight:700;
+}
+
+.carte{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:.9rem 1rem;
+  margin-bottom:.75rem;
+}
+.carte-titre{
+  display:flex;align-items:center;gap:.5rem;
+  font-weight:700;font-size:.95rem;margin-bottom:.65rem;
+}
+.carte-titre .lien{margin-left:auto;}
+
+.vide{
+  text-align:center;color:var(--ink-muted);
+  padding:1.5rem 1rem;font-size:.88rem;line-height:1.5;
+}
+.vide .emoji{display:block;font-size:1.9rem;margin-bottom:.45rem;opacity:.75;}
+
+/* ---------- Boutons ---------- */
+.btn{
+  border:1px solid var(--border);background:var(--surface);
+  border-radius:var(--radius-sm);padding:.62rem .9rem;
+  font-weight:600;font-size:.88rem;
+  display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  transition:transform .08s ease;
+}
+.btn:active{transform:scale(.97);}
+.btn.principal{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
+.btn.doux{background:var(--accent-soft);border-color:transparent;color:var(--accent-strong);}
+.btn.danger{background:var(--danger-soft);border-color:transparent;color:var(--danger);}
+.btn.or{background:var(--gold-soft);border-color:transparent;color:var(--gold);}
+.btn.plein{width:100%;display:flex;}
+.btn.mini{padding:.36rem .62rem;font-size:.78rem;border-radius:9px;}
+/* un bouton qui ne porte qu'une icône : pas de cadre, il s'efface derrière le texte */
+.btn.icone{
+  background:transparent;border-color:transparent;
+  padding:.4rem;min-width:34px;font-size:.92rem;
+  opacity:.62;
+}
+.btn.icone:active{background:var(--surface-2);opacity:1;}
+.btn:disabled{opacity:.42;pointer-events:none;}
+.lien{
+  background:none;border:none;padding:0;color:var(--accent-strong);
+  font-weight:600;font-size:.82rem;text-decoration:underline;text-underline-offset:3px;
+}
+.rangee-btn{display:flex;gap:.5rem;}
+.rangee-btn .btn{flex:1;}
+
+.fab{
+  position:fixed;
+  bottom:calc(88px + env(safe-area-inset-bottom));
+  width:54px;height:54px;border-radius:18px;border:none;
+  background:var(--accent);color:var(--accent-ink);
+  font-size:1.5rem;line-height:1;
+  box-shadow:var(--shadow-lg);z-index:15;
+  display:flex;align-items:center;justify-content:center;
+  left:50%;margin-left:196px;
+}
+@media (max-width:560px){ .fab{left:auto;right:1rem;margin-left:0;} }
+.fab:active{filter:brightness(.92);}
+
+/* ---------- Champs ---------- */
+label.champ{display:block;margin-bottom:.8rem;}
+label.champ > span{
+  display:block;font-size:.77rem;font-weight:600;color:var(--ink-muted);margin-bottom:.3rem;
+}
+input[type=text],input[type=number],input[type=date],input[type=time],
+input[type=url],input[type=password],input[type=tel],select,textarea{
+  width:100%;padding:.68rem .8rem;
+  background:var(--surface-2);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  outline:none;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft);
+}
+textarea{min-height:80px;resize:vertical;}
+.duo{display:flex;gap:.6rem;}
+.duo > *{flex:1;min-width:0;}
+
+.puces{display:flex;flex-wrap:wrap;gap:.4rem;}
+.puce{
+  border:1px solid var(--border);background:var(--surface-2);
+  border-radius:999px;padding:.4rem .75rem;font-size:.82rem;font-weight:600;
+  display:inline-flex;align-items:center;gap:.35rem;
+  transition:transform .08s ease, background .15s ease;
+}
+.puce:active{transform:scale(.96);}
+.puce.on{
+  background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
+  box-shadow:0 2px 6px rgba(44,42,36,.12);
+}
+
+/* Un interrupteur à segments : pour les bascules « soit l'un, soit l'autre ».
+   Sans lui, elles ressemblaient aux pastilles de filtre juste en dessous. */
+.segments{
+  display:flex;gap:.2rem;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:999px;padding:.22rem;
+  margin:.2rem 0 .8rem;
+}
+.segments button{
+  flex:1;min-width:0;border:none;background:transparent;
+  border-radius:999px;padding:.44rem .4rem;
+  font-size:.82rem;font-weight:600;color:var(--ink-muted);
+  display:inline-flex;align-items:center;justify-content:center;gap:.3rem;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:background .18s ease, color .18s ease;
+}
+.segments button.on{
+  background:var(--surface);color:var(--accent-strong);
+  box-shadow:var(--shadow);
+}
+
+.etiquette{
+  display:inline-flex;align-items:center;gap:.25rem;
+  font-size:.69rem;font-weight:700;
+  padding:.18rem .48rem;border-radius:999px;
+  background:var(--surface-2);color:var(--ink-muted);
+  border:1px solid var(--border);
+  white-space:nowrap;
+}
+.etiquette.vert{background:var(--accent-soft);color:var(--accent-strong);border-color:transparent;}
+.etiquette.or{background:var(--gold-soft);color:var(--gold);border-color:transparent;}
+.etiquette.chaud{background:var(--warm-soft);color:var(--warm);border-color:transparent;}
+.etiquette.rouge{background:var(--danger-soft);color:var(--danger);border-color:transparent;}
+/* les profils santé : juste l'émoji, sinon la fiche recette devient un sapin de Noël */
+.etiquette.sante{
+  background:none;border-color:transparent;
+  padding:.1rem .05rem;font-size:.9rem;line-height:1;
+}
+
+/* ---------- Listes ---------- */
+.ligne{
+  display:flex;align-items:center;gap:.7rem;
+  padding:.68rem 0;border-top:1px solid var(--border);
+}
+.ligne:first-child{border-top:none;}
+.ligne-corps{flex:1;min-width:0;}
+.ligne-corps b{display:block;font-size:.93rem;font-weight:600;line-height:1.3;}
+.ligne-corps small{display:block;color:var(--ink-muted);font-size:.77rem;margin-top:.15rem;}
+.ligne-corps .etiquettes{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.3rem;}
+.ligne.fait .ligne-corps b{text-decoration:line-through;color:var(--ink-muted);}
+
+.coche{
+  width:26px;height:26px;flex-shrink:0;border-radius:9px;
+  border:2px solid var(--border);background:transparent;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;color:transparent;padding:0;
+}
+.coche.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
+
+/* ---------- Navigation basse ---------- */
+.nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:20;
+  background:var(--surface-flou);
+  backdrop-filter:saturate(150%) blur(14px);
+  -webkit-backdrop-filter:saturate(150%) blur(14px);
+  border-top:1px solid var(--border);
+  padding:.35rem .3rem calc(.35rem + env(safe-area-inset-bottom));
+}
+.nav-inner{max-width:540px;margin:0 auto;display:flex;}
+.nav button{
+  flex:1;background:none;border:none;padding:.3rem .2rem;
+  display:flex;flex-direction:column;align-items:center;gap:.15rem;
+  color:var(--ink-muted);font-size:.65rem;font-weight:600;
+  position:relative;
+  transition:color .18s ease;
+}
+.nav button .ic{
+  font-size:1.2rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  width:46px;height:28px;border-radius:999px;
+  background:transparent;
+  transition:background .2s ease, transform .2s ease;
+}
+.nav button.active{color:var(--accent-strong);}
+.nav button.active .ic{background:var(--accent-soft);transform:translateY(-1px);}
+.nav button:active .ic{transform:scale(.92);}
+.nav .pastille{
+  position:absolute;top:0;left:calc(50% + 8px);
+  min-width:17px;height:17px;padding:0 .25rem;border-radius:999px;
+  background:var(--warm);color:#fff;font-size:.62rem;line-height:17px;font-weight:700;
+}
+
+/* ---------- Feuille modale ---------- */
+.voile{
+  position:fixed;inset:0;z-index:40;
+  background:rgba(20,18,14,.45);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s ease;
+}
+.voile.on{opacity:1;pointer-events:auto;}
+.feuille{
+  width:100%;max-width:540px;max-height:88dvh;overflow-y:auto;
+  background:var(--surface);
+  border-radius:22px 22px 0 0;
+  padding:1rem 1.1rem calc(1.3rem + env(safe-area-inset-bottom));
+  transform:translateY(16px);transition:transform .22s ease;
+  box-shadow:var(--shadow-lg);
+}
+.voile.on .feuille{transform:none;}
+.feuille-poignee{
+  width:40px;height:4px;border-radius:999px;background:var(--border);
+  margin:0 auto .9rem;
+}
+.feuille h3{margin:.1rem 0 1rem;font-family:var(--font-display);font-size:1.2rem;font-weight:600;}
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;left:50%;transform:translate(-50%,20px);
+  bottom:calc(100px + env(safe-area-inset-bottom));
+  background:var(--ink);color:var(--bg);
+  padding:.6rem 1rem;border-radius:999px;font-size:.85rem;font-weight:600;
+  z-index:60;opacity:0;pointer-events:none;transition:opacity .22s ease, transform .22s ease;
+  max-width:88vw;text-align:center;
+}
+.toast.on{opacity:1;transform:translate(-50%,0);}
+
+/* ---------- Ecran de connexion ---------- */
+.connexion{
+  min-height:100dvh;display:flex;flex-direction:column;justify-content:center;
+  padding:2rem 1.2rem calc(2rem + env(safe-area-inset-bottom));
+  max-width:440px;margin:0 auto;
+}
+.logo-tribu{
+  width:74px;height:74px;border-radius:24px;margin:0 auto 1rem;
+  background:var(--accent);color:var(--accent-ink);
+  display:flex;align-items:center;justify-content:center;font-size:2.1rem;
+  box-shadow:var(--shadow-lg);
+}
+.connexion h1{
+  font-family:var(--font-display);font-size:1.85rem;text-align:center;
+  margin:0 0 .35rem;font-weight:600;
+}
+.connexion p.intro{text-align:center;color:var(--ink-muted);margin:0 0 1.6rem;font-size:.9rem;line-height:1.5;}
+
+.grille-profils{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;}
+.profil-carte{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.85rem .35rem;text-align:center;box-shadow:var(--shadow);
+}
+.profil-carte .em{font-size:1.65rem;display:block;margin-bottom:.28rem;}
+.profil-carte b{font-size:.84rem;display:block;overflow:hidden;text-overflow:ellipsis;}
+.profil-carte small{font-size:.66rem;color:var(--ink-muted);}
+
+.pin-points{display:flex;gap:.55rem;justify-content:center;margin:1.1rem 0 1.3rem;}
+.pin-point{width:14px;height:14px;border-radius:999px;border:2px solid var(--border);}
+.pin-point.on{background:var(--accent);border-color:var(--accent);}
+.clavier{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem;max-width:270px;margin:0 auto;}
+.clavier button{
+  aspect-ratio:1.6;border-radius:var(--radius);border:1px solid var(--border);
+  background:var(--surface);font-size:1.25rem;font-weight:600;
+}
+.clavier button.vide{background:none;border:none;box-shadow:none;}
+
+/* ---------- Divers ---------- */
+.bandeau{
+  display:flex;gap:.55rem;align-items:flex-start;
+  background:var(--warm-soft);color:var(--warm);
+  border-radius:var(--radius-sm);padding:.62rem .75rem;
+  font-size:.79rem;line-height:1.45;margin-bottom:.75rem;font-weight:600;
+}
+.bandeau.info{background:var(--accent-soft);color:var(--accent-strong);}
+.bandeau.discret{
+  background:var(--surface-2);color:var(--ink-muted);
+  border:1px solid var(--border);font-weight:500;font-size:.76rem;
+}
+.bandeau.discret b{color:var(--ink);}
+.bandeau.discret .lien{color:var(--ink-muted);}
+.barre-progression{height:7px;border-radius:999px;background:var(--surface-2);overflow:hidden;}
+.barre-progression > i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .3s ease;}
+
+.grille-2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;}
+.stat{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.75rem .85rem;box-shadow:var(--shadow);
+}
+.stat b{display:block;font-size:1.35rem;font-family:var(--font-display);line-height:1.1;}
+.stat span{display:block;font-size:.73rem;color:var(--ink-muted);margin-top:.15rem;}
+
+.grille-cadeaux{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
+.cadeau{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.85rem .7rem;text-align:center;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:.35rem;align-items:center;
+}
+.cadeau .em{font-size:1.9rem;}
+.cadeau b{font-size:.86rem;line-height:1.25;}
+.cadeau .btn{width:100%;margin-top:auto;}
+
+.semaine-nav{display:flex;align-items:center;gap:.5rem;margin-bottom:.9rem;}
+.semaine-nav b{flex:1;text-align:center;font-size:.95rem;font-family:var(--font-display);}
+.semaine-nav button{
+  width:36px;height:36px;border-radius:11px;border:1px solid var(--border);
+  background:var(--surface);font-size:1rem;flex-shrink:0;
+}
+.jour-repas{margin-bottom:.55rem;}
+.jour-repas .entete{
+  display:flex;align-items:baseline;gap:.45rem;margin-bottom:.3rem;padding-left:.15rem;
+}
+.jour-repas .entete b{font-size:.84rem;text-transform:capitalize;}
+.jour-repas .entete small{color:var(--ink-muted);font-size:.71rem;}
+.jour-repas.aujourdhui .entete b{color:var(--accent-strong);}
+.jour-repas.aujourdhui .entete b::after{content:" • aujourd'hui";font-weight:600;font-size:.7rem;}
+.case-repas{
+  width:100%;text-align:left;display:flex;align-items:center;gap:.55rem;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:.55rem .7rem;margin-bottom:.3rem;
+  font-size:.85rem;
+}
+.case-repas .quand{
+  font-size:.66rem;font-weight:700;color:var(--ink-muted);
+  text-transform:uppercase;letter-spacing:.05em;width:38px;flex-shrink:0;
+}
+.case-repas .plat{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.case-repas .plat.libre{color:var(--ink-muted);font-weight:400;}
+
+.rang{
+  width:24px;text-align:center;font-weight:700;color:var(--ink-muted);font-size:.85rem;flex-shrink:0;
+}
+.rang.or{color:var(--gold);}
+
+hr.sep{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
+/* Le résumé de la semaine : trois petits compteurs, en pastilles pour qu'on
+   les lise comme un bilan et non comme une phrase inachevée. */
+.resume-compo{
+  display:flex;justify-content:center;flex-wrap:wrap;gap:.35rem;
+  margin:-.45rem 0 1rem;
+}
+.resume-compo span{
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:999px;padding:.24rem .6rem;
+  font-size:.77rem;font-weight:600;color:var(--ink-muted);
+}
+
+.aide{font-size:.77rem;color:var(--ink-muted);line-height:1.5;margin:.4rem 0 0;}
+.centre{text-align:center;}
+.code-famille{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:1.1rem;font-weight:700;letter-spacing:.1em;
+  background:var(--surface-2);border:1px dashed var(--border);
+  border-radius:var(--radius-sm);padding:.7rem;text-align:center;
+}
+.etat-connexion{
+  display:inline-flex;align-items:center;gap:.35rem;
+  font-size:.72rem;color:var(--ink-muted);
+}
+.etat-connexion i{width:8px;height:8px;border-radius:999px;background:var(--ink-muted);display:block;}
+.etat-connexion.en-ligne i{background:var(--ok);}
+.etat-connexion.local i{background:var(--warm);}
+
+/* ---------- bandeau version bêta ---------- */
+.badge-beta{
+  display:inline-block;
+  background:var(--warm-soft);color:var(--warm);
+  font-size:.62rem;font-weight:800;letter-spacing:.1em;
+  padding:.14rem .42rem;border-radius:6px;
+  vertical-align:middle;margin-left:.4rem;text-transform:uppercase;
+}
+.ruban-beta{
+  text-align:center;font-size:.72rem;color:var(--warm);
+  background:var(--warm-soft);
+  padding:.35rem .6rem;border-radius:0 0 12px 12px;
+  max-width:540px;margin:0 auto;font-weight:600;
+}
+.ruban-beta button{
+  background:none;border:none;padding:0;color:inherit;
+  font:inherit;text-decoration:underline;text-underline-offset:2px;
+}
+
+/* ---------- pastilles numérotées (premiers pas, mode d'emploi) ---------- */
+.etape{
+  width:26px;height:26px;flex-shrink:0;border-radius:999px;
+  background:var(--accent-soft);color:var(--accent-strong);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;font-weight:800;
+}
+.etape.ok{background:var(--accent);color:var(--accent-ink);}
+
+/* ---------- entête de la liste de courses choisie ---------- */
+.entete-liste{
+  display:flex;align-items:center;gap:.6rem;
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:.55rem .75rem;margin-bottom:.8rem;
+}
+.entete-liste b{display:block;font-size:.92rem;}
+.entete-liste small{display:block;font-size:.74rem;color:var(--ink-muted);margin-top:.1rem;}
+.entete-liste > div:first-child{flex:1;min-width:0;}
+
+/* ---------- grille d'icônes : fournie, donc défilante ---------- */
+.grille-emojis{
+  max-height:132px;overflow-y:auto;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:.5rem;margin-bottom:1rem;
+  -webkit-overflow-scrolling:touch;
+}
+.grille-emojis .puce{
+  background:var(--surface);
+  padding:.34rem .5rem;font-size:1.05rem;line-height:1.15;
+}
+.grille-emojis .puce.on{background:var(--accent);border-color:var(--accent);}
+
+/* ---------- pastille « il y a du nouveau » sur l'avatar ---------- */
+.topbar .avatar{position:relative;}
+.point-maj{
+  position:absolute;top:-2px;right:-2px;
+  width:12px;height:12px;border-radius:999px;
+  background:var(--warm);
+  box-shadow:0 0 0 2px var(--bg);
+}
+.ligne-maj{cursor:pointer;}
+
+/* ---------- le menu de la semaine, à afficher ou à imprimer ---------- */
+.entete-affiche, .jour-affiche{
+  display:grid;grid-template-columns:5.2rem 1fr 1fr;gap:.5rem;align-items:start;
+}
+.entete-affiche{
+  font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-muted);padding:0 .2rem .3rem;
+}
+.jour-affiche{
+  padding:.5rem .2rem;border-top:1px solid var(--border);
+}
+.jour-affiche.aujourdhui{background:var(--accent-soft);border-radius:var(--radius-sm);}
+.jour-affiche-nom{font-weight:700;font-size:.9rem;}
+.jour-affiche-nom small{display:block;font-weight:400;font-size:.7rem;color:var(--ink-muted);}
+.jour-affiche-repas{display:contents;}
+.jour-affiche-repas span{font-size:.85rem;line-height:1.35;}
+
+@media print{
+  .topbar, .nav, .fab, .sans-impression, #ecran-app > main { display:none !important; }
+  #voile{position:static;background:none;display:block !important;}
+  #feuille{position:static;max-height:none;box-shadow:none;border-radius:0;overflow:visible;}
+  .feuille-poignee{display:none;}
+  body{background:#fff;color:#000;}
+}
+
+/* ---------- index alphabétique du cahier de recettes ---------- */
+.index-lettres{
+  display:flex;flex-wrap:wrap;gap:.25rem;
+  margin:0 0 .5rem;
+}
+.index-lettres button{
+  flex:1 1 auto;min-width:24px;
+  border:1px solid transparent;background:var(--surface-2);
+  border-radius:8px;padding:.26rem 0;
+  font-size:.72rem;font-weight:700;color:var(--ink-muted);
+  transition:background .15s ease, color .15s ease;
+}
+.index-lettres button:active{background:var(--accent-soft);color:var(--accent-strong);}
+
+/* ---------- repère « qui cuisine / où en est le repas » ---------- */
+.case-repas{position:relative;}
+.marque-repas{position:absolute;top:.3rem;right:.35rem;}
+.marque-repas .avatar.xs{width:20px;height:20px;font-size:.7rem;}
+
+/* ---------- une recette se consulte d'un simple appui ---------- */
+.ligne-recette{cursor:pointer;}
+.ligne-recette:active{background:var(--surface-2);}
