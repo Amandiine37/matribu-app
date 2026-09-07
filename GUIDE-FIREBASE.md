@@ -189,3 +189,68 @@ Deux précautions, à prendre tout de suite :
 Pour voir l'erreur exacte : sur ordinateur, ouvrez l'application, appuyez sur
 `F12`, onglet **Console**. Le message est en anglais mais il suffit de me le
 recopier.
+
+---
+
+## Étape 8 (facultative) — App Check : bloquer les copies de l'application
+
+Le code de l'application est public, et la configuration Firebase avec lui.
+C'est normal et sans danger pour vos données : les règles de sécurité
+empêchent quiconque de lire une famille sans invitation.
+
+En revanche, rien n'empêche quelqu'un de brancher une **copie** de
+l'application sur votre base et d'y consommer votre quota gratuit en créant
+des familles vides. App Check règle exactement ce problème : il vérifie que
+la requête vient bien de vos sites à vous.
+
+### 8.1 — Obtenir la clé reCAPTCHA
+
+1. Allez sur **google.com/recaptcha/admin/create**.
+2. Libellé : `Ma Tribu`.
+3. Type : **reCAPTCHA v3**.
+4. Dans **Domaines**, ajoutez les **deux** adresses, une par ligne :
+   - `matribu-app.fr`
+   - `amandiine37.github.io`
+5. Validez. Google affiche deux clés :
+   - la **clé de site** — publique, elle va dans l'application ;
+   - la **clé secrète** — elle ne va QUE dans la console Firebase.
+
+> ⚠️ N'oubliez pas `amandiine37.github.io`. Les familles qui n'ont pas encore
+> déménagé sont encore là ; sans ce domaine, elles seraient bloquées le jour
+> où vous activez la contrainte.
+
+### 8.2 — Déclarer l'application dans Firebase
+
+1. Console Firebase → **Créer** (menu de gauche) → **App Check**.
+2. Onglet **Applications**, sélectionnez votre application web.
+3. Choisissez **reCAPTCHA v3** et collez la **clé secrète**.
+4. Enregistrez.
+
+### 8.3 — Coller la clé de site dans l'application
+
+Dans `firebase-config.js`, renseignez la ligne `cleAppCheck` :
+
+```js
+cleAppCheck: "6Lxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+Puis redéposez `firebase-config.js` **dans les deux dépôts**.
+
+### 8.4 — Observer AVANT de contraindre
+
+C'est l'étape que l'on saute et qu'on regrette.
+
+La **contrainte est désactivée par défaut** : l'application envoie ses jetons,
+mais le serveur ne les vérifie pas encore. Laissez tourner **quelques jours**,
+puis regardez les statistiques dans App Check.
+
+Vous devez y voir une écrasante majorité de requêtes **vérifiées**. S'il reste
+des requêtes « non vérifiées », c'est que de vrais utilisateurs passent encore
+à côté : cherchez pourquoi avant d'aller plus loin.
+
+Quand tout est vert : App Check → onglet **API**, ligne **Cloud Firestore** →
+**Appliquer**. Faites de même pour **Authentication**.
+
+> Si vous activez la contrainte trop tôt, l'application cesse de fonctionner
+> pour tout le monde, d'un coup. Le retour en arrière est immédiat (même
+> écran, bouton **Ne pas appliquer**), mais autant ne pas en arriver là.

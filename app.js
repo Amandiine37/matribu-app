@@ -87,7 +87,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.23 bêta";
+const VERSION = "0.24 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -799,6 +799,31 @@ const Store = {
     return true;
   },
 
+  /* App Check : atteste que la requête vient bien de NOTRE site, et pas d'une
+     copie de l'application branchée sur la même base. Le code étant public,
+     c'est le seul garde-fou contre quelqu'un qui viendrait consommer le quota
+     gratuit avec un clone.
+
+     Deux précautions importantes :
+     - sans clé configurée, on ne charge rien du tout : l'application marche
+       exactement comme avant ;
+     - un échec n'interrompt jamais le démarrage. Tant que la « contrainte »
+       n'est pas activée dans la console Firebase, un jeton manquant est
+       simplement ignoré par le serveur. */
+  async _activerAppCheck(a, base) {
+    const cle = (window.CONFIG_FIREBASE || {}).cleAppCheck;
+    if (!cle || cle === "A_REMPLIR") return;
+    try {
+      const ac = await import(base + "firebase-app-check.js");
+      ac.initializeAppCheck(a, {
+        provider: new ac.ReCaptchaV3Provider(cle),
+        isTokenAutoRefreshEnabled: true
+      });
+    } catch (err) {
+      console.warn("App Check indisponible, on continue sans :", err);
+    }
+  },
+
   async preparer() {
     this.raison = "";
     if (!this.configOk()) {
@@ -815,6 +840,7 @@ const Store = {
         import(base + "firebase-firestore.js")
       ]);
       const a = app.initializeApp(window.CONFIG_FIREBASE);
+      await this._activerAppCheck(a, base);
       const au = auth.getAuth(a);
       const cred = await auth.signInAnonymously(au);
       this._fs = fs;

@@ -23,5 +23,17 @@ window.CONFIG_FIREBASE = {
   projectId: "matribu-b360d",
   storageBucket: "matribu-b360d.firebasestorage.app",
   messagingSenderId: "713320479232",
-  appId: "1:713320479232:web:2f9fecae989b57f9bef6e5"
+  appId: "1:713320479232:web:2f9fecae989b57f9bef6e5",
+
+  /* Cle de site reCAPTCHA v3, pour App Check. Elle atteste que la requete
+     vient bien de CE site, et non d'une copie de l'application branchee sur
+     la meme base.
+
+     Laissee vide, il ne se passe rien : l'application fonctionne comme
+     avant. Pour l'activer, voir GUIDE-FIREBASE.md, section App Check.
+
+     Cette cle-ci est PUBLIQUE : c'est la "cle de site". La "cle secrete",
+     elle, se colle UNIQUEMENT dans la console Firebase et ne doit jamais
+     figurer dans ce fichier. */
+  cleAppCheck: ""
 };
