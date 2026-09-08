@@ -35,5 +35,5 @@ window.CONFIG_FIREBASE = {
      Cette cle-ci est PUBLIQUE : c'est la "cle de site". La "cle secrete",
      elle, se colle UNIQUEMENT dans la console Firebase et ne doit jamais
      figurer dans ce fichier. */
-  cleAppCheck: ""
+  cleAppCheck: "6LdeK7EtAAAAAP-kz6t6VT4HWQubPURIYu8ton1T"
 };

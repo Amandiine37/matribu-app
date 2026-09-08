@@ -87,7 +87,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.46 bêta";
+const VERSION = "0.47 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -880,8 +880,12 @@ const Store = {
     if (!cle || cle === "A_REMPLIR") return;
     try {
       const ac = await import(base + "firebase-app-check.js");
+      /* reCAPTCHA ENTERPRISE, et non la version 3 : Firebase a rendu cette
+         derniere obsolete et la console ne permet plus de s'y enregistrer.
+         Le quota gratuit du plan Spark couvre tres largement une poignee de
+         familles : aucun frais a prevoir. */
       ac.initializeAppCheck(a, {
-        provider: new ac.ReCaptchaV3Provider(cle),
+        provider: new ac.ReCaptchaEnterpriseProvider(cle),
         isTokenAutoRefreshEnabled: true
       });
     } catch (err) {
