@@ -618,8 +618,10 @@ Formulaires.repas = function (jour, moment) {
       const zone = f.querySelector("#liste-repas");
       const rech = f.querySelector("#rech-repas");
       const dessiner = () => {
-        const q = rech.value.toLowerCase().trim();
-        const l = liste.filter((x) => !q || x.nom.toLowerCase().includes(q));
+        /* Même tolérance que dans le cahier de recettes : « pates » trouve
+           « Pâtes », personne ne tape les accents sur un téléphone. */
+        const q = pourChercher(rech.value).trim();
+        const l = liste.filter((x) => !q || pourChercher(x.nom).includes(q));
         zone.innerHTML = l.length
           ? l.map((x) => '<button class="ligne" data-recette="' + x.id + '" ' +
             'style="width:100%;background:none;border:none;border-top:1px solid var(--border);text-align:left">' +
@@ -978,7 +980,12 @@ Formulaires.ingredientsVersCourses = function () {
     toast("Aucun plat de la bibliothèque prévu cette semaine");
     return;
   }
-  const dejaLa = new Set(etat.courses.filter((c) => !c.coche).map((c) => cleArticle(c.nom)));
+  /* « Déjà présent » se juge sur LA LISTE VISÉE, pas sur toutes à la fois.
+     Sinon le lait noté sur la liste de la pharmacie faisait sauter le lait de
+     la liste du drive — et on repartait des courses sans lait. */
+  const dejaDans = (listeId) => new Set(etat.courses
+    .filter((c) => !c.coche && listeDe(c) === listeId)
+    .map((c) => cleArticle(c.nom)));
 
   /* Pour chaque ingrédient : besoin, stock, reste à acheter. */
   const lignes = ing.map((i) => {
@@ -990,12 +997,30 @@ Formulaires.ingredientsVersCourses = function () {
       manque: m.manque,
       connu: m.connu,
       couvert: m.connu && m.manque !== null && m.manque <= 0,
-      dejaListe: dejaLa.has(cleArticle(i.nom))
+      dejaListe: false          // rempli juste après, selon la liste choisie
     };
   });
+  const marquerPour = (listeId) => {
+    const deja = dejaDans(listeId);
+    lignes.forEach((l) => { l.dejaListe = deja.has(cleArticle(l.nom)); });
+  };
+  marquerPour(listeCourante().id);
 
   const couverts = lignes.filter((l) => l.couvert).length;
   const aCocher = (l) => !l.couvert && !l.dejaListe;
+
+  const detailsDe = (l) => {
+    const d = [];
+    d.push("besoin " + esc(l.besoin || "?"));
+    if (l.enStock !== null) d.push("en réserve " + esc(l.enStock));
+    if (l.couvert) d.push("✅ rien à acheter");
+    else if (l.connu && l.manque !== null && l.enStock !== null) {
+      d.push("<b>à acheter " + esc(formaterQte(l.manque, l.unite)) + "</b>");
+    }
+    if (l.dejaListe) d.push("déjà dans cette liste");
+    if (!l.connu) d.push("⚠️ unités différentes, à vérifier");
+    return d.join(" • ");
+  };
 
   const listes = listesCourses();
   let html = '<div id="f-ing">' +
@@ -1020,20 +1045,10 @@ Formulaires.ingredientsVersCourses = function () {
       rayonCourant = l.rayon;
       html += '<div class="sous-titre" style="margin:.9rem 0 .3rem"><h3>' + esc(rayonCourant) + "</h3></div>";
     }
-    const details = [];
-    details.push("besoin " + esc(l.besoin || "?"));
-    if (l.enStock !== null) details.push("en réserve " + esc(l.enStock));
-    if (l.couvert) details.push("✅ rien à acheter");
-    else if (l.connu && l.manque !== null && l.enStock !== null) {
-      details.push("<b>à acheter " + esc(formaterQte(l.manque, l.unite)) + "</b>");
-    }
-    if (l.dejaListe) details.push("déjà dans la liste");
-    if (!l.connu) details.push("⚠️ unités différentes, à vérifier");
-
     html += '<label class="ligne" style="cursor:pointer">' +
       '<input type="checkbox" data-k="' + k + '" style="width:auto"' + (aCocher(l) ? " checked" : "") + ">" +
-      '<span class="ligne-corps"><b>' + esc(l.nom) + "</b><small>" +
-      details.join(" • ") + "</small></span></label>";
+      '<span class="ligne-corps"><b>' + esc(l.nom) + "</b><small data-d=\"" + k + "\">" +
+      detailsDe(l) + "</small></span></label>";
   });
 
   html += '<div class="rangee-btn" style="margin-top:1.2rem">' +
@@ -1041,6 +1056,19 @@ Formulaires.ingredientsVersCourses = function () {
     '<button class="btn principal" data-role="ok">Ajouter aux courses</button></div></div>';
 
   ouvrirFeuille("Ingrédients de la semaine", html, (f) => {
+    /* Changer de liste change ce qui s'y trouve déjà : on relit les cases et
+       les mentions, sinon l'écran parlerait d'une autre liste que celle visée. */
+    const champListe0 = f.querySelector("#choix-liste");
+    if (champListe0) champListe0.onchange = () => {
+      marquerPour(champListe0.value);
+      lignes.forEach((l, k) => {
+        const boite = f.querySelector('input[data-k="' + k + '"]');
+        const detail = f.querySelector('small[data-d="' + k + '"]');
+        if (boite) boite.checked = aCocher(l);
+        if (detail) detail.innerHTML = detailsDe(l);
+      });
+    };
+
     f.querySelector('[data-role="ok"]').onclick = () => {
       const choisis = Array.from(f.querySelectorAll('input[type="checkbox"]:checked'))
         .map((c) => lignes[Number(c.dataset.k)]);
@@ -1175,13 +1203,24 @@ Formulaires.recette = function (rid) {
 
     const bs = f.querySelector('[data-role="suppr"]');
     if (bs) bs.onclick = async () => {
-      const ok = await confirmer("Supprimer la recette « " + r.nom + " » ?",
+      /* Une recette au menu ne se supprime pas en silence : les repas qui la
+         citaient devenaient des cases mortes, vides à l'écran mais que le
+         générateur croyait occupées. On prévient, puis on libère vraiment. */
+      const prevus = repasUtilisant(r.id);
+      const alerte = prevus.length
+        ? "\n\n⚠️ Elle est prévue " + prevus.length + " fois dans vos menus. " +
+          (prevus.length > 1 ? "Ces repas redeviendront libres." : "Ce repas redeviendra libre.")
+        : "";
+      const ok = await confirmer("Supprimer la recette « " + r.nom + " » ?" + alerte,
         { titre: "Supprimer", ok: "Supprimer", danger: true });
       if (!ok) return;
       etat.recettes = etat.recettes.filter((x) => x.id !== r.id);
+      prevus.forEach((p) => { delete etat.repas[p.cleSem][p.cleCase]; });
       fermerFeuille();
-      sauver("recettes");
-      toast("Recette supprimée");
+      sauver("recettes", "repas");
+      toast(prevus.length
+        ? "Recette supprimée — " + prevus.length + " repas à replanifier"
+        : "Recette supprimée");
     };
 
     f.onsubmit = (ev) => {
@@ -1375,7 +1414,18 @@ Formulaires.membre = function (mid) {
     if (bs) bs.onclick = async () => {
       if (m.id === moi.id) { toast("Vous ne pouvez pas vous supprimer vous-même"); return; }
       if (m.role === "admin" && nbAdmins <= 1) { toast("Il faut au moins un administrateur"); return; }
-      const ok = await confirmer("Supprimer " + m.prenom + " de la famille ? Ses points et son historique seront perdus.",
+
+      /* Les tâches dont il était le SEUL responsable ne disparaissent pas :
+         elles restent, sans personne pour s'en occuper, et n'apparaissent
+         plus que dans l'onglet Tâches. On le dit avant, pas après. */
+      const orphelines = etat.taches.filter((t) =>
+        (t.participants || []).length === 1 && t.participants[0] === m.id);
+      const alerte = orphelines.length
+        ? "\n\n⚠️ " + orphelines.length + " tâche" + (orphelines.length > 1 ? "s n'auront" : " n'aura") +
+          " plus personne : " + orphelines.map((t) => t.nom).join(", ") +
+          ". Pensez à " + (orphelines.length > 1 ? "les" : "la") + " réattribuer."
+        : "";
+      const ok = await confirmer("Supprimer " + m.prenom + " de la famille ? Ses points et son historique seront perdus." + alerte,
         { titre: "Supprimer le membre", ok: "Supprimer", danger: true });
       if (!ok) return;
       etat.membres = etat.membres.filter((x) => x.id !== m.id);
@@ -1394,7 +1444,10 @@ Formulaires.membre = function (mid) {
       fermerFeuille();
       sauver("membres", "taches", "journal");
       await Store.retirerAppareils(sesAppareils);
-      toast("Membre supprimé");
+      toast(orphelines.length
+        ? "Membre supprimé — " + orphelines.length + " tâche" +
+          (orphelines.length > 1 ? "s sont" : " est") + " à réattribuer"
+        : "Membre supprimé");
     };
     f.onsubmit = async (ev) => {
       ev.preventDefault();
@@ -1752,16 +1805,33 @@ Formulaires.ajustementPoints = function (mid) {
   });
 };
 
-Formulaires.historique = function () {
-  const mien = etat.journal.filter((e) => e.membreId === moi.id).slice(0, 60);
-  const html = mien.length
-    ? mien.map((e) =>
+/* L'historique de quelqu'un. Sans argument, c'est le sien.
+
+   Un administrateur peut consulter celui d'un autre membre : c'est
+   indispensable pour les enfants sans téléphone, qui ne se connectent jamais
+   et dont personne ne pouvait donc voir le détail des points. « Il a 40
+   points » sans pouvoir dire d'où ils viennent, ça ne se défend pas devant
+   un enfant qui conteste. */
+Formulaires.historique = function (mid) {
+  const cible = mid && (mid === moi.id || estAdmin()) ? membre(mid) : moi;
+  if (!cible) return;
+  const sien = etat.journal.filter((e) => e.membreId === cible.id).slice(0, 60);
+  const solde = pointsDe(cible.id);
+
+  const entete = '<div class="ligne" style="padding-top:0">' + avatarDe(cible) +
+    '<div class="ligne-corps"><b>' + esc(cible.prenom) + "</b><small>" +
+    sien.length + " mouvement" + (sien.length > 1 ? "s" : "") + "</small></div>" +
+    '<span class="etiquette or">' + solde + " pts</span></div>";
+
+  const html = entete + (sien.length
+    ? sien.map((e) =>
       '<div class="ligne"><div class="ligne-corps"><b>' + esc(e.motif) + "</b><small>" +
       new Date(e.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) +
       "</small></div><span class=\"etiquette " + (e.delta > 0 ? "vert" : "rouge") + '">' +
       (e.delta > 0 ? "+" : "") + e.delta + "</span></div>").join("")
-    : '<p class="aide">Aucun mouvement de points pour l\'instant.</p>';
-  ouvrirFeuille("Mon historique de points",
+    : '<p class="aide" style="margin-top:.8rem">Aucun mouvement de points pour l\'instant.</p>');
+
+  ouvrirFeuille(cible.id === moi.id ? "Mon historique de points" : "Historique de " + cible.prenom,
     html + '<button class="btn plein" data-action="fermer" style="margin-top:1.2rem">Fermer</button>');
 };
 

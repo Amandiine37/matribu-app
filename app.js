@@ -87,7 +87,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.26 bêta";
+const VERSION = "0.42 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -261,6 +261,15 @@ function clePeriode(freq, d) {
   if (freq === "jour") return isoDate(d);
   if (freq === "mois") return d.getFullYear() + "-" + pad(d.getMonth() + 1);
   return cleSemaine(d);
+}
+/* Le premier instant de la periode en cours. Sert a verifier qu'une tache
+   n'a pas deja ete payee dans cette periode, meme si sa frequence a change
+   entre-temps. */
+function debutDePeriode(freq, d) {
+  if (freq === "jour") return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (freq === "mois") return new Date(d.getFullYear(), d.getMonth(), 1);
+  const l = lundiDe(d);
+  return new Date(l.getFullYear(), l.getMonth(), l.getDate());
 }
 function libellePeriode(freq) {
   if (freq === "jour") return "aujourd'hui";
@@ -475,6 +484,18 @@ function motsDe(texte) {
     .map((m) => (m.length > 3 && /[sx]$/.test(m) ? m.slice(0, -1) : m));
 }
 
+/* Un texte réduit à sa forme la plus simple, pour chercher. Sur un téléphone
+   personne ne tape les accents : « pates » doit trouver « Pâtes », « creme »
+   doit trouver « Crème », et « boeuf » doit trouver « Bœuf ». On garde les
+   espaces, contrairement à `motsDe` : ici on cherche dans une phrase, pas
+   dans une liste de mots. */
+function pourChercher(texte) {
+  return String(texte || "")
+    .toLowerCase()
+    .replace(/œ/g, "oe").replace(/æ/g, "ae")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
 /* Le produit figure-t-il dans ce nom ? On compare des MOTS ENTIERS : sinon
    « courgette » déclencherait « courge », et « poireau » déclencherait
    « poire ». C'est exactement le piège qu'on veut éviter. */
@@ -520,11 +541,11 @@ function devinerSaisons(ingredients) {
 }
 
 function recettesFiltrees() {
-  const q = ui.rechercheRecette.toLowerCase().trim();
+  const q = pourChercher(ui.rechercheRecette).trim();
   const f = ui.filtresRecettes;
   return etat.recettes.filter((r) => {
-    if (q && !r.nom.toLowerCase().includes(q) &&
-      !(r.ingredients || []).some((i) => i.nom.toLowerCase().includes(q))) return false;
+    if (q && !pourChercher(r.nom).includes(q) &&
+      !(r.ingredients || []).some((i) => pourChercher(i.nom).includes(q))) return false;
     if (f.includes("perso") && !estRecettePerso(r)) return false;
     if (f.includes("vege") && !r.vegetarien) return false;
     if (f.includes("rapide") && !r.rapide) return false;
@@ -1342,10 +1363,15 @@ const Actions = {
     await Store.ecrireEtat(cle, etat.etats[cle]);
 
     if (directe) {
-      await crediterTache(t, cle, beneficiaire);
+      const credite = await crediterTache(t, cle, beneficiaire);
       rendre();
       const m = membre(beneficiaire);
-      toast(m && t.points ? "+" + t.points + " points pour " + m.prenom + " 🌟" : "Validé");
+      /* On n'annonce des points que s'ils ont vraiment été donnés : annoncer
+         « +15 points » sans rien créditer est le meilleur moyen de perdre la
+         confiance des enfants. */
+      toast(credite && m ? "+" + t.points + " points pour " + m.prenom + " 🌟"
+        : t.points ? "Validé — points déjà donnés pour cette période"
+          : "Validé");
       return;
     }
     rendre();
@@ -1375,10 +1401,12 @@ const Actions = {
     etat.etats[cle] = e;
     await Store.ecrireEtat(cle, e);
 
-    await crediterTache(t, cle, gagnant);
+    const credite = await crediterTache(t, cle, gagnant);
     rendre();
     const m = membre(gagnant);
-    toast(m && t.points ? "+" + t.points + " points pour " + m.prenom + " 🌟" : "Validé");
+    toast(credite && m ? "+" + t.points + " points pour " + m.prenom + " 🌟"
+      : t.points ? "Validé — points déjà donnés pour cette période"
+        : "Validé");
   },
 
   async refuser(tacheId) {
@@ -1481,12 +1509,8 @@ const Actions = {
 
   /* --- Courses --- */
 
-  /* Une liste dictée ou recopiée arrive rarement article par article : on
-     accepte « pain, lait, œufs » comme trois lignes. Les séparateurs sont la
-     virgule, le point-virgule et le retour à la ligne. */
   ajouterPlusieursCourses(texte, opts) {
-    const noms = String(texte || "").split(/[\n,;]+/)
-      .map((x) => x.trim()).filter(Boolean);
+    const noms = nomsSaisis(texte);
     if (!noms.length) return 0;
     /* On ajoute dans l'ordre lu : `ajouterCourse` empile en tête, donc on
        parcourt à l'envers. */
@@ -1510,6 +1534,38 @@ const Actions = {
       parQui: moi && moi.id, creeLe: new Date().toISOString()
     });
     sauver("courses");
+  },
+
+  /* --- Réserve ---
+
+     Remplir sa réserve article par article, à travers un formulaire, décourage
+     vite. Ici on en pose plusieurs d'un coup — au clavier ou en dictant avec
+     le micro du téléphone. Les quantités se règlent ensuite, tranquillement :
+     ce qui compte à cet instant, c'est que la liste existe. */
+  ajouterPlusieursStock(texte) {
+    const noms = nomsSaisis(texte);
+    if (!noms.length) return 0;
+    const ajoutes = [];
+    const connus = [];
+    noms.forEach((n) => {
+      /* Déjà en réserve : on ne crée pas de doublon. La comparaison connaît
+         le singulier et le pluriel. */
+      if (articleStock(n)) { connus.push(n); return; }
+      etat.stock.push({
+        id: id(), nom: n.charAt(0).toUpperCase() + n.slice(1),
+        qte: "", unite: "", mini: "", rayon: devinerRayon(n)
+      });
+      ajoutes.push(n);
+    });
+    if (ajoutes.length) sauver("stock");
+    if (ajoutes.length && connus.length) {
+      toast(ajoutes.length + " ajouté(s) — " + connus.length + " déjà en réserve");
+    } else if (ajoutes.length) {
+      toast(ajoutes.length + " article(s) en réserve 🥫");
+    } else if (connus.length) {
+      toast(connus.length > 1 ? "Ils sont déjà en réserve" : "Il est déjà en réserve");
+    }
+    return ajoutes.length;
   },
 
   /* --- Listes de courses --- */
@@ -1621,6 +1677,15 @@ const Actions = {
 
   /* --- Stock --- */
   enregistrerStock(donnees, sid) {
+    /* Une réserve ne descend pas sous zéro. Les boutons + et − le garantissent
+       déjà ; la saisie au clavier, non — et « −5 kg de farine » ne fait pas que
+       s'afficher bizarrement : le réapprovisionnement croit qu'il manque le
+       minimum PLUS cinq kilos, et on achète beaucoup trop.
+       Les quantités en toutes lettres (« un peu ») restent acceptées. */
+    ["qte", "mini"].forEach((champ) => {
+      const v = nombre(donnees[champ]);
+      if (v !== null && v < 0) donnees[champ] = "0";
+    });
     if (sid) {
       const s = etat.stock.find((x) => x.id === sid);
       if (!s) return;
@@ -1648,15 +1713,24 @@ const Actions = {
   async racheterSousMinimum() {
     const bas = stockSousMinimum();
     if (!bas.length) { toast("Rien à racheter, tout est au-dessus du minimum"); return; }
-    /* Même tolérance que pour la réserve : « Oeufs » dans la liste et « Œufs »
-       au minimum, c'est le même article — on ne l'ajoute pas deux fois. */
-    const dejaLa = new Set(etat.courses.filter((c) => !c.coche).map((c) => cleArticle(c.nom)));
+    const liste = listeCourante();
+    const cible = liste.id;
+    /* « Déjà là » se juge sur LA LISTE OÙ L'ON AJOUTE, pas sur toutes à la
+       fois : la farine notée sur la liste du drive ne doit pas empêcher de la
+       remettre sur celle du supermarché, sinon on repart sans.
+       La comparaison reste tolérante : « Oeufs » et « Œufs », c'est le même
+       article, on ne l'ajoute pas deux fois. */
+    const dejaLa = new Set(etat.courses
+      .filter((c) => !c.coche && listeDe(c) === cible)
+      .map((c) => cleArticle(c.nom)));
     const aAjouter = bas.filter((s) => !dejaLa.has(cleArticle(s.nom)));
-    if (!aAjouter.length) { toast("Ils sont déjà dans la liste de courses"); return; }
-    const ok = await confirmer("Ajouter " + aAjouter.length + " article(s) à la liste de courses ?",
+    if (!aAjouter.length) {
+      toast("Ils sont déjà dans « " + liste.nom + " »");
+      return;
+    }
+    const ok = await confirmer("Ajouter " + aAjouter.length + " article(s) à « " + liste.nom + " » ?",
       { titre: "Réapprovisionner", ok: "Ajouter" });
     if (!ok) return;
-    const cible = listeCourante().id;
     aAjouter.slice().reverse().forEach((s) => {
       /* Ce qui MANQUE pour revenir au minimum, pas le minimum lui-même : avec
          200 g de farine et un minimum d'1 kg, on achète 800 g, pas 1 kg.
@@ -1814,9 +1888,24 @@ const Actions = {
 };
 
 /* Credite les points d'une tache validee, une seule fois par periode. */
+/* Une tache a-t-elle deja ete payee dans la periode en cours ?
+
+   Le garde-fou de l'identifiant (« tache X, semaine 37 ») ne suffisait pas :
+   il depend de la frequence. Passer une tache de « chaque jour » a « chaque
+   semaine » changeait la cle, et le meme travail pouvait etre credite une
+   seconde fois dans la meme journee. On regarde donc les DATES du journal,
+   qui ne mentent pas, plutot que la forme de la cle. */
+function dejaPayeeDansLaPeriode(t) {
+  const debut = debutDePeriode(t.frequence, new Date());
+  return (etat.journal || []).some((e) =>
+    e.type === "tache" && e.refId === t.id && e.delta > 0 &&
+    e.date && new Date(e.date) >= debut);
+}
+
 async function crediterTache(t, cle, beneficiaire) {
-  if (!beneficiaire || !t.points) return;
-  await ajouterAuJournal({
+  if (!beneficiaire || !t.points) return false;
+  if (dejaPayeeDansLaPeriode(t)) return false;
+  return await ajouterAuJournal({
     id: "t|" + t.id + "|" + clePeriode(t.frequence, new Date()),
     type: "tache", refId: t.id, cleEtat: cle.replace(/\|/g, "__"),
     membreId: beneficiaire, delta: t.points, motif: "Tâche : " + t.nom
@@ -1825,13 +1914,24 @@ async function crediterTache(t, cle, beneficiaire) {
 
 /* Ajoute une ligne au journal des points.
    Le serveur verifie le montant : si la ligne existe deja ou si le montant ne
-   correspond pas au bareme, elle est refusee et rien n'est credite. */
+   correspond pas au bareme, elle est refusee et rien n'est credite.
+
+   ORDRE IMPORTANT : la ligne entre dans `etat.journal` AVANT l'ecriture.
+   En mode local, `Store.ecrireJournal` enregistre tout `etat` sur l'appareil ;
+   ajouter la ligne apres revenait a sauvegarder une photo prise trop tot, et
+   les points du dernier geste disparaissaient au rechargement. Si l'ecriture
+   echoue, on retire la ligne : rien ne doit rester a l'ecran qui ne soit
+   reellement enregistre. */
 async function ajouterAuJournal(entree) {
   entree.date = new Date().toISOString();
   entree.parAdmin = moi ? moi.id : null;
+  const nouvelle = !etat.journal.some((x) => x.id === entree.id);
+  if (nouvelle) etat.journal.unshift(entree);
   const ok = await Store.ecrireJournal(entree);
-  if (!ok) return false;
-  if (!etat.journal.some((x) => x.id === entree.id)) etat.journal.unshift(entree);
+  if (!ok) {
+    if (nouvelle) etat.journal = etat.journal.filter((x) => x !== entree);
+    return false;
+  }
   return true;
 }
 
@@ -2813,6 +2913,23 @@ function genererMenus(cleSem, opt) {
   };
 }
 
+/* Où cette recette est-elle programmée ? Toutes semaines confondues.
+   Sert avant une suppression : une recette effacée laissait derrière elle des
+   cases pointant vers le vide. À l'écran elles semblaient libres, mais le
+   générateur les croyait occupées et ne les remplissait plus jamais. */
+function repasUtilisant(recetteId) {
+  const trouves = [];
+  Object.keys(etat.repas || {}).forEach((cleSem) => {
+    const sem = etat.repas[cleSem] || {};
+    Object.keys(sem).forEach((cleCase) => {
+      if (sem[cleCase] && sem[cleCase].recetteId === recetteId) {
+        trouves.push({ cleSem: cleSem, cleCase: cleCase });
+      }
+    });
+  });
+  return trouves;
+}
+
 /* Tous les ingredients des repas prevus, regroupes par nom et additionnes. */
 function ingredientsDeLaSemaine(cleSem) {
   const sem = etat.repas[cleSem] || {};
@@ -2830,11 +2947,15 @@ function ingredientsDeLaSemaine(cleSem) {
     const p = cleCase.split("-");
     const facteur = facteurConvives(r, convivesDuRepas(cleSem, p[0], p[1]));
     (r.ingredients || []).forEach((ing) => {
-      const cle = ing.nom.toLowerCase().trim();
+      /* Le regroupement se fait sur le nom NORMALISÉ, celui qui sait que
+         « Échalote » et « Échalotes » sont le même produit. Comparer les
+         libellés bruts faisait deux lignes dans la liste de courses, et on
+         se retrouvait à en acheter deux fois devant l'étal. */
+      const cle = cleArticle(ing.nom);
       if (!parNom.has(cle)) {
         parNom.set(cle, { nom: ing.nom, rayon: ing.rayon || "Autre", morceaux: [] });
       }
-      parNom.get(cle).morceaux.push({ qte: qteAjustee(ing.qte, facteur), unite: ing.unite || "" });
+      parNom.get(cle).morceaux.push({ qte: qteAjustee(ing.qte, facteur, ing.unite || ""), unite: ing.unite || "" });
     });
   });
 
@@ -3039,7 +3160,7 @@ function ingredientsARetirer(cleSem, jour, moment) {
   (r.ingredients || []).forEach((ing) => {
     const s = articleStock(ing.nom);
     if (!s) return;                               // pas en réserve : rien à retirer
-    const besoin = qteAjustee(ing.qte, facteur);
+    const besoin = qteAjustee(ing.qte, facteur, ing.unite || "");
     const retire = convertirUnite(besoin, ing.unite || "", s.unite || "");
     lignes.push({
       stockId: s.id, nom: s.nom,
@@ -3148,6 +3269,34 @@ function articleStock(nom) {
   const n = cleArticle(nom);
   if (!n) return null;
   return etat.stock.find((s) => cleArticle(s.nom) === n) || null;
+}
+
+/* ---------------------- Saisie d'une liste, à la voix ----------------------
+
+   Au clavier on écrit « pain, lait, œufs ». Au micro du téléphone on dit
+   « du pain du lait et des œufs » : pas de virgules, et un article devant
+   chaque mot. Les deux doivent donner la même liste.
+
+   On découpe donc aussi sur « et » et « puis », et on retire l'article de
+   tête. Attention aux mots qui commencent comme un article : « laitue » et
+   « lessive » ne doivent pas être amputés — d'où les espaces exigés après
+   « la », « le », « du »… et les limites de mot autour de « et ». */
+/* Les articles partitifs marquent aussi une frontière : « du pain du lait »
+   est une liste de deux. On coupe donc sur « du », « des », « de la »,
+   « de l' » — mais JAMAIS sur « de » ni « d' » seuls, sinon « pommes de
+   terre », « lait de coco » et « huile d'olive » se briseraient en morceaux.
+   Et on exige un espace AVANT : le « du » qui ouvre la phrase reste au
+   traitement de l'article de tête, juste en dessous. */
+const SEPARATEURS_SAISIE =
+  /[\n,;]+|\bet\b|\bpuis\b|\s+du\s+|\s+des\s+|\s+de\s+la\s+|\s+de\s+l'/i;
+const ARTICLE_INITIAL =
+  /^(?:de\s+l'|de\s+la\s+|de\s+|du\s+|des\s+|d'|l'|un\s+|une\s+|le\s+|la\s+|les\s+)/i;
+
+function nomsSaisis(texte) {
+  return String(texte || "")
+    .split(SEPARATEURS_SAISIE)
+    .map((x) => x.trim().replace(ARTICLE_INITIAL, "").trim())
+    .filter(Boolean);
 }
 
 /* Un article est « à racheter » quand sa quantité passe sous le minimum. */
@@ -3299,12 +3448,36 @@ function convivesDuRepas(cleSem, jour, moment) {
 }
 /* Une quantité mise à l'échelle, arrondie de façon lisible : personne
    n'achète 1,3333 oignon. */
-function qteAjustee(qte, facteur) {
+function qteAjustee(qte, facteur, unite) {
   const n = nombre(qte);
-  if (n === null || !facteur || facteur === 1) return qte;
+  if (n === null || n <= 0 || !facteur || facteur === 1) return qte;
   const v = n * facteur;
+  /* Sans unité, on ne compte pas une matière mais des objets : des oignons,
+     des œufs, des tomates. « 0,5 oignon » sur une liste de courses n'aide
+     personne — on arrondit au supérieur, et jamais à zéro. Les grammes et
+     les litres, eux, se divisent très bien. */
+  if (!unite) return texteNombre(Math.max(1, Math.ceil(v)));
   const arrondi = v >= 10 ? Math.round(v) : Math.round(v * 10) / 10;
   return texteNombre(arrondi);
+}
+
+/* Amener une section juste sous la barre du haut.
+
+   `scrollIntoView` vise le haut de la FENÊTRE, pas le haut de la zone
+   visible : la barre étant collante, elle recouvrait le titre visé et on
+   croyait avoir raté sa cible. On ne peut pas réserver une hauteur fixe
+   dans la feuille de style, car cette barre grandit quand le titre passe
+   sur deux lignes — sur un petit écran, « Administration / Réglages de la
+   famille » en prend trois. On la mesure donc à l'instant du saut.
+
+   Saut instantané, jamais « smooth » : sur trente mille pixels le défilement
+   animé est long, donne le tournis, et certains navigateurs l'ignorent. */
+function allerAuBloc(cible) {
+  if (!cible) return;
+  const barre = document.querySelector(".topbar");
+  const marge = (barre ? barre.getBoundingClientRect().height : 0) + 12;
+  const y = cible.getBoundingClientRect().top + window.scrollY - marge;
+  window.scrollTo(0, Math.max(0, y));
 }
 
 /* Tourne-t-on depuis l'icône de l'écran d'accueil plutôt que dans le
@@ -3416,6 +3589,8 @@ document.addEventListener("click", (e) => {
       break;
     }
     case "courses-onglet": ui.ongletCourses = b.dataset.valeur; rendre(); break;
+    /* Depuis l'accueil : ouvrir directement la réserve, pas la liste. */
+    case "reserve-ouvrir": ui.ongletCourses = "stock"; aller("courses"); break;
     case "liste-choisir": ui.listeActive = b.dataset.valeur; ui.ongletCourses = "liste"; rendre(); break;
     case "liste-nouvelle": Formulaires.liste(null); break;
     case "liste-editer": Formulaires.liste(listeCourante().id); break;
@@ -3462,11 +3637,7 @@ document.addEventListener("click", (e) => {
     case "recettes-tri": ui.triRecettes = b.dataset.valeur; rendre(); break;
     case "recettes-filtres": ui.filtresOuverts = !ui.filtresOuverts; rendre(); break;
     case "recettes-lettre": {
-      /* Saut instantané, pas « smooth » : sur trente mille pixels le
-         défilement animé est long et donne le tournis — et il est purement
-         et simplement ignoré par certains navigateurs. */
-      const cible = document.getElementById("lettre-" + b.dataset.valeur);
-      if (cible) cible.scrollIntoView({ block: "start" });
+      allerAuBloc(document.getElementById("lettre-" + b.dataset.valeur));
       break;
     }
     case "sante-info": Formulaires.profilsSante(b.dataset.valeur || null); break;
@@ -3478,8 +3649,7 @@ document.addEventListener("click", (e) => {
     case "notes-qui": ui.filtreQuiNotes = b.dataset.valeur || ""; rendre(); break;
     case "admin-onglets": Formulaires.onglets(); break;
     case "admin-aller": {
-      const cible = document.getElementById("admin-" + b.dataset.valeur);
-      if (cible) cible.scrollIntoView({ block: "start" });
+      allerAuBloc(document.getElementById("admin-" + b.dataset.valeur));
       break;
     }
     case "admin-reglages": Formulaires.reglagesFamille(); break;
@@ -3497,7 +3667,7 @@ document.addEventListener("click", (e) => {
     case "echange-accorder": Actions.accorderEchange(v); break;
     case "echange-refuser": Actions.refuserEchange(v); break;
     case "points-ajuster": Formulaires.ajustementPoints(v); break;
-    case "points-historique": Formulaires.historique(); break;
+    case "points-historique": Formulaires.historique(v); break;
     case "cadeau-pour": Formulaires.cadeauPour(v); break;
 
     case "membre-nouveau": Formulaires.membre(null); break;
@@ -3550,6 +3720,19 @@ document.addEventListener("submit", (e) => {
   champ.value = "";
   ui.focus = "champ-course";
   Actions.ajouterPlusieursCourses(val);
+});
+
+/* Saisie rapide dans la réserve — le même geste, l'autre étagère */
+document.addEventListener("submit", (e) => {
+  if (e.target.id !== "form-stock-rapide") return;
+  e.preventDefault();
+  const champ = document.getElementById("champ-stock");
+  const val = champ.value.trim();
+  if (!val) return;
+  champ.value = "";
+  ui.focus = "champ-stock";
+  Actions.ajouterPlusieursStock(val);
+  rendre();
 });
 
 /* Recherche dans la bibliotheque de recettes */

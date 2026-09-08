@@ -81,6 +81,17 @@ function bandeauMaj() {
     "Appuyez ici pour voir ce qui est nouveau et le mettre à jour.</div></div>";
 }
 
+/* Combien de lignes un bloc de l'accueil affiche au maximum. Au-delà, on
+   annonce le reste et on renvoie sur l'onglet dédié : l'accueil doit rester
+   lisible d'un coup d'oeil, même une semaine où tout s'accumule. */
+const MAX_LIGNES_ACCUEIL = 5;
+
+function resteAVoir(n) {
+  if (n <= 0) return "";
+  return '<p class="aide" style="margin:.6rem 0 0">+ ' + n + " autre" +
+    (n > 1 ? "s" : "") + " — <b>Tout voir</b></p>";
+}
+
 /* Le bandeau de déménagement, sur l'ancienne adresse uniquement. Il passe
    avant tout le reste : c'est la seule information de cet écran qui a une
    date de péremption. */
@@ -178,11 +189,17 @@ Vues.accueil = function () {
     }
   }
 
-  /* Mes taches */
+  /* Mes taches.
+     L'accueil est un tableau de bord, pas la liste complète. Sans limite, une
+     semaine chargée repoussait le menu du soir, l'agenda et les courses à
+     trois écrans de défilement. On montre les premières, on renvoie le reste
+     sur l'onglet Tâches — dont le lien est déjà là, à côté du titre. */
   const mes = mesTachesAFaire();
+  const mesMontrees = mes.slice(0, MAX_LIGNES_ACCUEIL);
   h.push(bloc("🧹 Mes tâches" + (mes.length ? ' <span class="etiquette chaud">' + mes.length + "</span>" : ""),
     mes.length
-      ? mes.map((x) => ligneTache(x, true)).join("")
+      ? mesMontrees.map((x) => ligneTache(x, true)).join("") +
+        resteAVoir(mes.length - mesMontrees.length)
       : rienDu("🎉", "Rien à faire pour le moment. Profitez-en !"),
     "Tout voir", "aller", "taches"));
 
@@ -230,26 +247,10 @@ Vues.accueil = function () {
     }
   }
 
-  /* Tâches des enfants sans téléphone : c'est le parent qui coche */
-  if (estAdmin()) {
-    const enfants = tachesDesEnfants();
-    if (enfants.length && !ongletMasque("taches")) {
-      h.push(bloc("🧒 À faire pour les enfants" +
-        ' <span class="etiquette chaud">' + enfants.length + "</span>",
-        enfants.map((x) => {
-          const qui = membre(x.assigne);
-          return '<div class="ligne">' + avatarDe(qui) +
-            '<div class="ligne-corps"><b>' + esc((x.t.emoji || "🧹") + " " + x.t.nom) + "</b><small>" +
-            esc(qui.prenom) + " • +" + x.t.points + " pts • " + libellePeriode(x.t.frequence) + "</small></div>" +
-            '<button class="btn mini principal" data-action="tache-fait" data-id="' + x.t.id + '">C\'est fait</button>' +
-            "</div>";
-        }).join("") +
-        '<p class="aide" style="margin-top:.6rem">Cocher ici vaut validation : les points sont ' +
-        "crédités tout de suite à l'enfant.</p>"));
-    }
-  }
-
-  /* Menu du jour */
+  /* Menu du jour.
+     Il passe avant les tâches des enfants : « qu'est-ce qu'on mange ce soir »
+     est la question qu'on se pose le plus souvent dans une journée, et elle
+     était reléguée au quatrième bloc, hors de l'écran. */
   const cleSem = cleSemaine(new Date());
   const jour = JOURS[(new Date().getDay() + 6) % 7];
   const sem = etat.repas[cleSem] || {};
@@ -275,12 +276,40 @@ Vues.accueil = function () {
       : rienDu("🤷", "Aucun repas prévu aujourd'hui."),
     "Voir la semaine", "aller", "menus"));
 
+  /* Tâches des enfants sans téléphone : c'est le parent qui coche.
+     Même limite que « Mes tâches » : ce bloc souffrait du même défaut. */
+  if (estAdmin()) {
+    const enfants = tachesDesEnfants();
+    if (enfants.length && !ongletMasque("taches")) {
+      const enfantsMontres = enfants.slice(0, MAX_LIGNES_ACCUEIL);
+      h.push(bloc("🧒 À faire pour les enfants" +
+        ' <span class="etiquette chaud">' + enfants.length + "</span>",
+        enfantsMontres.map((x) => {
+          const qui = membre(x.assigne);
+          return '<div class="ligne">' + avatarDe(qui) +
+            '<div class="ligne-corps"><b>' + esc((x.t.emoji || "🧹") + " " + x.t.nom) + "</b><small>" +
+            esc(qui.prenom) + " • +" + x.t.points + " pts • " + libellePeriode(x.t.frequence) + "</small></div>" +
+            '<button class="btn mini principal" data-action="tache-fait" data-id="' + x.t.id + '">C\'est fait</button>' +
+            "</div>";
+        }).join("") +
+        resteAVoir(enfants.length - enfantsMontres.length) +
+        '<p class="aide" style="margin-top:.6rem">Cocher ici vaut validation : les points sont ' +
+        "crédités tout de suite à l'enfant.</p>"));
+    }
+  }
+
   /* Agenda : la question « qu'est-ce qu'on a cette semaine ? » se pose tous
      les jours, on y répond donc sur l'accueil, sans avoir à ouvrir l'onglet. */
   if (!ongletMasque("notes")) {
     const auj = isoDate(new Date());
     const retard = notesAVenir().filter((n) => estRendezVous(n) && n.date < auj);
-    const jours = agendaParJour("", 14).filter((j) => j.date >= auj).slice(0, 4);
+    /* Se limiter à quatre jours ne suffisait pas : rien ne bornait le nombre
+       de rendez-vous DANS ces jours-là. Une semaine bien remplie faisait à
+       elle seule plus d'un écran et demi, et repoussait les courses tout en
+       bas. On tient donc un budget de lignes, tous jours confondus. */
+    const tousJours = agendaParJour("", 14).filter((j) => j.date >= auj);
+    const jours = tousJours.slice(0, 4);
+    const totalRdv = tousJours.reduce((n, j) => n + j.notes.length, 0);
     const libres = notesAVenir().filter((n) => !estRendezVous(n)).slice(0, 3);
 
     let corps = "";
@@ -289,14 +318,23 @@ Vues.accueil = function () {
         '<span class="etiquette rouge">' + retard.length + " en retard</span></div>" +
         retard.slice(0, 2).map(ligneNote).join("");
     }
+    let budget = MAX_LIGNES_ACCUEIL;
+    let affiches = 0;
     jours.forEach((j) => {
+      /* Un jour dont on n'a plus la place d'afficher le contenu n'apparaît
+         pas du tout : un titre de jour suivi de rien serait déroutant. */
+      const prises = budget > 0 ? j.notes.slice(0, budget) : [];
+      if (!prises.length) return;
+      budget -= prises.length;
+      affiches += prises.length;
       const dj = joursEntre(auj, j.date);
       corps += '<div class="ligne" style="border:none;padding:.5rem 0 .1rem">' +
         '<small style="font-weight:700;letter-spacing:.05em;text-transform:uppercase;' +
         'color:var(--ink-muted);font-size:.68rem">' +
         esc(dj === 0 ? "Aujourd’hui" : dj === 1 ? "Demain" : dateJolie(j.date)) +
-        "</small></div>" + j.notes.map((n) => ligneNote(n, true)).join("");
+        "</small></div>" + prises.map((n) => ligneNote(n, true)).join("");
     });
+    corps += resteAVoir(totalRdv - affiches);
     if (libres.length) {
       corps += '<div class="ligne" style="border:none;padding:.5rem 0 .1rem">' +
         '<small style="font-weight:700;letter-spacing:.05em;text-transform:uppercase;' +
@@ -325,8 +363,31 @@ Vues.accueil = function () {
       (restants.length > 3 ? "…" : "") + "</small></span></button>";
   }).filter(Boolean).join("");
 
+  /* Ce que la réserve a à dire. Ces deux alertes existaient déjà, mais il
+     fallait ouvrir Courses ▸ Ma réserve pour les découvrir — autant dire
+     jamais. Un anti-gaspi qu'on ne croise pas ne sert à rien. */
+  const sousMini = stockSousMinimum();
+  const bientotPerime = stockBientotPerime();
+  let alerteReserve = "";
+  if (sousMini.length || bientotPerime.length) {
+    const bouts = [];
+    if (sousMini.length) {
+      bouts.push("<b>" + sousMini.length + " sous le minimum</b>");
+    }
+    if (bientotPerime.length) {
+      bouts.push("<b>" + bientotPerime.length + " à consommer vite</b>");
+    }
+    const noms = sousMini.concat(bientotPerime).slice(0, 3).map((s) => s.nom);
+    alerteReserve = '<button class="ligne" data-action="reserve-ouvrir" ' +
+      'style="width:100%;background:none;border:none;border-top:1px solid var(--border);text-align:left">' +
+      '<span style="font-size:1.2rem">🥫</span>' +
+      '<span class="ligne-corps"><b>Ma réserve · ' + bouts.join(" · ") + "</b><small>" +
+      esc(noms.join(", ")) + (sousMini.length + bientotPerime.length > 3 ? "…" : "") +
+      "</small></span></button>";
+  }
+
   h.push(bloc("🛒 Courses",
-    lignesCourses || rienDu("✨", "Rien à acheter pour le moment."),
+    (lignesCourses + alerteReserve) || rienDu("✨", "Rien à acheter pour le moment."),
     "Ouvrir", "aller", "courses"));
 
   /* Classement */
@@ -558,15 +619,29 @@ function ligneCourse(c) {
 
 /* ------------------------------- la réserve ------------------------------- */
 
+/* Poser plusieurs articles d'un coup. C'est aussi la porte d'entrée de la
+   dictée : le micro du clavier remplit ce champ comme n'importe quel autre,
+   et « du riz des pâtes et du lait » donne bien trois articles. */
+function champRapideStock() {
+  return '<form id="form-stock-rapide" style="display:flex;gap:.5rem;margin:0 0 .4rem">' +
+    '<input type="text" id="champ-stock" placeholder="riz, pâtes, lait…" autocomplete="off">' +
+    '<button class="btn principal" type="submit" style="flex-shrink:0">Ajouter</button></form>' +
+    '<p class="aide" style="margin:0 0 1rem">Séparez par des virgules, ou dictez avec le ' +
+    "micro de votre clavier. Les quantités se règlent ensuite.</p>";
+}
+
 function vueReserve() {
   const h = [];
   if (!etat.stock.length) {
+    h.push(champRapideStock());
     h.push(rienDu("🥫",
-      "Votre réserve est vide.<br>Appuyez sur <b>+</b> pour y mettre ce que vous gardez " +
+      "Votre réserve est vide.<br>Posez ci-dessus ce que vous gardez " +
       "en permanence : pâtes, conserves, farine, lessive…<br><br>" +
-      "Indiquez une <b>quantité minimum</b> et l'application vous préviendra quand il faut racheter."));
+      "Indiquez ensuite une <b>quantité minimum</b> et l'application vous préviendra " +
+      "quand il faut racheter."));
     return h.join("");
   }
+  h.push(champRapideStock());
 
   /* Ce qui va se perdre passe avant ce qui manque : on peut racheter demain,
      on ne peut pas rattraper un yaourt périmé. */
@@ -1056,6 +1131,11 @@ Vues.points = function () {
     '<span class="etiquette or">' + x.pts + " pts</span>" +
     (estAdmin() && x.m.sansAppareil
       ? '<button class="btn mini or" data-action="cadeau-pour" data-id="' + x.m.id + '">🎁</button>' : "") +
+    /* D'où viennent ces points ? La question se pose surtout pour les enfants
+       sans téléphone, qui ne peuvent pas consulter leur propre historique. */
+    (estAdmin()
+      ? '<button class="btn mini icone" data-action="points-historique" data-id="' + x.m.id +
+        '" aria-label="Voir l\'historique de ' + esc(x.m.prenom) + '">🧾</button>' : "") +
     (estAdmin() ? '<button class="btn mini" data-action="points-ajuster" data-id="' + x.m.id + '">±</button>' : "") +
     "</div>").join("") + "</div>");
 

@@ -578,6 +578,16 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
   body{background:#fff;color:#000;}
 }
 
+/* ---------- sauts vers une section (admin, index des recettes) ----------
+   La barre du haut est collante : un saut qui vise le haut de l'écran place
+   la cible SOUS elle, et le titre disparaît — on croit avoir raté sa cible.
+   On réserve donc la hauteur de la barre (66 px, plus l'encoche du téléphone)
+   et un peu d'air au-dessus. */
+[id^="admin-"],
+[id^="lettre-"] {
+  scroll-margin-top: calc(78px + env(safe-area-inset-top));
+}
+
 /* ---------- index alphabétique du cahier de recettes ---------- */
 .index-lettres{
   display:flex;flex-wrap:wrap;gap:.25rem;
