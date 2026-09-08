@@ -1,0 +1,63 @@
+# .gitignore — ce que Git doit ignorer dans Ma Tribu
+#
+# ATTENTION, a lire avant de modifier ce fichier :
+#
+#   firebase-config.js DOIT rester publie. Ce n'est PAS un secret.
+#   Ces cles servent a designer la base, jamais a y entrer. Ce qui protege
+#   vraiment les donnees, ce sont les regles Firestore, cote serveur.
+#   Si on l'ajoutait ici, le site cesserait purement et simplement de
+#   fonctionner pour tout le monde.
+#
+#   firestore.rules reste publie lui aussi : le publier est une bonne
+#   pratique, et il ne sert a rien sans les droits d'administration Firebase.
+
+
+# ---------- Ce qui vous concerne aujourd'hui ----------
+
+# Python : cache genere automatiquement en lancant serve.py
+__pycache__/
+*.pyc
+
+# Configuration locale des outils (lanceur de serveur, etc.)
+.claude/
+
+# Fichiers deposes par Windows et les editeurs
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+
+# ---------- Precautions pour plus tard ----------
+# Rien de tout cela n'existe dans le projet aujourd'hui. On le pose par
+# avance : le jour ou l'un de ces fichiers apparait, il ne partira pas en
+# ligne par accident.
+
+# Mots de passe et reglages prives
+.env
+.env.*
+!.env.example
+
+# Cles privees Firebase / Google — celles-la, ce sont de VRAIS secrets :
+# elles donnent tous les droits sur la base, sans aucun controle.
+serviceAccountKey.json
+service-account*.json
+*-firebase-adminsdk-*.json
+
+# Certificats et cles
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependances installees (si le projet en utilise un jour)
+node_modules/
+
+# Journaux et fichiers temporaires
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tmp
+*.temp
