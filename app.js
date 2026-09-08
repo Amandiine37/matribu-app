@@ -87,7 +87,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.42 bêta";
+const VERSION = "0.43 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -346,11 +346,40 @@ function jetonAleatoire(octets) {
    32^12 ≈ un milliard de milliards de combinaisons : le deviner est hors
    de portee, et l'invitation ne sert qu'une fois. */
 const LETTRES_CODE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-function codeInvitation() {
-  const alea = crypto.getRandomValues(new Uint8Array(12));
+
+/* Tirer des caracteres au hasard dans un alphabet, sans favoriser personne.
+
+   Un octet vaut 0 a 255. Le ramener a l'alphabet par un simple reste ne tombe
+   juste que si la taille de l'alphabet divise 256. Nos 32 caracteres tombent
+   juste (8 octets par lettre, verifie) : il n'y a aucun biais aujourd'hui.
+
+   Mais c'est vrai par HASARD, pas par construction. Retirer une lettre
+   ambigue de plus — exactement l'esprit de cet alphabet — ferait sortir
+   certaines lettres 12 % plus souvent, en silence et sans rien casser.
+
+   On ecarte donc les octets qui depassent le dernier multiple complet. Le
+   tirage reste equitable quelle que soit la taille de l'alphabet, et on ne
+   perd jamais plus de quelques octets. */
+function tirerCaracteres(alphabet, combien) {
+  const n = alphabet.length;
+  const plafond = Math.floor(256 / n) * n;   // au-dela, l'octet est rejete
   let s = "";
-  for (let i = 0; i < 12; i++) s += LETTRES_CODE[alea[i] % LETTRES_CODE.length];
+  while (s.length < combien) {
+    /* Par petits paquets : `getRandomValues` refuse au-dela de 65 536 octets.
+       Nos codes font 6 et 12 caracteres, on n'y arrivera jamais — mais une
+       fonction qui explose sur une demande plus grande est un piege pose
+       pour le jour ou quelqu'un s'en resservira ailleurs. */
+    const paquet = Math.min(256, Math.max(8, (combien - s.length) * 2));
+    const alea = crypto.getRandomValues(new Uint8Array(paquet));
+    for (let i = 0; i < alea.length && s.length < combien; i++) {
+      if (alea[i] < plafond) s += alphabet[alea[i] % n];
+    }
+  }
   return s;
+}
+
+function codeInvitation() {
+  return tirerCaracteres(LETTRES_CODE, 12);
 }
 /* Presentation en trois groupes : plus facile a relire et a dicter. */
 function codeLisible(jeton) {
@@ -364,11 +393,9 @@ function codeLisible(jeton) {
    les familles des autres, impossible de verifier a l'avance qu'il est libre
    -> on le prend assez long pour que la collision soit negligeable. */
 function nouveauRepere() {
-  const lettres = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // sans I, O, 0, 1
-  let s = "";
-  const alea = crypto.getRandomValues(new Uint8Array(6));
-  for (let i = 0; i < 6; i++) s += lettres[alea[i] % lettres.length];
-  return "MAISON-" + s;
+  /* Le meme alphabet que les invitations, et surtout LE MEME : il etait
+     recopie ici, et deux copies finissent toujours par diverger. */
+  return "MAISON-" + tirerCaracteres(LETTRES_CODE, 6);
 }
 
 /* Transforme un code a 4 chiffres en empreinte impossible a relire.
