@@ -87,7 +87,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.43 bêta";
+const VERSION = "0.46 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -172,6 +172,23 @@ function esc(s) {
 }
 function pad(n) { return String(n).padStart(2, "0"); }
 function propre(v) { return JSON.parse(JSON.stringify(v)); }
+
+/* Un lien vers l'exterieur, et RIEN d'autre.
+
+   `esc()` protege le HTML, mais pas l'adresse elle-meme : « javascript:... »
+   reste un lien valide, et cliquer dessus execute du code dans la page, avec
+   la session de celui qui clique.
+
+   Le risque n'est pas theorique ici : le lien d'une recette voyage d'une
+   famille a l'autre par le catalogue partage. Une recette piegee, publiee
+   une fois, atteindrait toutes les familles qui l'importent.
+
+   On n'accepte donc que http et https. Le reste devient un lien vide, et le
+   bouton ne s'affiche pas. */
+function lienExterne(url) {
+  const u = String(url == null ? "" : url).trim();
+  return /^https?:\/\/[^\s]+$/i.test(u) ? u : "";
+}
 
 /* --- Quantites et unites --- */
 
@@ -1181,15 +1198,50 @@ const Store = {
     }
   },
 
-  async consommerInvitation(jeton) {
+  /* RESERVER le jeton — l'etape qui rend l'invitation reellement a usage
+     unique.
+
+     Elle se fait AVANT d'entrer dans la famille, et c'est tout l'interet :
+     ecrire sur un seul document est atomique chez Firestore, et la regle
+     exige que le jeton soit encore libre. Deux appareils qui presentent le
+     meme code au meme instant : un seul gagne, l'autre est refuse net.
+     Auparavant on entrait d'abord et on brulait ensuite — entre les deux,
+     un second appareil pouvait se glisser.
+
+     On signe la reservation avec l'identifiant de l'appareil. C'est ce qui
+     permet de RECOMMENCER si l'entree echoue juste apres (reseau coupe) :
+     le jeton nous appartient deja, on le represente et on repasse. */
+  async reserverInvitation(jeton) {
     if (this.mode !== "nuage") {
       const t = JSON.parse(localStorage.getItem("tribu:invitations") || "{}");
-      if (t[jeton]) { t[jeton].utilisee = true; t[jeton].utiliseeLe = Date.now(); }
+      if (t[jeton] && t[jeton].utilisee && t[jeton].utiliseePar !== this.uid) return false;
+      if (t[jeton]) {
+        t[jeton].utilisee = true;
+        t[jeton].utiliseeLe = Date.now();
+        t[jeton].utiliseePar = this.uid;
+      }
       localStorage.setItem("tribu:invitations", JSON.stringify(t));
-      return;
+      return true;
     }
-    await this._fs.setDoc(this._fs.doc(this._db, "invitations", jeton),
-      { utilisee: true, utiliseeLe: Date.now() }, { merge: true });
+    try {
+      await this._fs.setDoc(this._fs.doc(this._db, "invitations", jeton),
+        { utilisee: true, utiliseeLe: Date.now(), utiliseePar: this.uid }, { merge: true });
+      return true;
+    } catch (err) {
+      /* Refuse = quelqu'un d'autre l'a pris avant nous. Sauf si c'est nous
+         qui l'avions deja reserve : dans ce cas on peut continuer. */
+      const dejaAMoi = await this.jetonEstAMoi(jeton);
+      if (dejaAMoi) return true;
+      console.warn("Reservation du jeton refusee :", err);
+      this.derniereErreur = err;
+      return false;
+    }
+  },
+
+  /* Ce jeton m'appartient-il deja ? Sert aux reprises apres echec. */
+  async jetonEstAMoi(jeton) {
+    const inv = await this.lireInvitation(jeton);
+    return !!(inv && inv.utilisee === true && inv.utiliseePar === this.uid);
   },
 
   /* Entree dans la famille : on inscrit CET appareil dans la liste autorisee.
@@ -2040,7 +2092,13 @@ const Invitations = {
           : "Cette invitation n'existe pas ou a été supprimée."
       };
     }
-    if (inv.utilisee) return { ok: false, message: "Cette invitation a déjà été utilisée." };
+    /* Deja utilisee ? Une seule exception : si c'est CET appareil qui l'a
+       reservee. L'entree a du echouer juste apres (reseau coupe, page fermee)
+       et il faut pouvoir reprendre, sinon la personne se retrouve enfermee
+       dehors avec un code mort. */
+    if (inv.utilisee && inv.utiliseePar !== Store.uid) {
+      return { ok: false, message: "Cette invitation a déjà été utilisée." };
+    }
     if (inv.expireLe && inv.expireLe < Date.now()) return { ok: false, message: "Cette invitation a expiré." };
     return { ok: true, invitation: inv };
   }
@@ -2252,7 +2310,8 @@ const Partage = {
       rapide: !!r.rapide,
       saisons: (r.saisons || []).slice(0, 4),
       etapes: (r.etapes || []).slice(0, 20),
-      lien: r.lien || "",
+      /* On ne publie pas un lien qu'on refuserait d'ouvrir. */
+      lien: lienExterne(r.lien),
       ingredients: (r.ingredients || []).slice(0, 40).map((i) => ({
         nom: i.nom, qte: i.qte || "", unite: i.unite || "", rayon: i.rayon || "Autre"
       })),
@@ -2302,7 +2361,9 @@ const Partage = {
       nom: fiche.nom, emoji: fiche.emoji || "🍽️", type: fiche.type || "consistant",
       vegetarien: !!fiche.vegetarien, rapide: !!fiche.rapide,
       saisons: (fiche.saisons || []).slice(0, 4),
-      etapes: (fiche.etapes || []).slice(0, 20), lien: fiche.lien || "",
+      etapes: (fiche.etapes || []).slice(0, 20),
+      /* Une fiche venue d'ailleurs : son lien est filtre avant d'entrer. */
+      lien: lienExterne(fiche.lien),
       ingredients: (fiche.ingredients || []).map((i) => ({
         nom: i.nom, qte: i.qte || "", unite: i.unite || "", rayon: i.rayon || "Autre"
       })),

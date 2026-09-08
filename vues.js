@@ -1623,13 +1623,21 @@ const Connexion = {
         }, await champsPin(pin));
 
         Store.code = d.code;
+        /* On RESERVE le jeton avant d'entrer : c'est ce qui le rend vraiment
+           a usage unique. Si quelqu'un d'autre l'a pris entre-temps, on
+           s'arrete ici, avant d'avoir touche a la famille. */
+        const reserve = await Store.reserverInvitation(d.jeton);
+        if (!reserve) {
+          toast("Cette invitation vient d'être utilisée sur un autre appareil.");
+          bouton.disabled = false;
+          return;
+        }
         const ok = await Store.rejoindre(d.code, d.jeton, { nouveauMembre: nouveau });
         if (!ok) {
           toast("Invitation refusée par le serveur");
           bouton.disabled = false;
           return;
         }
-        await Store.consommerInvitation(d.jeton);
         const entre = await entrerDansFamille(d.code, nouveau.id);
         if (!entre) {
           ecranPanne(Store.derniereErreur, "Presque !",
@@ -1673,6 +1681,13 @@ const Connexion = {
           const r = await Invitations.valider(d.jeton);
           if (!r.ok) { toast(r.message); occupe = false; return; }
           Store.code = d.code;
+          /* Meme principe : on reserve d'abord, on entre ensuite. */
+          const reserve = await Store.reserverInvitation(d.jeton);
+          if (!reserve) {
+            toast("Cette invitation vient d'être utilisée sur un autre appareil.");
+            occupe = false;
+            return;
+          }
           const ok = await Store.rejoindre(d.code, d.jeton, {
             membreId: d.membre.id,
             admin: (d.membre.role || "membre") === "admin"
@@ -1683,7 +1698,6 @@ const Connexion = {
               "sécurité Firebase ne sont peut-être pas à jour.");
             return;
           }
-          await Store.consommerInvitation(d.jeton);
         }
 
         const entre = await entrerDansFamille(d.code, d.membre.id);

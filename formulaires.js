@@ -1146,7 +1146,7 @@ Formulaires.recette = function (rid) {
     "dans Administration).</p>" +
     '<label class="champ"><span>Lien vers la recette (Cookomix, blog…)</span>' +
     '<input type="url" name="lien" value="' + esc(cour.lien || "") + '" placeholder="https://…"></label>' +
-    (cour.lien ? '<a class="btn plein doux" href="' + esc(cour.lien) + '" target="_blank" rel="noopener" ' +
+    (lienExterne(cour.lien) ? '<a class="btn plein doux" href="' + esc(lienExterne(cour.lien)) + '" target="_blank" rel="noopener" ' +
       'style="margin-bottom:1rem;text-decoration:none">Ouvrir la recette ↗</a>' : "") +
     (r && estRecettePerso(r)
       ? '<button type="button" class="btn plein ' + (r.partageId ? "doux" : "") +
@@ -1986,8 +1986,8 @@ Formulaires.consulterRecette = function (rid) {
     : rienDu("📝", "Le déroulé n'est pas encore écrit.<br>" +
       "Vous pouvez l'ajouter dans <b>Modifier</b>, une étape par ligne.");
 
-  if (r.lien) {
-    html += '<a class="btn plein doux" href="' + esc(r.lien) + '" target="_blank" rel="noopener" ' +
+  if (lienExterne(r.lien)) {
+    html += '<a class="btn plein doux" href="' + esc(lienExterne(r.lien)) + '" target="_blank" rel="noopener" ' +
       'style="margin-top:.6rem;text-decoration:none">Ouvrir la recette d\'origine ↗</a>';
   }
 
