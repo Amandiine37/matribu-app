@@ -2547,5 +2547,144 @@ window.RECETTES_DEPART = [
   { nom:"Yaourt glacé aux fruits rouges", emoji:"🍦", type:"leger", vegetarien:true, rapide:true, thermomix:true, plat:"dessert", saisons:["ete"], etapes:["Congelez les fruits rouges la veille, étalés sur une plaque.", "Mixez-les encore gelés avec le yaourt et le jus de citron.", "Mixez par à-coups : la préparation doit rester glacée, pas fondre.", "Servez immédiatement, à la cuillère.", "Aucun sucre ajouté : la texture glacée arrondit déjà l'acidité."], lien:"", ingredients:[
     {nom:"Fruits rouges", qte:"500", unite:"g", rayon:"Surgelés"},
     {nom:"Yaourt nature", qte:"3", unite:"pot(s)", rayon:"Crèmerie"},
-    {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"}]}
+    {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
+
+  /* --- Plats pensés pour les sportifs -------------------------------------
+     Une vraie source de protéines, un féculent pour l'énergie, et de quoi
+     refaire les minéraux perdus à l'effort. Écrits pour l'application,
+     comme les autres : aucune recette n'est recopiée d'un site. */
+
+  { nom:"Poulet mariné au yaourt, boulgour aux herbes", emoji:"🍗", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Mélangez le yaourt, le jus de citron, l'ail écrasé et le cumin, puis faites-y mariner le poulet coupé en gros morceaux au moins une heure au frais.", "Faites cuire le boulgour dans deux fois son volume d'eau salée, à couvert, jusqu'à absorption complète.", "Saisissez le poulet égoutté à la poêle bien chaude, en plusieurs fois pour qu'il colore au lieu de bouillir.", "Ciselez menthe et persil, mélangez-les au boulgour tiède avec un filet d'huile d'olive.", "Servez le poulet sur le boulgour, avec le reste de citron."], lien:"", ingredients:[
+    {nom:"Blancs de poulet", qte:"600", unite:"g", rayon:"Boucherie"},
+    {nom:"Yaourt nature", qte:"2", unite:"pot(s)", rayon:"Crèmerie"},
+    {nom:"Boulgour", qte:"250", unite:"g", rayon:"Épicerie"},
+    {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Menthe", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Cumin", qte:"1", unite:"cuillère(s) à café", rayon:"Épicerie"},
+    {nom:"Huile d'olive", qte:"2", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Bol de quinoa, pois chiches rôtis et feta", emoji:"🥗", type:"consistant", vegetarien:true, rapide:false, thermomix:false, saisons:["ete", "automne"], etapes:["Égouttez et séchez les pois chiches, mélangez-les au paprika et à un filet d'huile, puis enfournez 25 minutes à 200 °C : ils doivent croquer.", "Faites cuire le quinoa dans de l'eau salée, égouttez et laissez tiédir.", "Coupez le concombre en dés et les tomates cerises en deux, émincez l'oignon rouge très fin.", "Mélangez le tout, ajoutez la feta émiettée et les pois chiches encore chauds.", "Assaisonnez au jus de citron et à l'huile d'olive juste avant de servir."], lien:"", ingredients:[
+    {nom:"Quinoa", qte:"250", unite:"g", rayon:"Épicerie"},
+    {nom:"Pois chiches", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Feta", qte:"150", unite:"g", rayon:"Crèmerie"},
+    {nom:"Concombre", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Tomates cerises", qte:"250", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Oignon rouge", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Paprika", qte:"1", unite:"cuillère(s) à café", rayon:"Épicerie"},
+    {nom:"Huile d'olive", qte:"3", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Dahl de lentilles corail aux épinards", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le gingembre râpé dans un peu d'huile.", "Ajoutez le curcuma, laissez chauffer quelques secondes pour réveiller les épices.", "Versez les lentilles corail rincées, les tomates concassées et le lait de coco, complétez d'un peu d'eau.", "Laissez mijoter 20 minutes à découvert : les lentilles doivent se défaire.", "Ajoutez les épinards en fin de cuisson, le temps qu'ils tombent. Servez avec le riz complet."], lien:"", ingredients:[
+    {nom:"Lentilles corail", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Riz complet", qte:"250", unite:"g", rayon:"Épicerie"},
+    {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
+    {nom:"Épinards", qte:"300", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Tomates concassées", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Gingembre", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Curcuma", qte:"1", unite:"cuillère(s) à café", rayon:"Épicerie"}]},
+
+  { nom:"Saumon rôti, patates douces et brocolis", emoji:"🐟", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:["automne", "hiver"], etapes:["Coupez les patates douces en gros cubes, enfournez-les 20 minutes à 200 °C avec un filet d'huile d'olive.", "Ajoutez les pavés de saumon sur la même plaque et poursuivez 12 à 15 minutes.", "Faites cuire les brocolis à la vapeur, en gardant du croquant.", "Faites dorer les graines de courge à sec dans une poêle, une minute suffit.", "Répartissez le tout, parsemez de graines et de persil, arrosez de jus de citron."], lien:"", ingredients:[
+    {nom:"Pavés de saumon", qte:"4", unite:"", rayon:"Poissonnerie"},
+    {nom:"Patates douces", qte:"800", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Brocolis", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Graines de courge", qte:"40", unite:"g", rayon:"Épicerie"},
+    {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Huile d'olive", qte:"2", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Omelette épinards-feta et pain complet", emoji:"🍳", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Faites tomber les épinards à la poêle avec l'oignon émincé, jusqu'à ce qu'il n'y ait plus d'eau.", "Battez les œufs, salez peu : la feta sale déjà beaucoup.", "Versez les œufs sur les épinards, émiettez la feta par-dessus.", "Laissez prendre à feu doux, sans remuer, puis repliez ou passez sous le gril une minute.", "Servez avec le pain complet grillé."], lien:"", ingredients:[
+    {nom:"Œufs", qte:"8", unite:"", rayon:"Crèmerie"},
+    {nom:"Épinards", qte:"300", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Feta", qte:"100", unite:"g", rayon:"Crèmerie"},
+    {nom:"Pain complet", qte:"4", unite:"tranche(s)", rayon:"Boulangerie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Huile d'olive", qte:"1", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Steak haché, boulgour aux épinards et haricots verts", emoji:"🥩", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites cuire le boulgour dans deux fois son volume d'eau salée, à couvert.", "Faites tomber les épinards avec l'oignon émincé, puis mélangez-les au boulgour.", "Cuisez les haricots verts à l'eau bouillante salée, 8 minutes, puis rafraîchissez-les pour garder la couleur.", "Saisissez les steaks à la poêle très chaude, une à deux minutes par face selon l'épaisseur.", "Servez sans attendre, le boulgour encore chaud."], lien:"", ingredients:[
+    {nom:"Steaks hachés", qte:"4", unite:"", rayon:"Boucherie"},
+    {nom:"Boulgour", qte:"250", unite:"g", rayon:"Épicerie"},
+    {nom:"Épinards", qte:"300", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Haricots verts", qte:"400", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Huile d'olive", qte:"1", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Pâtes complètes au thon, roquette et pignons", emoji:"🍝", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites cuire les pâtes complètes dans une grande quantité d'eau salée.", "Pendant ce temps, faites blondir l'ail émincé dans l'huile d'olive, sans le brûler.", "Ajoutez le thon égoutté et émietté, réchauffez une minute à peine.", "Faites dorer les pignons à sec dans une petite poêle.", "Égouttez les pâtes, mélangez-les à la poêle avec le zeste et le jus du citron, puis ajoutez la roquette hors du feu et les pignons."], lien:"", ingredients:[
+    {nom:"Pâtes complètes", qte:"500", unite:"g", rayon:"Épicerie"},
+    {nom:"Thon au naturel", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Roquette", qte:"100", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Pignons", qte:"50", unite:"g", rayon:"Épicerie"},
+    {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Huile d'olive", qte:"3", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Chili de haricots rouges et quinoa", emoji:"🌶️", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le poivron coupé en dés.", "Ajoutez le cumin et le paprika, mélangez quelques secondes.", "Versez les tomates concassées, les haricots rouges égouttés et le quinoa avec un verre d'eau.", "Laissez mijoter 25 minutes à couvert, en remuant de temps en temps : le quinoa cuit dans la sauce.", "Ajoutez le maïs en fin de cuisson et rectifiez l'assaisonnement."], lien:"", ingredients:[
+    {nom:"Haricots rouges", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Quinoa", qte:"200", unite:"g", rayon:"Épicerie"},
+    {nom:"Tomates concassées", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Poivron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Maïs", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Cumin", qte:"1", unite:"cuillère(s) à café", rayon:"Épicerie"},
+    {nom:"Paprika", qte:"1", unite:"cuillère(s) à café", rayon:"Épicerie"}]},
+
+  { nom:"Wok de poulet, riz complet et légumes croquants", emoji:"🥢", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites cuire le riz complet à l'eau salée : il demande une bonne vingtaine de minutes.", "Coupez le poulet en lanières fines et les légumes en bâtonnets réguliers.", "Saisissez le poulet dans un wok très chaud, réservez-le dès qu'il est doré.", "Faites sauter les légumes deux à trois minutes seulement, ils doivent rester croquants.", "Remettez le poulet, ajoutez le gingembre râpé et la sauce soja, mélangez et servez sur le riz."], lien:"", ingredients:[
+    {nom:"Blancs de poulet", qte:"600", unite:"g", rayon:"Boucherie"},
+    {nom:"Riz complet", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Carottes", qte:"3", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Poivron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Brocolis", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Gingembre", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Sauce soja", qte:"3", unite:"cuillère(s) à soupe", rayon:"Épicerie"},
+    {nom:"Huile d'olive", qte:"2", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Sardines grillées, écrasé de pommes de terre et roquette aux noix", emoji:"🐠", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:["printemps", "ete"], etapes:["Faites cuire les pommes de terre à l'eau salée, puis écrasez-les grossièrement à la fourchette avec l'huile d'olive et l'ail écrasé.", "Passez les sardines sous le gril, 3 minutes de chaque côté, la peau bien tendue.", "Concassez les noix à la main.", "Assaisonnez la roquette au jus de citron, ajoutez les noix.", "Servez les sardines sur l'écrasé, la salade à côté."], lien:"", ingredients:[
+    {nom:"Sardines fraîches", qte:"12", unite:"", rayon:"Poissonnerie"},
+    {nom:"Pommes de terre", qte:"800", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Roquette", qte:"100", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Noix", qte:"50", unite:"g", rayon:"Épicerie"},
+    {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"1", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Huile d'olive", qte:"3", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Salade de lentilles, œufs mollets et noix", emoji:"🥗", type:"consistant", vegetarien:true, rapide:true, thermomix:false, saisons:["automne", "hiver"], etapes:["Faites cuire les lentilles vertes 20 minutes dans de l'eau non salée, avec une feuille de laurier.", "Plongez les œufs 6 minutes dans l'eau bouillante, puis refroidissez-les aussitôt pour arrêter la cuisson.", "Préparez une vinaigrette bien moutardée avec l'huile d'olive et le vinaigre.", "Mélangez les lentilles encore tièdes à l'échalote ciselée et à la vinaigrette : tièdes, elles s'imprègnent mieux.", "Ajoutez les noix concassées, le persil, et posez les œufs coupés en deux au dernier moment."], lien:"", ingredients:[
+    {nom:"Lentilles vertes", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Œufs", qte:"4", unite:"", rayon:"Crèmerie"},
+    {nom:"Noix", qte:"60", unite:"g", rayon:"Épicerie"},
+    {nom:"Échalote", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Moutarde", qte:"1", unite:"cuillère(s) à café", rayon:"Épicerie"},
+    {nom:"Huile d'olive", qte:"3", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Escalopes de dinde, boulgour et champignons", emoji:"🦃", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:["automne", "hiver"], etapes:["Faites cuire le boulgour dans deux fois son volume de bouillon, à couvert.", "Faites sauter les champignons émincés à feu vif, sans les entasser : sinon ils rendent leur eau et bouillent.", "Ajoutez l'oignon en fin de cuisson des champignons.", "Saisissez les escalopes 3 minutes par face dans la même poêle.", "Mélangez champignons et boulgour, parsemez de persil, servez avec les escalopes."], lien:"", ingredients:[
+    {nom:"Escalopes de dinde", qte:"4", unite:"", rayon:"Boucherie"},
+    {nom:"Boulgour", qte:"250", unite:"g", rayon:"Épicerie"},
+    {nom:"Champignons de Paris", qte:"400", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Huile d'olive", qte:"2", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Curry de pois chiches au lait de coco et riz complet", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Lancez la cuisson du riz complet, qui sera le plus long.", "Faites revenir l'oignon et l'ail, ajoutez la pâte de curry et laissez-la chauffer une minute.", "Versez les pois chiches égouttés, les tomates concassées et le lait de coco.", "Laissez mijoter 15 minutes à découvert pour que la sauce épaississe.", "Ajoutez les épinards en fin de cuisson et un trait de jus de citron avant de servir."], lien:"", ingredients:[
+    {nom:"Pois chiches", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Riz complet", qte:"250", unite:"g", rayon:"Épicerie"},
+    {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
+    {nom:"Épinards", qte:"200", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Tomates concassées", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Pâte de curry", qte:"2", unite:"cuillère(s) à soupe", rayon:"Épicerie"},
+    {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
+
+  { nom:"Cabillaud, lentilles vertes et citron", emoji:"🐟", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:["automne", "hiver"], etapes:["Faites cuire les lentilles 20 minutes avec la carotte en dés, l'oignon et le laurier, dans de l'eau non salée.", "Salez seulement en fin de cuisson, sinon la peau des lentilles durcit.", "Posez les dos de cabillaud sur les lentilles chaudes, couvrez et laissez cuire 8 minutes à feu doux : la vapeur suffit.", "Arrosez de jus de citron et d'un filet d'huile d'olive.", "Parsemez de persil et servez dans l'assiette creuse, avec un peu du jus de cuisson."], lien:"", ingredients:[
+    {nom:"Dos de cabillaud", qte:"4", unite:"", rayon:"Poissonnerie"},
+    {nom:"Lentilles vertes", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Huile d'olive", qte:"2", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]}
 ];

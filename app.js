@@ -87,7 +87,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.47 bêta";
+const VERSION = "0.48 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -2487,7 +2487,7 @@ const GROUPES_ALIMENTS = {
   },
   cerealesCompletes: {
     mots: ["boulgour", "quinoa", "riz complet", "pain complet", "farine complete",
-      "avoine", "sarrasin", "epeautre", "millet"]
+      "avoine", "sarrasin", "epeautre", "millet", "pate complete", "pates completes"]
   },
   feculentsRaffines: {
     mots: ["riz", "pate", "spaghetti", "tagliatelle", "nouille", "vermicelle",
@@ -2495,7 +2495,7 @@ const GROUPES_ALIMENTS = {
       "pomme de terre", "puree", "polenta", "tortilla", "wrap", "frite",
       "couscous", "baguette", "chips"],
     sauf: ["pate de curry", "pate de miso", "riz complet", "pain complet",
-      "farine complete", "pate a tartiner"]
+      "farine complete", "pate a tartiner", "pate complete", "pates completes"]
   },
   sucres: {
     mots: ["sucre", "miel", "sirop", "confiture", "chocolat", "caramel", "nutella",
@@ -2660,6 +2660,36 @@ const PROFILS_SANTE = [
        fruits de mer ni œuf, un plat n'entre pas dans ce profil. */
     requis: ["poisson", "fruitsMer", "oeuf"],
     seuil: 2.6
+  },
+  {
+    val: "sportif", nom: "Sportif", emoji: "💪",
+    resume: "Une vraie source de protéines, des féculents pour l'énergie, et les minéraux dépensés à l'effort.",
+    detail: "Après un effort, le corps a besoin de deux choses : des protéines pour " +
+      "réparer le muscle, et des glucides pour refaire ses réserves. Ce profil met " +
+      "donc en avant les plats qui associent une vraie source de protéines — viande, " +
+      "volaille, poisson, œufs, légumineuses — à des féculents, et qui apportent au " +
+      "passage les minéraux que l'entraînement fait perdre : le fer de la viande " +
+      "rouge et des lentilles, le magnésium des fruits à coque et des céréales " +
+      "complètes, le calcium des laitiers.\n\n" +
+      "⚠️ Ce n'est pas un plan nutritionnel. Les besoins d'un joggeur du dimanche et " +
+      "ceux d'un athlète en préparation n'ont rien à voir, et ce qui compte le plus — " +
+      "les quantités, le moment du repas, la boisson — l'application ne le connaît pas.",
+    /* Les féculents comptent POUR ici, alors qu'ils comptent contre ailleurs :
+       c'est le carburant, et c'est bien la différence de ce profil. */
+    pour: {
+      volaille: 2, poisson: 1.8, legumineuses: 1.8, oeuf: 1.5, fruitsMer: 1.5,
+      viandeRouge: 1.8, cerealesCompletes: 1.2, laitier: 0.5, oleagineux: 0.8,
+      feculentsRaffines: 0.4, vegetalFrais: 0.2
+    },
+    contre: { sucres: 1.5, charcuterie: 1 },
+    /* Un gratin de courgettes à la crème n'est pas un plat de sportif : sans
+       source franche de protéines, le plat n'entre pas dans le profil. */
+    requis: ["volaille", "poisson", "fruitsMer", "oeuf", "viandeRouge", "legumineuses"],
+    /* Réglé en mesurant sur le cahier : à 2,8 le profil gardait un plat sur
+       trois et ne triait plus rien ; à 3,5 il écartait des plats évidents.
+       À 3,2 il en retient 78 sur 367, soit la même proportion que les autres
+       façons de cuisiner (cœur 91, anti-inflammatoire 100, glycémie 78). */
+    seuil: 3.2
   },
   {
     val: "peuDeSel", nom: "Peu de sel", emoji: "🧂", famille: "eviter",
