@@ -7,7 +7,9 @@
  * Seuls les fichiers de l'app sont mis en cache : les appels a Firebase
  * (autre domaine) passent toujours directement par le reseau.
  */
-var CACHE = "tribu-v1";
+/* v2 (13/09/2026) : les fichiers de l'app sont demandes en "no-cache", voir
+ * plus bas. Changer ce nom fait repartir chaque appareil d'un cache propre. */
+var CACHE = "tribu-v2";
 var ASSETS = [
   "./",
   "./index.html",
@@ -49,7 +51,14 @@ self.addEventListener("fetch", function (event) {
   if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(req).then(function (res) {
+    /* "no-cache" : le navigateur REVALIDE le fichier aupres du serveur a chaque
+     * fois au lieu de le ressortir de son cache HTTP. GitHub Pages sert tout
+     * avec 10 minutes de cache (max-age=600) : sans cela, un telephone ouvert
+     * juste apres un depot melangeait un fichier neuf et un ancien — un
+     * carrousel sans son style, une correction absente (constate le 13/09/2026).
+     * Le cout : une requete conditionnelle par fichier, qui repond 304 quand
+     * rien n'a change. Hors connexion, on retombe sur la copie du cache. */
+    fetch(req, { cache: "no-cache" }).then(function (res) {
       if (res && res.status === 200) {
         var copie = res.clone();
         caches.open(CACHE).then(function (cache) { cache.put(req, copie); });

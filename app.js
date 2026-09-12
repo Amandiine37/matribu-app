@@ -2108,8 +2108,16 @@ const Store = {
     }
   },
 
-  /* Combien de temps on laisse au serveur avant de se contenter du cache. */
+  /* Combien de temps on laisse au serveur avant de se contenter du CACHE.
+     Ne joue que si le cache a repondu : sans cache, on attend le serveur. */
   DELAI_HORS_LIGNE: 2500,
+  /* Garde-fou, sans cache ni reponse : au-dela, on renonce plutot que de
+     rester plante sur « Chargement… ». L'ecran de demarrage propose alors de
+     reessayer. Avant le 13/09/2026, cette limite valait 2,5 s et confondait
+     « pas encore de reponse » avec « pas d'acces » : a la premiere ouverture
+     apres un depot (cache vide) sur un reseau lent, Amandine a vu l'ecran de
+     panne puis a du reessayer. */
+  DELAI_SANS_REPONSE: 20000,
 
   /* Ouvre l'ecoute ET attend le premier etat de la tribu.
 
@@ -2142,18 +2150,28 @@ const Store = {
       return Promise.resolve(d);
     }
     return new Promise((resoudre) => {
-      let fini = false, duCache = null;
+      let fini = false, duCache = null, delaiEcoule = false;
       const finir = (v) => {
         if (fini) return;
         fini = true;
         clearTimeout(minuterie);
+        clearTimeout(garde);
         this._surDoc = null;
         this._surRefus = null;
         resoudre(v);
       };
-      const minuterie = setTimeout(() => finir(duCache), this.DELAI_HORS_LIGNE);
+      /* Le serveur se tait mais le cache connait la tribu : on entre (hors
+         ligne). Sans cache, on continue d'attendre — un reseau lent n'est
+         pas un refus. */
+      const minuterie = setTimeout(() => {
+        delaiEcoule = true;
+        if (duCache) finir(duCache);
+      }, this.DELAI_HORS_LIGNE);
+      const garde = setTimeout(() => finir(duCache), this.DELAI_SANS_REPONSE);
       this._surDoc = (donnees, duServeur) => {
-        if (duServeur) finir(donnees); else duCache = donnees;
+        if (duServeur) { finir(donnees); return; }
+        duCache = donnees;
+        if (delaiEcoule) finir(donnees);     // cache arrive tard : on n'attend plus
       };
       this._surRefus = () => finir(null);
       this.abonner(code, cb);
