@@ -499,6 +499,9 @@ Formulaires.retour = function () {
         /* Un resume (« iPhone · Safari »), pas le user-agent complet : c'est
            ce que l'ecran annonce, et c'est tout ce qui sert (revue du 12/09/2026). */
         appareil: typeAppareil(navigator.userAgent),
+        /* Instant d'envoi en nombre : les regles Firestore le comparent a
+           l'heure du serveur pour autoriser l'effacement au bout de 12 mois. */
+        envoyeA: Date.now(),
         envoyeLe: new Date().toISOString()
       };
       const ok = await Store.envoyerRetour(retour);
@@ -1839,6 +1842,99 @@ Formulaires.invitation = function () {
   });
 };
 
+/* ==================== PRÉSENTATION DE BIENVENUE ====================
+
+   Un petit carrousel à la première ouverture sur un appareil : un volet par
+   fonction, et un dernier volet qui souhaite la bienvenue. Il ne parle que de
+   ce que la famille a vraiment : les onglets masqués n'y figurent pas, les
+   points n'y sont que s'ils sont activés. Se rejoue depuis le menu du profil. */
+
+Formulaires.bienvenue = function () {
+  const textes = {
+    accueil: ["🏡", "L'accueil", "Votre journée en un coup d'œil : les tâches du jour, " +
+      "le repas du soir, les courses urgentes et les rappels."],
+    taches: ["🧹", "Les tâches", "Chacun coche ce qu'il a fait, un administrateur valide. " +
+      "« Chacun son tour » fait tourner les corvées tout seul."],
+    courses: ["🛒", "Les courses", "Plusieurs listes — la semaine, le drive, la pharmacie — " +
+      "rangées par rayon. Collez une liste, ou dictez-la au micro du clavier."],
+    reserve: ["🥫", "La réserve", "Ce que vous gardez à la maison, côté alimentaire ou côté " +
+      "maison. Indiquez un minimum : l'application vous prévient quand il faut racheter."],
+    menus: ["🍽️", "Les menus", "Le générateur propose la semaine à partir de vos recettes et de " +
+      "votre réserve. Un bouton envoie aux courses ce qui manque — et suit le menu si vous le changez."],
+    recettes: ["📖", "Les recettes", "Des centaines de plats fournis, les vôtres, vos favoris, " +
+      "et un catalogue partagé entre les familles."],
+    notes: ["🔔", "Les rappels", "Rendez-vous et pense-bêtes, pour toute la famille ou pour " +
+      "une seule personne. Ils remontent sur l'accueil le jour venu."]
+  };
+  const volets = ongletsVisibles().filter((o) => textes[o.vue]).map((o) => textes[o.vue]);
+  if (pointsActifs()) volets.push(["🌟", "Les points", "Les tâches validées rapportent des points, " +
+    "à échanger contre de petits plaisirs en famille. Et un objectif commun, à atteindre tous ensemble."]);
+  volets.push(["👋", "Bienvenue dans votre tribu, " + esc(moi ? moi.prenom : "") + " !",
+    "Tout est partagé en temps réel entre les appareils de la famille. " +
+    "Vous retrouverez cette présentation à tout moment depuis votre profil."]);
+
+  const html = '<div class="carrousel" id="carrousel">' +
+    volets.map((v) => '<div class="volet"><div class="grand">' + v[0] + "</div><h4>" + v[1] +
+      "</h4><p>" + v[2] + "</p></div>").join("") + "</div>" +
+    '<div class="points-carrousel" id="points-carrousel">' +
+    volets.map((v, i) => "<i" + (i === 0 ? ' class="on"' : "") + "></i>").join("") + "</div>" +
+    '<div class="rangee-btn">' +
+    '<button class="btn" data-role="passer">Passer</button>' +
+    '<button class="btn principal" data-role="suivant">Suivant</button></div>';
+
+  ui.bienvenueOuverte = true;
+  ouvrirFeuille("Ma Tribu en une minute", html, (feuille) => {
+    const bande = feuille.querySelector("#carrousel");
+    const points = feuille.querySelectorAll("#points-carrousel i");
+    const bSuivant = feuille.querySelector('[data-role="suivant"]');
+    const dernier = volets.length - 1;
+    /* L'index COURANT est la référence des boutons — pas la position lue
+       pendant une animation. Sinon deux appuis rapides sur « Suivant »
+       sautaient un volet, voire fermaient la fiche (constaté au test). Un
+       balayage au doigt le met à jour une fois le mouvement terminé. */
+    let courant = 0;
+    let attente = null;
+    const rafraichir = () => {
+      points.forEach((p, k) => p.classList.toggle("on", k === courant));
+      bSuivant.textContent = courant === dernier ? "C'est parti 🏡" : "Suivant";
+    };
+    const terminer = () => {
+      ui.bienvenueOuverte = false;
+      try { localStorage.setItem("tribu:bienvenue:" + etat.famille.code, "1"); } catch (e) { }
+      fermerFeuille();
+    };
+    bande.addEventListener("scroll", () => {
+      clearTimeout(attente);
+      attente = setTimeout(() => {
+        courant = Math.max(0, Math.min(dernier,
+          Math.round(bande.scrollLeft / Math.max(1, bande.clientWidth))));
+        rafraichir();
+      }, 120);
+    }, { passive: true });
+    bSuivant.onclick = () => {
+      if (courant >= dernier) { terminer(); return; }
+      courant++;
+      rafraichir();
+      /* D un coup, pas en glissant : le defilement anime entre en conflit avec
+         l accrochage (scroll-snap) de Chrome, qui annulait un appui sur deux.
+         Le balayage au doigt, lui, reste natif et fluide. */
+      bande.scrollTo({ left: courant * bande.clientWidth, behavior: "auto" });
+    };
+    feuille.querySelector('[data-role="passer"]').onclick = terminer;
+    /* Fermée autrement (voile, poignée) : c'est vu quand même. */
+    const voile = document.getElementById("voile");
+    const surFermeture = () => {
+      if (!voile.classList.contains("on")) {
+        ui.bienvenueOuverte = false;
+        try { localStorage.setItem("tribu:bienvenue:" + etat.famille.code, "1"); } catch (e) { }
+        obs.disconnect();
+      }
+    };
+    const obs = new MutationObserver(surFermeture);
+    obs.observe(voile, { attributes: true, attributeFilter: ["class"] });
+  });
+};
+
 /* ==================== FAMILLES FONDATRICES ====================
 
    La fiche du programme : le numéro obtenu, ou ce qu'il reste à faire pour
@@ -2302,6 +2398,7 @@ Formulaires.menuProfil = function () {
         appareilsDe(moi.id).length + ")</button>"
       : "") +
     '<button class="btn plein" data-action="apparence" style="margin-bottom:.5rem">🎨 Apparence</button>' +
+    '<button class="btn plein" data-action="bienvenue" style="margin-bottom:.5rem">✨ Revoir la présentation</button>' +
     '<button class="btn plein" data-role="mon-profil" style="margin-bottom:.5rem">✏️ Modifier mon profil</button>' +
     "<hr class=\"sep\">" +
     '<button class="btn plein doux" data-action="retour" style="margin-bottom:.5rem">' +

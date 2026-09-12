@@ -2543,6 +2543,35 @@ const Store = {
     } catch (err) { this.derniereErreur = err; return { ok: false, n: 0, err: err }; }
   },
 
+  /* MENAGE des signalements de plus de 12 mois (12/09/2026).
+     La page de confidentialite promet qu'un signalement est efface au bout
+     de 12 mois au plus : c'est ici que la promesse se tient. On retrouve ceux
+     de la tribu (requete filtree, droit d'administrateur), on ne garde que
+     ceux dont l'instant d'envoi a plus d'un an, et on les efface — les regles
+     Firestore refusent tout retour plus recent. Ceux envoyes par la 0.48
+     n'ont pas d'instant numerique : ils ne partent qu'avec la tribu. */
+  DELAI_RETOUR: 365 * 86400000,
+
+  async purgerRetoursDe(code) {
+    if (this.mode !== "nuage") return { ok: true, n: 0 };
+    try {
+      const fs = this._fs;
+      const q = await fs.getDocs(fs.query(fs.collection(this._db, "retours"),
+        fs.where("famille", "==", code)));
+      const limite = Date.now() - this.DELAI_RETOUR;
+      const refs = [];
+      q.forEach((s) => {
+        const d = s.data() || {};
+        if (typeof d.envoyeA === "number" && d.envoyeA > 0 && d.envoyeA < limite) refs.push(s.ref);
+      });
+      if (!refs.length) return { ok: true, n: 0 };
+      return await this._effacerRefs(refs);
+    } catch (err) {
+      console.warn("Ménage des signalements impossible :", err);
+      return { ok: false, n: 0, err: err };
+    }
+  },
+
   /* MENAGE des invitations MORTES d'une tribu (12/09/2026).
 
      Sur le telephone, ce menage existait deja : `_invitationsLocales()` efface
@@ -3060,7 +3089,8 @@ async function supprimerFamilleEntiere(code, suivi, dejaMarquee) {
   ["tribu:session", "tribu:derniereFamille", "tribu:vue",
     "tribu:recettesMaj:" + code, "tribu:repereVerifie:" + code, "tribu:donnees:" + code,
     "tribu:vu:" + code, "tribu:fondatrice:" + code, "tribu:fondatriceFetee:" + code,
-    "tribu:menageInv:" + code, "tribu:recettesAPart:" + code]
+    "tribu:menageInv:" + code, "tribu:recettesAPart:" + code, "tribu:bienvenue:" + code,
+    "tribu:menageRet:" + code]
     .forEach((k) => { try { localStorage.removeItem(k); } catch (e) { } });
 
   bilan.ok = true;
@@ -3132,6 +3162,7 @@ async function entrerDansFamille(code, membreId, opts) {
   noterOuverture(code);          // idem : la date du jour, pour le ménage
   suivreProgrammeFondatrices(code);   // idem : la place dans le programme
   menageInvitations(code);       // idem : on efface les invitations mortes
+  menageRetours(code);           // idem : les signalements de plus de 12 mois
   migrerRecettesSiBesoin(code);  // idem : les recettes dans leur propre document
   majRecettesSiBesoin();         // idem : complète les recettes d'avant
   $("#ecran-connexion").hidden = true;
@@ -3143,7 +3174,19 @@ async function entrerDansFamille(code, membreId, opts) {
   memoriserVue();
   rendre();
   prechaufferCahier();           // pour que la première génération soit vive
+  montrerBienvenueSiBesoin(code);
   return true;
+}
+
+/* La présentation de bienvenue, UNE fois par appareil et par tribu : le
+   nouveau membre la voit sur son téléphone, l'ancien pas deux fois. Un peu
+   après le dessin de l'écran, pour qu'elle glisse sur une page déjà là. */
+function montrerBienvenueSiBesoin(code) {
+  try { if (localStorage.getItem("tribu:bienvenue:" + code)) return; } catch (e) { return; }
+  setTimeout(() => {
+    if (Store.code !== code || !moi) return;
+    try { Formulaires.bienvenue(); } catch (e) { console.warn("Présentation non ouverte :", e); }
+  }, 600);
 }
 
 /* Classer 353 plats coûte une demi-seconde la première fois. Fait au
@@ -3206,6 +3249,21 @@ async function migrerRecettesSiBesoin(code) {
   const fait = await Store.migrerRecettes(code);
   try { localStorage.setItem(cle, "1"); } catch (e) { /* sans importance */ }
   if (fait) rendre();
+}
+
+/* Efface les signalements de la tribu vieux de plus de 12 mois, AU PLUS une
+   fois par jour et par appareil administrateur — la promesse de la page de
+   confidentialité, tenue sans que personne n'y pense. Rien n'est annoncé. */
+async function menageRetours(code) {
+  if (Store.mode !== "nuage" || !estAdmin()) return;
+  const cle = "tribu:menageRet:" + code;
+  const jour = new Date().toISOString().slice(0, 10);
+  try {
+    if (localStorage.getItem(cle) === jour) return;
+    localStorage.setItem(cle, jour);
+  } catch (e) { /* mémoire indisponible : on fait le ménage quand même */ }
+  const r = await Store.purgerRetoursDe(code);
+  if (r && r.n) console.info("Signalements de plus de 12 mois effacés : " + r.n);
 }
 
 /* Efface les invitations mortes de la tribu, AU PLUS une fois par jour et par
@@ -3356,6 +3414,9 @@ async function oublierPlace() {
    la memoire du navigateur, pas dans la tribu : c'est un evenement d'ecran,
    pas une donnee de famille — et chaque telephone merite son moment. */
 function feterFondatrice(code) {
+  /* La presentation de bienvenue est ouverte : la fete attendra l'ouverture
+     suivante plutot que de l'ecraser (une seule feuille a la fois). */
+  if (ui.bienvenueOuverte) return;
   const cle = "tribu:fondatriceFetee:" + code;
   try {
     if (localStorage.getItem(cle)) return;
@@ -6120,6 +6181,7 @@ document.addEventListener("click", (e) => {
     case "effacer-appareil": Formulaires.effacerAppareil(); break;
     case "demenagement": Formulaires.demenagement(); break;
     case "fondatrice": Formulaires.fondatrice(); break;
+    case "bienvenue": fermerFeuille(); setTimeout(() => Formulaires.bienvenue(), 260); break;
     case "masquer-conseil-icone":
       localStorage.setItem("tribu:conseilEcranAccueil", "1");
       rendre();

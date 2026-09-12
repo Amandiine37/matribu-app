@@ -493,6 +493,24 @@ input[type=checkbox]{min-width:18px;min-height:18px;accent-color:var(--accent);}
   background:var(--warm);color:#fff;font-size:.62rem;line-height:17px;font-weight:700;
 }
 
+/* ---------- Présentation de bienvenue (carrousel) ---------- */
+.carrousel{
+  display:flex;overflow-x:auto;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+.carrousel::-webkit-scrollbar{display:none;}
+.volet{
+  flex:0 0 100%;scroll-snap-align:start;box-sizing:border-box;
+  padding:.4rem .6rem .5rem;text-align:center;min-height:230px;
+}
+.volet .grand{font-size:3rem;line-height:1;margin:.3rem 0 .7rem;}
+.volet h4{font-family:var(--font-display);font-size:1.25rem;font-weight:600;margin:0 0 .45rem;}
+.volet p{color:var(--ink-muted);font-size:.9rem;line-height:1.5;margin:0;}
+.points-carrousel{display:flex;justify-content:center;gap:.4rem;margin:.5rem 0 1rem;}
+.points-carrousel i{width:7px;height:7px;border-radius:999px;background:var(--border);
+  transition:background .2s ease, transform .2s ease;}
+.points-carrousel i.on{background:var(--accent);transform:scale(1.35);}
+
 /* ---------- Feuille modale ---------- */
 .voile{
   position:fixed;inset:0;z-index:40;
