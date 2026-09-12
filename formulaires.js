@@ -1217,7 +1217,12 @@ Formulaires.ingredientsVersCourses = function () {
         etat.courses.unshift({
           id: id(), nom: l.nom, qte: qte, unite: l.unite, rayon: l.rayon,
           coche: false, listeId: cible, vrac: !!(enReserve && enReserve.vrac),
-          parQui: moi && moi.id, creeLe: new Date().toISOString()
+          parQui: moi && moi.id, creeLe: new Date().toISOString(),
+          /* La semaine de menu qui a produit cet article. C'est ce qui permet
+             de le retirer ou de le reduire quand un plat est enleve du menu
+             (reconcilierCoursesDuMenu). Un article ajoute a la main n'a pas
+             cette marque et n'est jamais touche. */
+          menu: ui.semaine
         });
       });
       sauver("courses");

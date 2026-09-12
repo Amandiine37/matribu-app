@@ -430,7 +430,7 @@ Vues.accueil = function () {
           return '<div class="ligne">' + avatarDe(qui) +
             '<div class="ligne-corps"><b>' + esc((x.t.emoji || "🧹") + " " + x.t.nom) + "</b><small>" +
             esc(qui.prenom) + " • +" + x.t.points + " pts • " + libellePeriode(x.t.frequence) + "</small></div>" +
-            '<button class="btn mini principal" data-action="tache-fait" data-id="' + x.t.id + '">C\'est fait</button>' +
+            '<button class="btn mini principal" data-action="tache-fait" data-id="' + x.t.id + '">Fait</button>' +
             "</div>";
         }).join("") +
         resteAVoir(enfants.length - enfantsMontres.length) +
@@ -570,7 +570,7 @@ function ligneTache(x, compact) {
 
   if (et.statut === "afaire") {
     if (jeSuisAssigne || estAdmin()) {
-      boutons.push('<button class="btn mini principal" data-action="tache-fait" data-id="' + t.id + '">C\'est fait</button>');
+      boutons.push('<button class="btn mini principal" data-action="tache-fait" data-id="' + t.id + '">Fait</button>');
     }
   } else if (et.statut === "fait") {
     if (estAdmin()) {
@@ -1522,7 +1522,8 @@ Vues.admin = function () {
   const perso = rayonsPerso();
   h.push(blocAncre("rayons", "🗂️ Rayons (" + rayonsTous().length + ")",
     '<p class="aide">Ils rangent la réserve et la liste de courses. Chacun appartient ' +
-    "à un côté : 🥫 alimentaire ou 🧴 maison. Les deux fourre-tout 🗂️ sont des deux côtés.</p>" +
+    "à un côté : 🥫 alimentaire ou 🧴 maison. Seuls « À catégoriser » et « Autre » 🗂️ " +
+    "apparaissent des deux côtés.</p>" +
     '<div class="puces" style="margin-top:.7rem">' +
     ordreRayons(RAYONS).map((r) => {
       const c = coteDuRayon(r);

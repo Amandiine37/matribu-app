@@ -2797,8 +2797,51 @@ const Store = {
   }
 };
 
+/* LES COURSES SUIVENT LE MENU (12/09/2026, bug signale par Amandine).
+
+   Un article envoye depuis le menu porte la semaine qui l'a produit
+   (champ `menu`). Quand les repas de cette semaine changent — plat vide,
+   remplace, regenere, recette supprimee — on recalcule les besoins et :
+   - un article dont l'ingredient n'est plus demande par aucun plat est retire ;
+   - un article encore demande prend la quantite recalculee (deux plats qui
+     partagent un ingredient etaient fusionnes en une ligne : retirer l'un
+     des deux doit REDUIRE la ligne, pas la supprimer) ;
+   - un article ajoute a la main (sans marque), ou deja coche (deja achete),
+     n'est jamais touche ;
+   - rien n'est jamais AJOUTE ici : ajouter reste le geste de la personne,
+     par « Ingredients de la semaine ».
+   Limite assumee : une quantite retouchee a la main sur un article marque
+   sera realignee sur le besoin calcule au prochain changement de menu.
+   Renvoie true si quelque chose a change. */
+function reconcilierCoursesDuMenu() {
+  const semaines = [...new Set(etat.courses.filter((c) => c.menu && !c.coche).map((c) => c.menu))];
+  let change = false;
+  semaines.forEach((sem) => {
+    const besoins = new Map(ingredientsDeLaSemaine(sem).map((i) => [cleArticle(i.nom), i]));
+    etat.courses = etat.courses.filter((c) => {
+      if (c.menu !== sem || c.coche) return true;
+      const b = besoins.get(cleArticle(c.nom));
+      if (!b) { change = true; return false; }
+      const m = manquePour(b.nom, b.qte, b.unite);
+      const qte = (m.connu && m.manque !== null && m.enStock !== null)
+        ? texteNombre(m.manque)
+        : (nombre(b.qte) !== null ? texteNombre(nombre(b.qte)) : b.besoinTexte);
+      if (qte !== c.qte || (b.unite || "") !== (c.unite || "")) {
+        c.qte = qte; c.unite = b.unite; change = true;
+      }
+      return true;
+    });
+  });
+  return change;
+}
+
 /* Enregistre le document principal + redessine. */
 function sauver(...cles) {
+  /* Tout changement de menu passe ici : c'est l'unique point ou accrocher la
+     reconciliation des courses. Une seule ecriture pour les deux rubriques. */
+  if (cles.indexOf("repas") !== -1 && reconcilierCoursesDuMenu() && cles.indexOf("courses") === -1) {
+    cles.push("courses");
+  }
   if (cles.some((c) => ["membres", "taches", "cadeaux"].indexOf(c) !== -1)) {
     /* Seul un administrateur ecrit les membres et le registre des appareils :
        la migration ne se fait donc que depuis son appareil. */
@@ -4309,16 +4352,21 @@ function reparerRecettes() {
       });
     }
 
-    /* Quantité et unité collées : « 800 g » -> 800 + g. En cas de doute sur
-       l'unité, on ne touche à rien : mieux vaut l'ancien format qu'une perte. */
-    (r.ingredients || []).forEach((i) => {
-      if (i.unite !== undefined && i.unite !== null) return;
+    /* Quantité et unité collées : « 800 g » -> 800 + g.
+       Quand on ne sait pas lire (« une pincée », « 2 gros », rien du tout), on
+       ne perd rien : la quantité reste telle quelle, et l'unité devient
+       « sans unité » — la valeur que l'application utilise déjà pour compter
+       (4 carottes). AVANT (jusqu'au 12/09/2026), on « ne touchait à rien » :
+       l'unité restait absente, le diagnostic la recomptait à chaque fois, et
+       le bouton « Mettre à jour » ne s'éteignait jamais. La réparation doit
+       pouvoir régler TOUT ce que le diagnostic compte, sinon il ment. */
+    if (!Array.isArray(r.ingredients)) r.ingredients = [];
+    r.ingredients.forEach((i) => {
+      if (!i || (i.unite !== undefined && i.unite !== null)) return;
       const m = String(i.qte || "").trim().match(/^([0-9]+(?:[.,][0-9]+)?)\s*(.*)$/);
-      if (!m) return;
-      const u = normaliserUnite(m[2]);
-      if (u === null) return;
-      i.qte = m[1];
-      i.unite = u;
+      const u = m ? normaliserUnite(m[2]) : null;
+      if (m && u !== null) { i.qte = m[1]; i.unite = u; }
+      else i.unite = "";
       unitesSeparees++;
     });
   });
@@ -5684,7 +5732,7 @@ function majBarre() {
   if (nav.dataset.signature !== signature) {
     nav.innerHTML = visibles.map((o) =>
       '<button data-vue="' + o.vue + '"><span class="ic">' + o.emoji + "</span>" +
-      esc(o.nom) + "</button>").join("");
+      '<span class="lib">' + esc(o.nom) + "</span></button>").join("");
     nav.dataset.signature = signature;
   }
   nav.querySelectorAll("button").forEach((b) => {
