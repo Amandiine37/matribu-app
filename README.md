@@ -1,6 +1,6 @@
 # 🏡 Ma Tribu — l'organisation de la maison, en famille
 
-> ### 🧪 Version 0.21 — BÊTA
+> ### 🧪 Version 0.50 — BÊTA
 > L'application est utilisable au quotidien, mais elle est encore jeune : des
 > bugs sont possibles et la forme des données peut encore changer.
 > Un bouton **« Signaler un problème / proposer une idée »** est disponible
@@ -12,14 +12,40 @@ Application pour téléphone (à installer sur l'écran d'accueil) qui rassemble
 |---|---|
 | 🏡 **Accueil** | Ce qu'il y a à faire aujourd'hui : mes tâches, le menu du jour, les rappels, les courses, le classement. |
 | 🧹 **Tâches** | Les tâches ménagères, avec la personne assignée, les points, et la validation. |
-| 🛒 **Courses** | Une ou plusieurs listes partagées (semaine, mois, magasin), rangées par rayon. |
+| 🛒 **Courses** | Une ou plusieurs listes partagées (semaine, mois, magasin), rangées par rayon. Les ingrédients d'un menu s'y envoient en un geste, et suivent le menu s'il change. |
+| 🥫 **Réserve** | Ce qu'on garde à la maison, en deux côtés — alimentaire et maison — avec les quantités minimum et les dates de péremption. |
 | 🍽️ **Menus** | Les repas midi et soir de la semaine, avec un générateur automatique. |
-| 📖 **Recettes** | Le cahier : 291 plats et 62 desserts, filtrables et triables. |
+| 📖 **Recettes** | Le cahier : 336 plats et 62 desserts fournis, les vôtres, vos favoris, et le catalogue partagé entre familles. |
 | 🔔 **Rappels** | L'agenda partagé de la famille et les pense-bêtes. |
-| 🥫 **Ma réserve** | Votre stock (épicerie, conserves, vrac…) avec les quantités minimum, dans l'onglet Courses. |
-| 🌟 **Points & cadeaux** | Le score de chacun et la boutique de récompenses. |
+| 🌟 **Points & cadeaux** | Le score de chacun et les petits plaisirs à partager — désactivable si votre famille préfère s'en passer. |
 
 ---
+
+## Nouveautés de la 0.50
+
+- **La Réserve a son onglet**, en deux côtés — 🥫 alimentaire et 🧴 maison — avec un
+  champ de recherche et des rayons repliables. Un administrateur peut créer ses
+  propres rayons.
+- **Les courses suivent le menu** : retirer un plat retire ou réduit les articles
+  qu'il avait envoyés — jamais ceux ajoutés à la main, jamais ceux déjà cochés.
+- **Favoris** ⭐ propres à chaque personne, et deux filtres de plus (importées,
+  favoris) dans le cahier.
+- **Les points sont un réglage** : activés ou non, comme l'objectif commun. Les
+  cadeaux proposés sont des moments à partager, pas des achats.
+- **Cinq palettes** (myrtille, pivoine, lagon, cannelle, ardoise), par appareil.
+- **Les appareils se gèrent** : chacun voit les siens, un administrateur peut
+  en retirer un (téléphone perdu), et « Quitter la tribu sur cet appareil »
+  existe.
+- **Une présentation de bienvenue** à la première ouverture, à revoir depuis le
+  profil.
+- **Familles Fondatrices** : les 100 premières tribus qui utilisent vraiment
+  l'application reçoivent un badge et un numéro permanents ; celles qui étaient
+  là avant sont Pionnières.
+- **Beaucoup plus léger pour le serveur** : une copie de la tribu est gardée sur
+  le téléphone (ouverture immédiate, utilisable hors ligne), et l'application ne
+  redemande que ce qui a changé.
+- Une **page de confidentialité** complète, et le code à 4 chiffres masqué à la
+  saisie.
 
 ## Comment ça marche, en deux minutes
 
@@ -264,8 +290,9 @@ reste affiché.
 
 ### La réserve et les courses
 
-L'onglet **Courses** se partage en deux, avec un sélecteur en haut :
-**🛒 Mes listes** et **🥫 Ma réserve**.
+Deux onglets, qui se parlent : **🛒 Courses** et **🥫 Réserve**. (L'onglet Courses
+garde aussi un sélecteur vers la réserve, pour passer de l'un à l'autre sans
+changer d'onglet.)
 
 **🛒 Mes listes** — vous pouvez en avoir plusieurs, chacune avec son rythme et
 son magasin :
@@ -289,8 +316,12 @@ virgules — *pain, lait, œufs* fait trois lignes. Et le lien **Coller une
 liste** ouvre une zone où l'on peut coller un message ou dicter d'un trait,
 un article par ligne. Chacun est rangé automatiquement dans son rayon.
 
-**🥫 Ma réserve** — ce que vous gardez en permanence à la maison : épicerie,
-conserves, produits d'entretien. Pour chaque article :
+**🥫 Réserve** — ce que vous gardez en permanence à la maison, en deux côtés
+pour ne pas mélanger l'épicerie et l'entretien : **🥫 alimentaire** (fruits et
+légumes, crèmerie, épicerie, surgelés…) et **🧴 maison** (entretien, hygiène,
+maison, animaux). Un champ de recherche apparaît dès que la réserve grandit, et
+chaque rayon se replie. Un administrateur peut ajouter ses propres rayons
+(*Administration ▸ 🗂️ Rayons*), en choisissant leur côté. Pour chaque article :
 
 - la quantité que vous avez, avec son unité ;
 - une **quantité minimum** facultative. Dès que vous passez en dessous,
@@ -362,7 +393,7 @@ deviner.*
 ### Les menus
 
 - Appuyez sur **🎲 Générer** : l'application remplit la semaine en piochant dans
-  la bibliothèque de recettes (353 plats fournis). Voir les réglages juste en
+  la bibliothèque de recettes (398 recettes fournies). Voir les réglages juste en
   dessous.
 - Sous les boutons, une ligne récapitule ce que donne la semaine :
   **🐟 2 · 🍗 3 · 🥦 2**.
@@ -421,7 +452,7 @@ place ce qu'elle peut et vous le dit.
 Chaque recette peut porter une ou plusieurs **saisons** — 🌸 printemps, ☀️ été,
 🍂 automne, ❄️ hiver. Une recette sans saison cochée convient toute l'année.
 
-Les 353 plats fournis sont déjà renseignés : la ratatouille et le gratin de
+Les 398 recettes fournies sont déjà renseignées : la ratatouille et le gratin de
 courgettes en été, la tartiflette et la soupe à l'oignon en hiver, les lasagnes
 toute l'année…
 
@@ -448,7 +479,7 @@ Appuyez sur une recette dans la liste : sa fiche s'ouvre avec les **ingrédients
 et le **déroulé numéroté**. Depuis l'onglet Menus, un bouton
 **📖 Consulter la recette** ouvre la même fiche pour le plat prévu ce jour-là.
 
-Les 353 plats fournis ont tous leur déroulé (4 à 5 étapes). Il est **écrit pour
+Les 398 recettes fournies ont toutes leur déroulé (4 à 5 étapes). Il est **écrit pour
 l'application** : aucune recette n'est recopiée d'un site. C'est indicatif —
 pour les temps exacts ou les vitesses d'un robot, collez le lien de la recette
 d'origine dans la fiche, un bouton l'ouvrira.
@@ -458,7 +489,7 @@ par ligne**, les lignes vides sont ignorées.
 
 #### Les plats fournis
 
-L'application arrive avec **291 plats et 62 desserts**, dont **99 marqués 🍲 robot** : veloutés,
+L'application arrive avec **336 plats et 62 desserts**, dont **117 marqués 🍲 robot** : veloutés,
 risottos, sauces, plats mijotés et one-pot — tout ce que le Thermomix (ou un
 autre robot cuiseur) fait bien. Ils sont écrits maison : **aucune recette n'est
 recopiée d'un site**, on n'y trouve que le nom du plat et ses ingrédients. À
@@ -468,7 +499,7 @@ La case **🍲 Robot** existe aussi sur vos propres recettes.
 
 #### Si votre famille existait déjà
 
-Les 353 recettes sont **recopiées dans votre famille le jour de sa création** :
+Les 398 recettes sont **recopiées dans votre famille le jour de sa création** :
 les améliorations apportées ensuite au fichier de recettes ne les atteignent
 pas toutes seules. Une famille créée avant l'arrivée des saisons se retrouve
 donc avec des recettes sans saison — et le filtre affiche alors tout.
@@ -508,7 +539,7 @@ En dessous, six filtres se combinent librement :
 | Filtre | Ce qu'il garde |
 |---|---|
 | ☀️ **De saison** | Ce qui se cuisine en ce moment (la saison affichée suit la date) |
-| 🍲 **Thermomix** | Les plats qui se prêtent bien au robot cuiseur (99 des 353 fournis) |
+| 🍲 **Thermomix** | Les plats qui se prêtent bien au robot cuiseur (117 des 398 fournies) |
 | ✍️ **Mes recettes** | Uniquement celles que vous avez créées (pas les 300 fournies) |
 | 🌿 **Végé** | Les plats végétariens |
 | ⚡ **Rapide** | Moins de 30 minutes |
@@ -546,7 +577,7 @@ Chaque plat est rangé **tout seul**, d'après ses ingrédients. Rien à saisir 
 vos propres recettes et celles que vous importez sont classées de la même
 façon, et si vous changez les ingrédients, le classement suit.
 
-| Profil | Ce qu'il retient | Sur les 353 |
+| Profil | Ce qu'il retient | Sur les 398 |
 |---|---|---|
 | ❤️ **Cœur & cholestérol** | Moins de graisses saturées (beurre, crème, fromage, charcuterie), plus de poisson, de légumineuses, d'huile d'olive et de fibres | 79 |
 | 🩸 **Glycémie** | Des fibres et des protéines plutôt que du sucre et des féculents raffinés servis seuls | 65 |
@@ -595,7 +626,7 @@ peuvent interférer.)
 
 ### Les desserts
 
-62 des 353 recettes sont des **desserts**. Ils vivent dans le même cahier, avec
+62 des 398 recettes sont des **desserts**. Ils vivent dans le même cahier, avec
 deux différences :
 
 - le **générateur de menus ne les propose jamais** : il remplit des midis et
@@ -606,7 +637,7 @@ deux différences :
 Pour marquer un de vos plats comme dessert, cochez **🍰 Dessert** dans le
 formulaire de la recette.
 
-### Retrouver un plat parmi 353
+### Retrouver un plat parmi 398
 
 Le cahier est long : sans repères, c'est cinquante écrans à faire défiler.
 Trois outils, du plus rapide au plus complet :
@@ -625,7 +656,7 @@ Juste au-dessus de la liste, trois façons de la trier :
 
 | Tri | Ce qu'il donne |
 |---|---|
-| 🔤 **A → Z** | L'ordre alphabétique, **avec un repère par lettre** : A, B, C… Avec 353 plats, c'est ce qui permet de retrouver un nom en faisant défiler. |
+| 🔤 **A → Z** | L'ordre alphabétique, **avec un repère par lettre** : A, B, C… Avec 398 recettes, c'est ce qui permet de retrouver un nom en faisant défiler. |
 | 🕐 **Récentes** | Les dernières arrivées d'abord : ce que vous venez d'ajouter, puis ce qu'une mise à jour a apporté. |
 | ☀️ **De saison** | Les plats de la saison en cours d'abord, puis ceux de toute l'année, puis le reste. Contrairement au filtre, **rien n'est caché** : c'est juste l'ordre qui change. |
 
@@ -649,7 +680,7 @@ autres familles**. Un écran vous rappelle précisément ce qui devient visible 
 
 Quelques règles :
 
-- seules **vos propres créations** peuvent être partagées — pas les 353 recettes
+- seules **vos propres créations** peuvent être partagées — pas les 398 recettes
   fournies (tout le monde les a déjà), ni celles importées d'une autre famille ;
 - vous pouvez **retirer** une publication à tout moment, depuis la même fenêtre ;
 - une fiche publiée n'est pas modifiable : pour corriger, retirez-la et
@@ -765,11 +796,12 @@ bandeau orange le rappelle sur l'accueil.
 | `app.js` | Le cœur : dates, points, rotation des tâches, stockage, connexion. |
 | `vues.js` | Le dessin de chaque écran. |
 | `formulaires.js` | Les fenêtres qui remontent du bas (ajouter, modifier…). |
-| `recettes.js` | Les 353 plats fournis au démarrage. Modifiable dans l'app. |
+| `recettes.js` | Les 398 recettes fournies au démarrage. Modifiables dans l'app. |
 | `firebase-config.js` | **Le seul fichier à remplir** pour activer le partage. |
 | `firestore.rules` | Les règles de sécurité, **à copier dans Firebase**. Sans elles, rien n'est protégé. |
 | `manifest.webmanifest` | Permet d'installer l'app sur l'écran d'accueil. |
-| `sw.js` | Rend l'application utilisable sans réseau. |
+| `sw.js` | Rend l'application utilisable sans réseau, et va toujours chercher la dernière version quand il y a du réseau. |
+| `confidentialite.html` | La page de confidentialité : qui, quoi, où, combien de temps, et comment tout faire effacer. |
 | `icon-192.png`, `icon-512.png` | Les icônes. |
 | `make_icons.py` | Regénère les icônes si vous changez la couleur (local). |
 | `serve.py` | Petit serveur pour tester sur ordinateur (local). |
@@ -794,7 +826,9 @@ puis ouvrir `http://localhost:4174`.
 |---|---|
 | **Accès par appareil** | Seuls les téléphones inscrits dans la famille peuvent la lire. Le repère de la tribu (`MAISON-K4T9`) n'ouvre rien. |
 | **Invitations à usage unique** | Un lien, une personne, un appareil. Il expire, et se désactive dès qu'il a servi. |
-| **Codes à 4 chiffres chiffrés** | Ils ne sont jamais enregistrés tels quels, seulement sous forme d'empreinte illisible (PBKDF2). Même en ouvrant la base, on ne peut pas les relire. Si quelqu'un l'oublie, un administrateur le réinitialise. |
+| **Codes à 4 chiffres : un verrou de profil** | Ils ne sont jamais enregistrés tels quels, seulement sous forme d'empreinte (PBKDF2). Mais quatre chiffres restent quatre chiffres : quelqu'un qui a accès aux données de la tribu peut retrouver un code en quelques secondes. C'est un verrou entre membres, pas un mot de passe — les vrais droits tiennent à l'appareil, vérifiés par le serveur. Si quelqu'un l'oublie, un administrateur le réinitialise. |
+| **Appareils retirables** | Chacun voit ses appareils ; un administrateur peut en retirer un (téléphone perdu). Un appareil retiré est refusé dès sa prochaine ouverture, et ne revient jamais par un vieux lien. |
+| **Copie locale effaçable** | Une copie de la tribu vit sur le téléphone pour aller vite. « Effacer les données de cet appareil », « Quitter la tribu » et « Repartir de zéro » l'effacent aussi. |
 | **Points en écriture unique** | Chaque gain de points est une ligne qui ne peut plus jamais être modifiée, créée par un administrateur, et dont le montant est vérifié par Firebase lui-même. Impossible de se donner des points en bidouillant l'appli. |
 | **Droits par rôle** | Un membre ordinaire ne peut toucher qu'aux courses, repas, rappels et recettes. Les membres, tâches, cadeaux et barèmes sont réservés aux administrateurs. |
 
@@ -818,7 +852,7 @@ Tout cela repose sur le fichier **`firestore.rules`**, à publier dans Firebase
 
 Oui, c'est prévu et ça fonctionne : il suffit de leur donner l'adresse de
 l'application. Ils appuient sur **« Créer ma famille »** et repartent de zéro
-avec leur propre tribu — leurs membres, leurs tâches, leurs points, les 50
+avec leur propre tribu — leurs membres, leurs tâches, leurs points, les 398
 recettes de départ.
 
 **Leurs données sont totalement séparées des vôtres.** Une famille n'est lisible
@@ -843,11 +877,12 @@ et vous ne pouvez pas voir la leur depuis l'application.
 
 ### Les limites gratuites
 
-L'offre gratuite de Firebase autorise, par jour, de l'ordre de **50 000
-lectures** et **20 000 écritures**, pour **1 Go** de stockage. Une famille active
-consomme quelques centaines de lectures par jour : vous pouvez héberger
-tranquillement une dizaine de familles. Au-delà, surveillez la consommation dans
-la console (onglet *Usage*).
+L'offre gratuite de Firebase autorise, par jour, **50 000 lectures** et
+**20 000 écritures**, pour **1 Go** de stockage et **10 Go** de trafic par mois.
+Depuis la 0.50, une ouverture ordinaire ne lit plus aucun document (la copie
+locale suffit, le serveur ne renvoie que ce qui a changé) : l'application peut
+héberger largement plus de 100 familles sur l'offre gratuite. Surveillez tout de
+même la consommation dans la console (onglet *Utilisation*).
 
 ### Le repère de famille
 
@@ -868,22 +903,24 @@ envoie le message dans une collection **`retours`** de votre base Firebase.
 
 Pour les lire : console Firebase → **Firestore Database** → collection
 `retours`. Chaque message contient le type (problème / idée / autre), le titre,
-le détail, le prénom, le nom de la tribu, la version de l'application et le
-modèle de téléphone.
+le détail, le prénom, le nom et le repère de la tribu, la version de
+l'application et le type d'appareil, résumé (« iPhone · Safari »). Seul un membre
+de la tribu peut en envoyer un en son nom.
 
-Par sécurité, ces messages **ne sont lisibles que depuis la console** : personne
-ne peut les consulter — ni les modifier — depuis l'application.
+Ces messages **ne sont lisibles que depuis la console** : personne ne peut les
+consulter — ni les modifier — depuis l'application. Ils partent avec la tribu si
+elle est supprimée, et sont effacés automatiquement au bout de 12 mois.
 
 ## Bon à savoir
 
-- **L'onglet ouvert est retenu.** Si vous rechargez la page en consultant vos
-  recettes ou votre réserve, vous y revenez — plus de retour brutal à l'accueil.
+- **L'onglet ouvert est retenu** pendant une demi-heure : si vous revenez vite,
+  vous retrouvez l'écran où vous étiez ; plus tard, vous repartez de l'accueil.
 
 - **Pas de notification qui sonne.** Une application web ne peut pas envoyer de
   rappel quand elle est fermée. Les rappels s'affichent dans l'app (pastille
   orange sur l'onglet 🔔) mais ne feront pas vibrer le téléphone.
-- **Hors connexion**, l'application s'ouvre et s'affiche, mais les modifications
-  ne partiront vers la famille qu'au retour du réseau.
+- **Hors connexion**, l'application s'ouvre avec la copie gardée sur le
+  téléphone ; les modifications partiront vers la famille au retour du réseau.
 - **Changer de téléphone ?** Demandez une nouvelle invitation à un
   administrateur : vous retrouverez votre profil, vos points et votre historique.
 - **Il vous redemande de créer une famille ?** C'est que cet accès-là n'a pas
