@@ -33,6 +33,9 @@ function puceMultiple(role, options, choisis) {
 function brancherMulti(f, role, unique) {
   const g = f.querySelector('[data-role="' + role + '"]');
   if (!g) return;
+  /* Choix unique : le choix deja retenu ne doit pas ressembler a un bouton
+     (curseur « main » au survol), puisque cliquer dessus ne change rien. */
+  if (unique) g.classList.add("unique");
   g.onclick = (ev) => {
     const b = ev.target.closest("[data-val]");
     if (!b) return;
@@ -44,7 +47,7 @@ function valeursMulti(f, role) {
   return Array.from(f.querySelectorAll('[data-role="' + role + '"] .puce.on')).map((b) => b.dataset.val);
 }
 function selectRayon(valeur) {
-  return '<select name="rayon">' + RAYONS.map((r) =>
+  return '<select name="rayon">' + ordreRayons(rayonsTous()).map((r) =>
     '<option value="' + esc(r) + '"' + (r === valeur ? " selected" : "") + ">" + esc(r) + "</option>").join("") + "</select>";
 }
 function selectUnite(valeur, nom) {
@@ -64,7 +67,13 @@ function boutonsFormulaire(labelOk, avecSuppression) {
 Formulaires.tache = function (tid) {
   if (!estAdmin()) return;
   const t = tid ? etat.taches.find((x) => x.id === tid) : null;
-  const cour = t || { emoji: "🧹", frequence: "semaine", points: 10, participants: [], rotation: true, actif: true };
+  /* Une tâche neuve propose TOUT LE MONDE : c'est le cas courant, et cela
+     évite le piège d'une tâche sans participant — elle n'était assignée à
+     personne, donc invisible partout sauf dans l'Administration (12/09/2026). */
+  const cour = t || {
+    emoji: "🧹", frequence: "semaine", points: 10,
+    participants: etat.membres.map((m) => m.id), rotation: true, actif: true
+  };
   const assigne = t ? membre(assigneDe(t, new Date())) : null;
 
   const html = "<form id=\"f-tache\">" +
@@ -76,8 +85,10 @@ Formulaires.tache = function (tid) {
       { val: "jour", html: "Chaque jour" },
       { val: "semaine", html: "Chaque semaine" },
       { val: "mois", html: "Chaque mois" }], [cour.frequence]) +
-    '<label class="champ"><span>Points gagnés</span>' +
-    '<input type="number" name="points" value="' + (cour.points || 10) + '" min="0" max="500" required></label>' +
+    (pointsActifs()
+      ? '<label class="champ"><span>Points gagnés</span>' +
+        '<input type="number" name="points" value="' + (cour.points || 10) + '" min="0" max="500" required></label>'
+      : "") +
     '<label class="champ"><span>Qui peut s\'en occuper</span></label>' +
     (etat.membres.length
       ? puceMultiple("part", etat.membres.map((m) => ({ val: m.id, html: esc(m.emoji + " " + m.prenom) })),
@@ -133,14 +144,20 @@ Formulaires.tache = function (tid) {
         t.nom = String(d.get("nom")).trim();
         t.emoji = emojiChoisi(f, "🧹");
         if (t.frequence !== freq) { t.frequence = freq; t.decalage = 0; }
-        t.points = Number(d.get("points")) || 0;
+        /* Points éteints : le champ n'est pas affiché. On GARDE la valeur
+           existante, sinon modifier une tâche la remettrait à zéro et le
+           réglage ne serait plus réversible sans perte. */
+        if (pointsActifs()) t.points = Number(d.get("points")) || 0;
         t.participants = part;
         t.rotation = !!d.get("rotation");
         t.actif = !d.get("pause");
       } else {
         const nouvelle = {
           id: id(), nom: String(d.get("nom")).trim(), emoji: emojiChoisi(f, "🧹"),
-          frequence: freq, points: Number(d.get("points")) || 0,
+          frequence: freq,
+          /* Même raison : sans le champ, on pose la valeur habituelle, pour
+             que la tâche compte normalement si les points reviennent. */
+          points: pointsActifs() ? (Number(d.get("points")) || 0) : 10,
           participants: part, rotation: !!d.get("rotation"),
           decalage: 0, actif: !d.get("pause"), creeLe: new Date().toISOString()
         };
@@ -457,8 +474,8 @@ Formulaires.retour = function () {
     '<label class="champ"><span>Détails (que faisiez-vous ? qu\'attendiez-vous ?)</span>' +
     '<textarea name="detail" maxlength="1500" required ' +
     'placeholder="J\'étais dans l\'onglet Tâches, j\'ai appuyé sur…"></textarea></label>' +
-    '<p class="aide">Sont joints automatiquement : votre prénom, le nom de la tribu, ' +
-    "la version de l'application et le type de téléphone. Rien d'autre.</p>" +
+    '<p class="aide">Sont joints automatiquement : votre prénom, le nom et le repère de la tribu, ' +
+    "la version de l'application et le type d'appareil (par exemple « iPhone · Safari »). Rien d'autre.</p>" +
     '<div class="rangee-btn" style="margin-top:1.2rem">' +
     '<button type="button" class="btn" data-action="fermer">Annuler</button>' +
     '<button type="submit" class="btn principal">Envoyer</button></div></form>';
@@ -479,15 +496,18 @@ Formulaires.retour = function () {
         famille: etat.famille.code || "?",
         nomFamille: etat.famille.nom || "",
         version: VERSION,
-        appareil: navigator.userAgent.slice(0, 200),
+        /* Un resume (« iPhone · Safari »), pas le user-agent complet : c'est
+           ce que l'ecran annonce, et c'est tout ce qui sert (revue du 12/09/2026). */
+        appareil: typeAppareil(navigator.userAgent),
         envoyeLe: new Date().toISOString()
       };
       const ok = await Store.envoyerRetour(retour);
       fermerFeuille();
-      if (ok && Store.mode === "nuage") {
+      if (ok) {
         toast("Merci ! Votre message est parti 💌");
-      } else if (ok) {
-        toast("Enregistré sur cet appareil (pas de connexion au partage)");
+      } else if (Store.mode !== "nuage") {
+        /* Inutile de promettre un envoi differe : il n'existe pas. */
+        toast("Sans partage familial, aucun message ne peut être envoyé");
       } else {
         toast("Envoi impossible — réessayez plus tard");
       }
@@ -600,9 +620,20 @@ Formulaires.repas = function (jour, moment) {
       "posée, le générateur la laissera tranquille et rien n'ira dans les courses.</p>";
   }
 
+  /* « 🎲 Autre idée » : refait CE repas avec les reglages memorises du
+     generateur, sans toucher au reste de la semaine. Pas pour une absence, ni
+     pour un repas deja cuisine. */
+  const autreIdee = !estAbsence(actuel) && e.statut !== "fait" && e.statut !== "valide";
   h += '<div class="sous-titre" style="margin-top:.2rem"><h3>' +
     (actuel && !estAbsence(actuel) ? "Changer le plat" : "Choisir un plat") + "</h3></div>" +
-    '<input type="text" id="rech-repas" placeholder="Rechercher un plat…" autocomplete="off" style="margin-bottom:.8rem">' +
+    (autreIdee
+      ? '<button class="btn plein doux" data-role="autre-idee" style="margin-bottom:.35rem">🎲 ' +
+        (actuel && actuel.recetteId ? "Autre idée de plat" : "Proposer un plat") + "</button>" +
+        '<p class="aide" style="margin:0 0 .8rem">Selon vos réglages du générateur : ' +
+        esc(resumeReglagesGenerateur()) + ".</p>"
+      : "") +
+    '<div id="filtres-repas"></div>' +
+    '<input type="text" id="rech-repas" placeholder="Rechercher un plat ou un ingrédient…" autocomplete="off" style="margin-bottom:.6rem">' +
     '<div id="liste-repas" style="max-height:36dvh;overflow-y:auto;margin-bottom:.9rem"></div>' +
     "<hr class=\"sep\">" +
     '<label class="champ"><span>Ou écrire librement</span>' +
@@ -617,13 +648,57 @@ Formulaires.repas = function (jour, moment) {
     h, (f) => {
       const zone = f.querySelector("#liste-repas");
       const rech = f.querySelector("#rech-repas");
+
+      /* Les mêmes filtres que le cahier de recettes, gardés sur l'appareil
+         (au départ : ceux du générateur). Repliés, on ne voit que ceux qui
+         sont actifs, pour ne pas repousser la liste hors de l'écran. */
+      let filtres = filtresChoixPlat();
+      let filtresOuverts = false;
+      const zoneF = f.querySelector("#filtres-repas");
+      const puceFiltre = (v, libelle, on) =>
+        '<button type="button" class="puce ' + (on ? "on" : "") + '" data-filtre-plat="' + esc(v) + '">' +
+        libelle + (on && !filtresOuverts ? " ✕" : "") + "</button>";
+      const dessinerFiltres = () => {
+        zoneF.innerHTML = '<div class="puces" style="margin-bottom:.5rem">' +
+          '<button type="button" class="puce" data-role="ouvrir-filtres">🔎 ' +
+          (filtresOuverts ? "Replier" : "Filtres") + "</button>" +
+          (filtresOuverts
+            ? filtresRecettesBase().map(([v, l]) => puceFiltre(v, l, filtres.includes(v))).join("") +
+              PROFILS_SANTE.map((p) => puceFiltre("sante:" + p.val, p.emoji + " " + esc(p.nom),
+                filtres.includes("sante:" + p.val))).join("")
+            : filtres.map((v) => puceFiltre(v, nomFiltreRecette(v), true)).join("")) +
+          "</div>" +
+          (filtresOuverts
+            ? '<button type="button" class="lien" data-role="filtres-generateur" style="margin:-.2rem 0 .6rem">' +
+              "↺ Reprendre les filtres du générateur</button>"
+            : "");
+      };
+      zoneF.onclick = (ev) => {
+        if (ev.target.closest('[data-role="ouvrir-filtres"]')) {
+          filtresOuverts = !filtresOuverts; dessinerFiltres(); return;
+        }
+        if (ev.target.closest('[data-role="filtres-generateur"]')) {
+          filtres = filtresDepuisGenerateur();
+        } else {
+          const p = ev.target.closest("[data-filtre-plat]");
+          if (!p) return;
+          const v = p.dataset.filtrePlat;
+          filtres = filtres.includes(v) ? filtres.filter((x) => x !== v) : filtres.concat([v]);
+        }
+        memoriserListe("tribu:filtresChoixPlat", filtres);
+        dessinerFiltres();
+        dessiner();
+      };
+      dessinerFiltres();
+
       const dessiner = () => {
         /* Même tolérance que dans le cahier de recettes : « pates » trouve
-           « Pâtes », personne ne tape les accents sur un téléphone. */
-        const q = pourChercher(rech.value).trim();
-        const l = liste.filter((x) => !q || pourChercher(x.nom).includes(q));
+           « Pâtes », personne ne tape les accents sur un téléphone. La
+           recherche porte aussi sur les ingrédients. */
+        const l = liste.filter((x) => recetteCorrespond(x, rech.value, filtres));
         zone.innerHTML = l.length
-          ? l.map((x) => '<button class="ligne" data-recette="' + x.id + '" ' +
+          ? '<p class="aide" style="margin:0 0 .3rem">' + l.length + " plat" + (l.length > 1 ? "s" : "") + "</p>" +
+            l.map((x) => '<button class="ligne" data-recette="' + x.id + '" ' +
             'style="width:100%;background:none;border:none;border-top:1px solid var(--border);text-align:left">' +
             '<span style="font-size:1.3rem">' + esc(x.emoji || "🍽️") + "</span>" +
             '<span class="ligne-corps"><b>' + esc(x.nom) + "</b><small>" +
@@ -637,6 +712,20 @@ Formulaires.repas = function (jour, moment) {
       };
       dessiner();
       rech.oninput = dessiner;
+
+      const bAutre = f.querySelector('[data-role="autre-idee"]');
+      if (bAutre) bAutre.onclick = () => {
+        const g = reglagesGenerateur();
+        const res = genererMenus(ui.semaine, Object.assign({}, g,
+          { rapideSemaine: g.rapide, cibles: [{ jour: jour, moment: moment }] }));
+        if (!res) return;
+        const nv = (etat.repas[ui.semaine] || {})[jour + "-" + moment];
+        const r = nv && nv.recetteId ? etat.recettes.find((x) => x.id === nv.recetteId) : null;
+        toast("🎲 " + (r ? (r.emoji || "🍽️") + " " + r.nom : "Nouveau plat"));
+        /* On reste sur la fiche : on relance jusqu'a trouver son bonheur. */
+        Formulaires.repas(jour, moment);
+      };
+
       zone.onclick = (ev) => {
         const b = ev.target.closest("[data-recette]");
         if (!b) return;
@@ -792,6 +881,14 @@ Formulaires.reglagesFamille = function () {
     "Mettez 0 pour ne pas compter la cuisine.</p>" +
 
     '<label class="champ" style="display:flex;gap:.6rem;align-items:flex-start">' +
+    '<input type="checkbox" name="points"' + (g.points !== false ? " checked" : "") +
+    ' style="width:auto;margin-top:.25rem"><span style="margin:0">Système de points' +
+    '<br><small style="font-weight:400">Points des tâches, classement, cadeaux et objectif ' +
+    "commun. Décoché, tout cela disparaît de l'application : les tâches restent, avec " +
+    "« c'est fait » et la validation. Rien n'est effacé, et tout revient si vous le " +
+    "réactivez.</small></span></label>" +
+
+    '<label class="champ" style="display:flex;gap:.6rem;align-items:flex-start">' +
     '<input type="checkbox" name="antiGaspi"' + (g.antiGaspi !== false ? " checked" : "") +
     ' style="width:auto;margin-top:.25rem"><span style="margin:0">Anti-gaspillage' +
     '<br><small style="font-weight:400">Le générateur de menus propose en priorité ' +
@@ -807,6 +904,7 @@ Formulaires.reglagesFamille = function () {
       if (!(n >= 1 && n <= 30)) { toast("Entre 1 et 30 personnes"); return; }
       etat.reglages = Object.assign({}, etat.reglages, {
         convives: n,
+        points: !!d.get("points"),
         pointsRepas: Math.max(0, Math.min(200, Number(d.get("pointsRepas")) || 0)),
         antiGaspi: !!d.get("antiGaspi")
       });
@@ -833,6 +931,39 @@ function reglagesGenerateur() {
   let lu = {};
   try { lu = JSON.parse(localStorage.getItem("tribu:generateur") || "{}") || {}; } catch (e) { lu = {}; }
   return Object.assign({}, REGLAGES_GEN_DEFAUT, lu);
+}
+
+/* Les filtres de la liste « Changer le plat » d'un repas, gardés sur
+   l'appareil. La première fois, ils reprennent ceux du générateur : on ne
+   perd pas son filtre en passant de « 🎲 Autre idée » au choix à la main. */
+function filtresDepuisGenerateur() {
+  const g = reglagesGenerateur();
+  const f = ["plat"];                     // le générateur ne pose jamais de dessert
+  if (g.saisons) f.push("saison");
+  if (g.thermomix) f.push("thermomix");
+  if (g.regime === "vege") f.push("vege");
+  if (g.profil) f.push("sante:" + g.profil);
+  return f;
+}
+function filtresChoixPlat() {
+  return lireListeMemorisee("tribu:filtresChoixPlat") || filtresDepuisGenerateur();
+}
+
+/* Les reglages du generateur en quelques mots, affiches sous « 🎲 Autre
+   idée » : on sait sur quoi repose la proposition. */
+function resumeReglagesGenerateur() {
+  const g = reglagesGenerateur();
+  const l = [];
+  if (g.regime === "vege") l.push("végétarien");
+  else if (g.regime === "sansViande") l.push("sans viande");
+  const p = g.profil ? infoProfil(g.profil) : null;
+  if (p) l.push(p.nom.toLowerCase());
+  if (g.saisons) l.push("de saison");
+  if (g.thermomix) l.push("Thermomix de préférence");
+  if (g.rapide) l.push("rapide en semaine");
+  if (g.soirLeger) l.push("léger le soir");
+  if (g.reserve) l.push("ma réserve d’abord");
+  return l.length ? l.join(", ") : "aucun filtre";
 }
 
 Formulaires.generateur = function () {
@@ -1151,7 +1282,7 @@ Formulaires.recette = function (rid) {
     (r && estRecettePerso(r)
       ? '<button type="button" class="btn plein ' + (r.partageId ? "doux" : "") +
       '" data-role="partager" style="margin-bottom:1rem">' +
-      (r.partageId ? "🌍 Partagée avec les autres familles" : "🌍 Partager avec les autres familles") +
+      (r.partageId ? "🏘️ Partagée avec les autres familles" : "🏘️ Partager avec les autres familles") +
       "</button>"
       : "") +
     "<hr class=\"sep\">" +
@@ -1368,9 +1499,14 @@ Formulaires.cadeau = function (cid) {
 
 /* ================================ MEMBRE ================================ */
 
-Formulaires.membre = function (mid) {
+Formulaires.membre = async function (mid) {
   if (!estAdmin()) return;
+  /* Le compte adulte (adresse e-mail) ne vit pas sur le membre mais a part,
+     dans la collection « comptes » : on la relit avant d'ouvrir la fiche. */
+  if (Store.mode === "nuage") await Store.listerComptes(etat.famille.code);
   const m = mid ? membre(mid) : null;
+  const compte = m ? Store.compteDe(m.id) : null;
+  const connexionActuelle = compte ? "email" : "code";
   const cour = m || { emoji: "😀", role: "membre", pin: "" };
   const nbAdmins = etat.membres.filter((x) => x.role === "admin").length;
 
@@ -1387,6 +1523,18 @@ Formulaires.membre = function (mid) {
     "c'est vous qui cochez pour lui.</small></span></label>" +
 
     '<div id="bloc-connexion">' +
+    /* Comment cette personne entrera dans la tribu. Le code a 4 chiffres
+       reste demande dans les deux cas : c'est lui qui designe le profil sur
+       un telephone partage, l'e-mail ne remplace que le lien d'invitation. */
+    '<label class="champ"><span>Comment cette personne rejoint la tribu</span></label>' +
+    puceMultiple("connexion", [
+      { val: "code", html: "🔑 Par code" },
+      { val: "email", html: "📧 Par e-mail" }], [connexionActuelle]) +
+    '<p class="aide" style="margin:-.6rem 0 .8rem" id="aide-connexion"></p>' +
+    '<label class="champ" id="champ-email"><span>Adresse e-mail</span>' +
+    '<input type="email" name="email" autocomplete="email" inputmode="email" ' +
+    'value="' + esc(compte ? compte.adresse : "") + '" placeholder="prenom@exemple.fr"></label>' +
+
     '<label class="champ"><span>Rôle</span></label>' +
     puceMultiple("role", [
       { val: "membre", html: "Membre" },
@@ -1394,20 +1542,46 @@ Formulaires.membre = function (mid) {
     '<p class="aide" style="margin:-.6rem 0 1rem">Un administrateur valide les tâches, accorde les cadeaux ' +
     "et gère les réglages de la famille.</p>" +
     '<label class="champ"><span>Code à 4 chiffres' + (m ? " (laisser vide pour ne pas changer)" : "") + "</span>" +
-    '<input type="tel" name="pin" inputmode="numeric" maxlength="4" placeholder="' + (m ? "••••" : "1234") + '">' +
+    champPin('placeholder="' + (m ? "••••" : "1234") + '"') +
     "</label></div>" +
 
+    /* Ses appareils connectés, et le moyen d'en retirer un (étape 2). */
+    (m && Store.mode === "nuage" && !m.sansAppareil
+      ? '<button type="button" class="btn plein doux" data-role="appareils" data-compte-appareils="' +
+        esc(m.id) + '" style="margin:.4rem 0 .2rem">' +
+        "📋 Appareils de " + esc(m.prenom) + " (" + appareilsDe(m.id).length + ")</button>"
+      : "") +
     boutonsFormulaire(m ? "Enregistrer" : "Ajouter", !!m && etat.membres.length > 1) + "</form>";
 
   ouvrirFeuille(m ? "Modifier " + m.prenom : "Nouveau membre", html, (f) => {
     brancherEmojis(f);
     brancherMulti(f, "role", true);
 
+    brancherMulti(f, "connexion", true);
+
+    const bAppareils = f.querySelector('[data-role="appareils"]');
+    if (bAppareils) bAppareils.onclick = () => Formulaires.appareils(m.id);
+
     /* Un profil sans téléphone n'a besoin ni de rôle ni de code. */
     const caseSans = f.querySelector("#case-sans-appareil");
     const blocConnexion = f.querySelector("#bloc-connexion");
-    const majBloc = () => { blocConnexion.hidden = caseSans.checked; };
+    const champEmail = f.querySelector("#champ-email");
+    const aideCo = f.querySelector("#aide-connexion");
+    const majBloc = () => {
+      blocConnexion.hidden = caseSans.checked;
+      const parEmail = (valeursMulti(f, "connexion")[0] || "code") === "email";
+      champEmail.hidden = !parEmail;
+      aideCo.innerHTML = parEmail
+        ? "Elle recevra un lien par e-mail. En cliquant dessus, elle entre dans la tribu — " +
+          "et pourra se reconnecter seule plus tard, sans vous déranger."
+        : "Vous lui donnerez un code d'invitation à taper ou à coller. " +
+          "Un code par personne <b>et par téléphone</b>.";
+    };
     caseSans.onchange = majBloc;
+    /* Sur le GROUPE, et apres brancherMulti : les deux ecoutent le meme clic,
+       et celui qui coche la puce doit passer en premier, sinon on relit
+       l ancien choix. */
+    f.querySelector('[data-role="connexion"]').addEventListener("click", majBloc);
     majBloc();
 
     const bs = f.querySelector('[data-role="suppr"]');
@@ -1444,6 +1618,8 @@ Formulaires.membre = function (mid) {
       fermerFeuille();
       sauver("membres", "taches", "journal");
       await Store.retirerAppareils(sesAppareils);
+      const sonCompte = Store.compteDe(m.id);
+      if (sonCompte) await Store.supprimerCompte(sonCompte.adresse);
       toast(orphelines.length
         ? "Membre supprimé — " + orphelines.length + " tâche" +
           (orphelines.length > 1 ? "s sont" : " est") + " à réattribuer"
@@ -1457,13 +1633,42 @@ Formulaires.membre = function (mid) {
       if (!sansAppareil && pin && !/^[0-9]{4}$/.test(pin)) {
         toast("Le code doit faire 4 chiffres"); return;
       }
+      const connexion = sansAppareil ? "code" : (valeursMulti(f, "connexion")[0] || "code");
+      const email = String(d.get("email") || "").trim().toLowerCase();
+      if (connexion === "email" && !emailPlausible(email)) {
+        toast("Vérifiez l'adresse e-mail"); return;
+      }
+      /* Deux profils ne peuvent pas partager une adresse : la connexion par
+         e-mail donne UNE identite, et deux personnes qui la partagent
+         entreraient l une chez l autre. */
+      if (connexion === "email" && Store.mode !== "nuage") {
+        toast("La connexion par e-mail demande le partage familial"); return;
+      }
+      /* Deux profils ne partagent jamais une adresse : un compte adulte
+         designe UN profil (MODELE-COMPTES-APPAREILS.md, I2). */
+      if (connexion === "email" &&
+        (Store.comptesFamille || []).some((c) => c.adresse === email && (!m || c.membre !== m.id))) {
+        toast("Cette adresse est déjà utilisée par un autre membre"); return;
+      }
       const role = sansAppareil ? "membre" : (valeursMulti(f, "role")[0] || "membre");
       if (m && m.role === "admin" && role !== "admin" && nbAdmins <= 1) {
         toast("Il faut au moins un administrateur"); return;
       }
-      if (sansAppareil && m && (m.uids || []).length) {
+      if (sansAppareil && m && aUnAppareil(m)) {
         toast("Retirez d'abord ses appareils : ce profil est déjà connecté quelque part");
         return;
+      }
+
+      /* Le compte adulte (adresse e-mail) s'enregistre AVANT le membre. S'il est
+         refuse — adresse deja liee a une autre tribu —, on ne cree ni ne modifie
+         rien, la fiche reste ouverte et on le dit. Avant, le membre etait cree
+         quand meme, sans compte, sur un message ambigu (constate le 10/09/2026).
+         Le drapeau « admin » est une COPIE du role, recalculee a chaque fois. */
+      const idCible = m ? m.id : id();
+      const ancien = (m && Store.mode === "nuage") ? Store.compteDe(m.id) : null;
+      if (Store.mode === "nuage" && connexion === "email" && !sansAppareil) {
+        const rc = await Store.enregistrerCompte(email, idCible, role === "admin");
+        if (!rc.ok) { toast(rc.message); return; }
       }
 
       if (m) {
@@ -1471,16 +1676,27 @@ Formulaires.membre = function (mid) {
         m.emoji = emojiChoisi(f, "😀");
         m.role = role;
         m.sansAppareil = sansAppareil;
+
         if (!sansAppareil && pin) Object.assign(m, await champsPin(pin));
         if (sansAppareil) { m.pin = null; m.pinHash = null; m.pinSel = null; }
       } else {
         if (!sansAppareil && !pin) { toast("Choisissez un code à 4 chiffres"); return; }
         const nouveau = {
-          id: id(), prenom: String(d.get("prenom")).trim(), emoji: emojiChoisi(f, "😀"),
-          role: role, uids: [], sansAppareil: sansAppareil, creeLe: new Date().toISOString()
+          id: idCible, prenom: String(d.get("prenom")).trim(), emoji: emojiChoisi(f, "😀"),
+          role: role, sansAppareil: sansAppareil,
+          creeLe: new Date().toISOString()
         };
         if (!sansAppareil) Object.assign(nouveau, await champsPin(pin));
         etat.membres.push(nouveau);
+      }
+
+      /* Puis on range l'ancien compte : l'adresse a change (la nouvelle est
+         deja enregistree ci-dessus), ou la personne repasse « par code ». */
+      if (Store.mode === "nuage") {
+        if (ancien && (connexion !== "email" || sansAppareil || ancien.adresse !== email)) {
+          await Store.supprimerCompte(ancien.adresse);
+        }
+        Store.listerComptes(etat.famille.code);
       }
 
       fermerFeuille();
@@ -1542,6 +1758,8 @@ Formulaires.invitation = function () {
       const inv = await Invitations.creer(jours, cible ? cible.id : null);
       bouton.disabled = false;
       if (!inv) { toast("Création impossible"); return; }
+      if (Store.mode === "nuage") await Store.listerComptes(etat.famille.code);
+      const compteCible = cible ? Store.compteDe(cible.id) : null;
       const lien = Invitations.lien(inv.jeton);
       const fin = new Date(inv.expireLe).toLocaleDateString("fr-FR",
         { day: "numeric", month: "long", year: "numeric" });
@@ -1553,19 +1771,50 @@ Formulaires.invitation = function () {
         "</div></div>" +
         /* Le code d'abord : c'est le seul format qui passe partout, y compris
            dans une application sans barre d'adresse, ou dicté au téléphone. */
-        '<div class="code-famille">' + esc(codeLisible(inv.jeton)) + "</div>" +
+        codeAvecCopie(inv.jeton) +
         '<p class="aide centre" style="margin:.4rem 0 .7rem">À taper dans ' +
         "<b>J'ai reçu une invitation</b>. Les tirets sont facultatifs.</p>" +
         '<div class="rangee-btn" style="margin-bottom:.5rem">' +
-        '<button class="btn doux" data-action="copier" data-texte="' + esc(inv.jeton) + '">Copier le code</button>' +
-        '<button class="btn principal" data-role="partager">Partager le lien</button></div>' +
+        '<button class="btn principal plein" data-role="partager">Partager le lien</button></div>' +
         '<div class="code-famille" style="font-size:.7rem;word-break:break-all;letter-spacing:0">' +
         esc(lien) + "</div>" +
         '<button class="btn plein mini" data-action="copier" style="margin-top:.4rem" ' +
         'data-texte="' + esc(lien) + '">Copier le lien</button>' +
+        /* Si le profil vise a ete cree en mode e-mail, on propose de lui
+           envoyer le lien directement : c'est tout l'interet du mode. Le
+           bouton n'apparait que la, quand l'invitation existe deja. */
+        (compteCible
+          ? '<hr class="sep"><button class="btn plein principal" data-role="envoyer-email" ' +
+            'style="margin-bottom:.4rem">📧 Envoyer le lien à ' + esc(compteCible.adresse) + "</button>" +
+            '<p class="aide">' + esc(cible.prenom) + " recevra un e-mail de Firebase. " +
+            "En cliquant dessus, " + esc(cible.prenom) + " entrera dans la tribu — et devra " +
+            "confirmer son adresse, puis saisir son code à 4 chiffres.</p>"
+          : "") +
         '<p class="aide" style="margin-top:.6rem">Une fois utilisée, elle ne fonctionnera plus. ' +
         "Créez-en une nouvelle pour chaque personne et chaque appareil — " +
         "une icône sur l'écran d'accueil compte comme un appareil.</p>";
+
+      const be = zone.querySelector('[data-role="envoyer-email"]');
+      if (be) be.onclick = async () => {
+        be.disabled = true;
+        be.textContent = "Envoi…";
+        const r = await Store.envoyerLienConnexion(compteCible.adresse);
+        be.disabled = false;
+        if (r.ok) {
+          /* Vous vous l'envoyez à vous-même : on retient VOTRE adresse, comme
+             « Me connecter par e-mail », et le lien s'ouvrira sans rien
+             redemander dans ce navigateur. Pour quelqu'un d'autre, on ne garde
+             que « un lien est parti d'ici », jamais son adresse. */
+          if (moi && compteCible.membre === moi.id) Store.retenirEmail(compteCible.adresse);
+          else Store.marquerLienEnvoyeIci();
+          be.textContent = "✅ Envoyé à " + compteCible.adresse;
+          be.classList.remove("principal");
+          toast("Lien envoyé 💌");
+        } else {
+          be.textContent = "📧 Réessayer l'envoi";
+          toast(r.message || "Envoi impossible");
+        }
+      };
 
       const bp = zone.querySelector('[data-role="partager"]');
       bp.onclick = () => {
@@ -1582,6 +1831,109 @@ Formulaires.invitation = function () {
         }
       };
     };
+  });
+};
+
+/* ==================== FAMILLES FONDATRICES ====================
+
+   La fiche du programme : le numéro obtenu, ou ce qu'il reste à faire pour
+   confirmer sa place. `feter` = le grand moment, juste après la validation ;
+   elle s'ouvre alors d'elle-même, une seule fois par appareil. */
+
+Formulaires.fondatrice = function (feter) {
+  const p = placeFondatrice();
+  if (!p || !p.numero) return;
+  const pionniere = p.genre === "pionniere";
+  const nom = pionniere ? "Famille Pionnière" : "Famille Fondatrice";
+  const emoji = pionniere ? "🌱" : "🏅";
+  const validee = estFondatrice();
+  const av = avancementFondatrice();
+
+  const critere = (fait, titre, detail) =>
+    '<div class="ligne' + (fait ? " fait" : "") + '">' +
+    '<span class="etape' + (fait ? " ok" : "") + '">' + (fait ? "✓" : "") + "</span>" +
+    '<div class="ligne-corps"><b>' + titre + "</b><small>" + detail + "</small></div></div>";
+
+  const avantage = (ico, titre, detail) =>
+    '<div class="ligne"><span style="font-size:1.2rem">' + ico + "</span>" +
+    '<div class="ligne-corps"><b>' + titre + "</b><small>" + detail + "</small></div></div>";
+
+  const html =
+    (feter
+      ? '<div class="bandeau info">🎉<div><b>Vous êtes officiellement la ' + nom + " " +
+        numeroFondatrice(p.numero) + " de Ma Tribu !</b><br>" +
+        "Ce numéro est le vôtre, et il le restera.</div></div>"
+      : "") +
+
+    '<div class="carte" style="text-align:center">' +
+    '<div style="font-size:2.6rem;line-height:1">' + emoji + "</div>" +
+    '<div style="font-family:var(--font-display);font-size:1.15rem;margin:.35rem 0 0">' +
+    nom + "</div>" +
+    '<div style="font-family:var(--font-display);font-size:2.1rem;font-weight:700;line-height:1.15">' +
+    numeroFondatrice(p.numero) + "</div>" +
+    '<div class="aide" style="margin-top:.35rem">' +
+    (validee
+      ? (pionniere
+        ? "Votre tribu était là avant le programme. Ce statut vous est offert, sans condition."
+        : "Acquis, et définitif.")
+      : "Place réservée pendant " + PROGRAMME.jours + " jours") +
+    "</div></div>" +
+
+    (validee ? "" :
+      '<div class="carte">' +
+      '<div class="carte-titre">Ce qu\'il reste à faire</div>' +
+      critere(av.membres >= PROGRAMME.membres,
+        "Être au moins " + PROGRAMME.membres + " dans la tribu",
+        av.membres + " membre" + (av.membres > 1 ? "s" : "") + " pour l'instant") +
+      critere(av.validees >= PROGRAMME.validees,
+        PROGRAMME.validees + " tâches ou repas validés",
+        av.validees + " sur " + PROGRAMME.validees) +
+      critere(av.jours >= PROGRAMME.joursUtiles,
+        "Utiliser l'application " + PROGRAMME.joursUtiles + " jours différents",
+        av.jours + " jour" + (av.jours > 1 ? "s" : "") + " pour l'instant") +
+      '<p class="aide" style="margin-top:.7rem">' +
+      (av.resteJours > 1 ? "Il vous reste " + av.resteJours + " jours."
+        : av.resteJours === 1 ? "C'est le dernier jour." : "Plus que quelques heures.") +
+      " Passé ce délai, la place retourne aux autres familles.</p>" +
+      "</div>") +
+
+    '<div class="carte">' +
+    '<div class="carte-titre">Ce que cela vous donne</div>' +
+    avantage(emoji, "Un badge permanent",
+      "Il reste sur votre accueil, quoi qu'il arrive ensuite.") +
+    avantage("🔢", "Un numéro unique",
+      "Le " + numeroFondatrice(p.numero) + " n'appartient qu'à votre tribu.") +
+    avantage("🧪", "Les nouveautés en avant-première",
+      "Vous les essayez avant tout le monde.") +
+    avantage("🗳️", "Votre voix sur la suite",
+      "Vos idées passent en premier.") +
+    '<button class="btn doux plein" data-action="retour" style="margin-top:.6rem">' +
+    "💡 Proposer une idée</button>" +
+    "</div>" +
+
+    '<p class="aide" style="text-align:center" id="places-restantes"></p>' +
+
+    '<button class="btn plein' + (feter ? " principal" : "") + '" data-action="fermer" ' +
+    'style="margin-top:.4rem">' + (feter ? "Merci !" : "Fermer") + "</button>";
+
+  ouvrirFeuille(feter ? "🎉 " + nom + " " + numeroFondatrice(p.numero) : nom, html, (f) => {
+    /* « Proposer une idée » ouvre une autre fiche : on ferme celle-ci avant,
+       sinon la seconde remplacerait la première sans qu'on sache d'où on vient. */
+    f.querySelectorAll('[data-action="retour"]')
+      .forEach((b) => b.addEventListener("click", fermerFeuille));
+
+    /* Le compteur de places demande une lecture au serveur : il s'affiche
+       quand elle arrive, sans faire attendre la fiche. S'il n'arrive pas,
+       la ligne reste vide — ce n'est qu'un ornement. */
+    if (!Store.placesFondatrices) return;
+    Store.placesFondatrices().then((places) => {
+      const zone = f.querySelector("#places-restantes");
+      if (!zone || !places) return;
+      const reste = Math.max(0, PROGRAMME.places - places.length);
+      zone.textContent = reste
+        ? reste + (reste > 1 ? " places encore libres sur " : " place encore libre sur ") + PROGRAMME.places
+        : "Les " + PROGRAMME.places + " places sont prises.";
+    }).catch(() => { });
   });
 };
 
@@ -1723,12 +2075,10 @@ Formulaires.monAppareil = function () {
         return;
       }
       const lien = Invitations.lien(inv.jeton);
-      zone.innerHTML = '<div class="code-famille">' + esc(codeLisible(inv.jeton)) + "</div>" +
+      zone.innerHTML = codeAvecCopie(inv.jeton) +
         '<p class="aide centre" style="margin:.4rem 0 .7rem">Valable 7 jours, une seule fois. ' +
         "Les tirets sont facultatifs.</p>" +
-        '<div class="rangee-btn">' +
-        '<button class="btn doux" data-action="copier" data-texte="' + esc(inv.jeton) + '">Copier le code</button>' +
-        '<button class="btn doux" data-action="copier" data-texte="' + esc(lien) + '">Copier le lien</button></div>';
+        '<button class="btn plein doux" data-action="copier" data-texte="' + esc(lien) + '">Copier le lien complet</button>';
       bouton.textContent = "Créer un autre code";
     };
   });
@@ -1835,11 +2185,83 @@ Formulaires.historique = function (mid) {
     html + '<button class="btn plein" data-action="fermer" style="margin-top:1.2rem">Fermer</button>');
 };
 
+/* ================================ RAYONS ================================
+
+   Les rayons fournis ne couvrent pas toutes les maisons : bébé, jardin,
+   pharmacie, cave… La famille ajoute les siens, et dit de quel côté ils vont
+   — alimentaire ou maison. Rangés dans les réglages : un administrateur les
+   écrit, ils valent pour tout le monde. */
+Formulaires.rayon = function () {
+  if (!estAdmin()) { toast("Seul un administrateur peut ajouter un rayon"); return; }
+
+  const html = '<form id="f-rayon">' +
+    '<label class="champ"><span>Nom du rayon</span>' +
+    '<input type="text" name="nom" required maxlength="24" autocomplete="off" ' +
+    'placeholder="Bébé, Jardin, Pharmacie…"></label>' +
+    '<label class="champ"><span>De quel côté de la réserve ?</span></label>' +
+    puceMultiple("cote", [
+      { val: "alimentaire", html: "🥫 Alimentaire" },
+      { val: "maison", html: "🧴 Maison" }], ["alimentaire"]) +
+    '<p class="aide" style="margin-top:.7rem">Il apparaîtra dans la réserve, dans la liste de ' +
+    "courses et dans la fiche de chaque article. L'application ne devinera pas toute seule " +
+    "qu'un produit lui appartient : vous le choisirez à la main.</p>" +
+    boutonsFormulaire("Ajouter", false) + "</form>";
+
+  ouvrirFeuille("Nouveau rayon", html, (f) => {
+    brancherMulti(f, "cote", true);
+    f.onsubmit = (ev) => {
+      ev.preventDefault();
+      const nom = String(new FormData(ev.target).get("nom") || "").trim();
+      if (!nom) { toast("Donnez un nom au rayon"); return; }
+      if (rayonsTous().some((r) => pourChercher(r) === pourChercher(nom))) {
+        toast("Ce rayon existe déjà");
+        return;
+      }
+      etat.reglages = Object.assign({}, etat.reglages, {
+        rayonsPerso: rayonsPerso().concat([{ nom: nom, cote: valeursMulti(f, "cote")[0] || "alimentaire" }])
+      });
+      fermerFeuille();
+      sauver("reglages");
+      toast("Rayon « " + nom + " » ajouté");
+    };
+  });
+};
+
+/* ================================ APPARENCE ================================
+
+   Le mode clair/sombre et la palette de couleurs, dans la même fiche. Les
+   deux ne valent que pour CET appareil : chacun choisit ce qu'il préfère,
+   sans déranger le reste de la tribu et sans droits particuliers. */
+Formulaires.apparence = function () {
+  let th = "auto";
+  try { th = localStorage.getItem("tribu:theme") || "auto"; } catch (e) { /* sans importance */ }
+  const pal = paletteActuelle();
+  const pastille = (c) => '<span style="display:inline-block;width:.62rem;height:.62rem;' +
+    "border-radius:50%;background:" + c + ';border:1px solid rgba(0,0,0,.14);' +
+    'margin-right:.12rem;vertical-align:-1px"></span>';
+
+  const html =
+    '<p class="aide" style="margin:0 0 .9rem">Ces réglages ne concernent que cet appareil.</p>' +
+    '<label class="champ"><span>Mode</span></label>' +
+    '<div class="puces">' +
+    [["auto", "🌗 Automatique"], ["light", "☀️ Clair"], ["dark", "🌙 Sombre"]].map(([v, l]) =>
+      '<button class="puce' + (th === v ? " on" : "") + '" data-action="theme-choix" data-valeur="' +
+      v + '">' + l + "</button>").join("") + "</div>" +
+    '<label class="champ" style="margin-top:1rem"><span>Palette</span></label>' +
+    '<div class="puces">' + PALETTES.map((p) =>
+      '<button class="puce' + (pal === p.val ? " on" : "") + '" data-action="palette" data-valeur="' +
+      esc(p.val) + '">' + p.apercu.map(pastille).join("") + " " + p.emoji + " " + esc(p.nom) +
+      "</button>").join("") + "</div>" +
+    '<p class="aide" style="margin-top:.9rem">Le mode sombre existe pour chaque palette : ' +
+    "les deux réglages se combinent.</p>" +
+    '<button class="btn plein" data-action="fermer" style="margin-top:1rem">Fermer</button>';
+
+  ouvrirFeuille("🎨 Apparence", html);
+};
+
 /* ================================ MENU PROFIL ================================ */
 
 Formulaires.menuProfil = function () {
-  const th = localStorage.getItem("tribu:theme") || "auto";
-  const nomTheme = th === "light" ? "clair" : th === "dark" ? "sombre" : "automatique";
   const etatTexte = Store.mode === "nuage"
     ? '<span class="etat-connexion en-ligne"><i></i>Partagé avec la famille</span>'
     : '<span class="etat-connexion local"><i></i>Sur cet appareil uniquement</span>';
@@ -1859,24 +2281,45 @@ Formulaires.menuProfil = function () {
     '<span class="avatar">' + esc(moi.emoji || "🙂") + "</span>" +
     '<div class="ligne-corps"><b>' + esc(moi.prenom) + "</b><small>" +
     (estAdmin() ? "Administrateur" : "Membre") + " • " + esc(etat.famille.nom) + "</small></div>" +
-    '<span class="etiquette or">' + pointsDe(moi.id) + " pts</span></div>" +
+    (pointsActifs() ? '<span class="etiquette or">' + pointsDe(moi.id) + " pts</span>" : "") + "</div>" +
     '<p style="margin:.6rem 0 1rem">' + etatTexte + "</p>" + alerteCrypto +
-    '<button class="btn plein" data-action="aller" data-vue="points" style="margin-bottom:.5rem">🌟 Points & cadeaux</button>' +
+    (pointsActifs()
+      ? '<button class="btn plein" data-action="aller" data-vue="points" style="margin-bottom:.5rem">🌟 Points & cadeaux</button>'
+      : "") +
     '<button class="btn plein" data-action="aller" data-vue="recettes" style="margin-bottom:.5rem">📖 Mes recettes</button>' +
     (estAdmin()
       ? '<button class="btn plein" data-action="aller" data-vue="admin" style="margin-bottom:.5rem">⚙️ Administration</button>'
       : "") +
     '<button class="btn plein" data-action="mon-appareil" style="margin-bottom:.5rem">📱 Connecter un appareil</button>' +
-    '<button class="btn plein" data-action="theme" style="margin-bottom:.5rem">🌓 Thème : ' + nomTheme + "</button>" +
+    (Store.mode === "nuage"
+      ? '<button class="btn plein" data-role="mes-appareils" data-compte-appareils="' + esc(moi.id) +
+        '" style="margin-bottom:.5rem">📋 Mes appareils (' +
+        appareilsDe(moi.id).length + ")</button>"
+      : "") +
+    '<button class="btn plein" data-action="apparence" style="margin-bottom:.5rem">🎨 Apparence</button>' +
     '<button class="btn plein" data-role="mon-profil" style="margin-bottom:.5rem">✏️ Modifier mon profil</button>' +
     "<hr class=\"sep\">" +
     '<button class="btn plein doux" data-action="retour" style="margin-bottom:.5rem">' +
     "🐞 Signaler un problème / proposer une idée</button>" +
+    '<button class="btn plein doux" data-action="effacer-appareil" style="margin-bottom:.5rem">' +
+    "🧹 Effacer les données de cet appareil</button>" +
+    (Store.mode === "nuage"
+      ? '<button class="btn plein doux" data-role="quitter-tribu" style="margin-bottom:.5rem">' +
+        "🚪 Quitter la tribu sur cet appareil</button>"
+      : "") +
     '<p class="aide centre" style="margin-bottom:.8rem">Version ' + esc(VERSION) +
-    " — merci de vos retours !</p>" +
+    " — merci de vos retours !<br>" +
+    /* Obligation légale dès lors que d autres familles que la sienne
+       utilisent l application : dire ce qui est collecté et comment le
+       faire effacer. La page vit à part, elle se lit sans être connecté. */
+    '<a href="confidentialite.html" target="_blank" rel="noopener">Confidentialité et données personnelles</a></p>' +
     '<button class="btn plein danger" data-action="deconnexion">Changer de membre / se déconnecter</button>';
 
   ouvrirFeuille("Mon profil", html, (f) => {
+    const bMesAppareils = f.querySelector('[data-role="mes-appareils"]');
+    if (bMesAppareils) bMesAppareils.onclick = () => Formulaires.appareils(moi.id);
+    const bQuitter = f.querySelector('[data-role="quitter-tribu"]');
+    if (bQuitter) bQuitter.onclick = () => Formulaires.quitterTribu();
     f.querySelector('[data-role="mon-profil"]').onclick = () => {
       if (estAdmin()) { Formulaires.membre(moi.id); return; }
       Formulaires.monProfilSimple();
@@ -1887,6 +2330,156 @@ Formulaires.menuProfil = function () {
   });
 };
 
+/* ===================== QUITTER LA TRIBU SUR CET APPAREIL (étape 4) =====================
+
+   Cet appareil seul quitte la tribu : il est retiré comme depuis la liste des
+   appareils (registre, listes d'accès, révoqués), puis il oublie tout ce que
+   Ma Tribu garde ici et reçoit une identité neuve. Le membre, ses points et
+   ses autres appareils ne changent pas. Jamais le dernier appareil
+   administrateur : plus personne ne pourrait gérer la tribu (les règles le
+   refusent aussi). */
+Formulaires.quitterTribu = async function () {
+  if (Store.mode !== "nuage" || !moi) return;
+  const admins = etat.adminsUid || [];
+  if (admins.indexOf(Store.uid) !== -1 && admins.length <= 1) {
+    ouvrirFeuille("Quitter la tribu sur cet appareil",
+      '<div class="bandeau">🔑<div><b>C’est le seul appareil administrateur de la tribu.</b> ' +
+      "S’il part, plus personne ne pourra la gérer. Donnez d’abord les droits " +
+      "d’administrateur à un autre appareil : une invitation « administrateur », ou le lien " +
+      "e-mail d’un adulte administrateur.</div></div>" +
+      '<button class="btn plein" data-action="fermer" style="margin-top:1rem">Compris</button>');
+    return;
+  }
+  const nom = (etat.famille && etat.famille.nom) || "la tribu";
+  const autres = appareilsDe(moi.id).filter((a) => !a.ici).length;
+  const ok = await confirmer("Cet appareil quittera « " + nom + " ». Votre profil, vos points" +
+    (autres === 0 ? "" : autres === 1 ? " et votre autre appareil" : " et vos " + autres + " autres appareils") +
+    " ne changent pas. Pour revenir ici plus tard, il faudra une nouvelle invitation, " +
+    "ou le lien e-mail si votre adresse est enregistrée.",
+    { titre: "Quitter la tribu sur cet appareil", ok: "Quitter", danger: true });
+  if (!ok) return;
+  /* Plus d'écoute AVANT de se retirer : sinon le refus qui suit ouvrirait
+     l'écran « accès perdu » au lieu de terminer proprement. */
+  Store._detacher();
+  const r = await Store.retirerAppareil(Store.uid);
+  if (!r.ok) {
+    toast(r.message);
+    Store.abonner(Store.code, Store._cbAbonnement);
+    return;
+  }
+  await Store.oublierCetAppareil();
+  /* Un écran, et non un message fugace : le rechargement emportait le message
+     avant qu'on ait pu le lire. La page ne se recharge qu'au bouton Terminer. */
+  viderEcranTribu();
+  Connexion.aller("tribuQuittee", { nom: nom });
+};
+
+/* ================================ APPAREILS (étape 2) ================================
+
+   Les appareils rattachés à un membre, et le moyen d'en retirer un : téléphone
+   perdu, tablette donnée, ordinateur de bureau quitté. Un administrateur voit
+   ceux de chacun ; un membre voit les siens et peut retirer ses AUTRES
+   appareils sans déranger personne (parcours P7). L'appareil qu'on tient en
+   main n'est pas retirable d'ici : ce sera « Quitter la tribu sur cet
+   appareil » (étape 4). */
+Formulaires.appareils = function (membreId) {
+  const m = membre(membreId);
+  if (!m) return;
+  const lesMiens = !!(moi && moi.id === membreId);
+  if (!estAdmin() && !lesMiens) return;
+
+  const actifs = appareilsDe(membreId);
+  const retires = appareilsRetiresDe(membreId);
+  const PAR = { creation: "création de la tribu", invitation: "code d’invitation", compte: "lien e-mail" };
+  const date = (iso) => {
+    const d = iso ? new Date(iso) : null;
+    return d && !isNaN(d) ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
+  };
+  const icone = (type) => /iPhone|Android|iPad/.test(type || "") ? "📱"
+    : /Mac|Windows|Linux/.test(type || "") ? "💻" : "🔹";
+
+  const ligne = (a) => '<div class="ligne">' +
+    '<span style="font-size:1.3rem">' + icone(a.type) + "</span>" +
+    '<div class="ligne-corps"><b>' + esc(a.type) +
+    (a.ici ? ' <span class="etiquette vert">cet appareil</span>' : "") +
+    (a.admin ? ' <span class="etiquette">admin</span>' : "") + "</b><small>" +
+    (a.ajouteLe
+      ? "Ajouté le " + esc(date(a.ajouteLe)) + (PAR[a.par] ? " • par " + PAR[a.par] : "")
+      : "Ajouté avant la version 0.50") + "</small></div>" +
+    /* Le bouton n'apparaît que si le retrait est permis : jamais sur
+       l'appareil qu'on tient (étape 4), ni sur le dernier appareil
+       administrateur de la tribu (les règles le refusent). */
+    (a.ici ? ""
+      : a.admin && (etat.adminsUid || []).length <= 1
+        ? '<small class="aide" style="margin:0;text-align:right;line-height:1.3">Seul appareil<br>administrateur</small>'
+        : '<button class="btn mini danger" data-retirer="' + esc(a.uid) + '">Retirer</button>') +
+    "</div>";
+
+  const html =
+    '<div data-feuille-appareils="' + esc(membreId) + '" hidden></div>' +   // repère pour rafraichirAppareils
+    '<p class="aide" style="margin-bottom:.8rem">Chaque téléphone, tablette ou ordinateur ' +
+    "connecté à ce profil. Retirer un appareil lui coupe <b>tout de suite</b> l’accès à la " +
+    "tribu, <b>pour de bon</b> : utile pour un téléphone perdu ou donné.</p>" +
+    (actifs.length ? actifs.map(ligne).join("")
+      : '<p class="aide">Aucun appareil n’est connecté à ce profil.</p>') +
+    (retires.length
+      ? '<div class="sous-titre" style="margin-top:1rem"><h3>Appareils retirés</h3></div>' +
+        retires.map((r) => '<div class="ligne"><span style="font-size:1.3rem">🚫</span>' +
+          '<div class="ligne-corps"><b>' + esc(r.type || "Appareil") + "</b><small>Retiré le " +
+          esc(date(r.le)) + (r.par && membre(r.par) ? " par " + esc(membre(r.par).prenom) : "") +
+          "</small></div></div>").join("")
+      : "") +
+    '<button class="btn plein" data-action="fermer" style="margin-top:1rem">Fermer</button>';
+
+  ouvrirFeuille(lesMiens ? "Mes appareils" : "Appareils de " + m.prenom, html, (f) => {
+    f.querySelectorAll("[data-retirer]").forEach((b) => {
+      b.onclick = async () => {
+        const uid = b.dataset.retirer;
+        const a = actifs.find((x) => x.uid === uid);
+        /* Jamais le dernier appareil administrateur : plus personne ne
+           pourrait gérer la tribu (les règles le refusent aussi). */
+        const admins = etat.adminsUid || [];
+        if (admins.indexOf(uid) !== -1 && admins.length <= 1) {
+          toast("C’est le seul appareil administrateur de la tribu : il ne peut pas être retiré.");
+          return;
+        }
+        const ok = await confirmer("Retirer « " + (a ? a.type : "cet appareil") + " » ? Il perdra " +
+          "tout de suite l’accès à la tribu, et ne pourra plus y revenir tel quel.",
+          { titre: "Retirer cet appareil", ok: "Retirer", danger: true });
+        if (ok) {
+          const r = await Store.retirerAppareil(uid);
+          toast(r.ok ? "Appareil retiré 🚫" : r.message);
+        }
+        Formulaires.appareils(membreId);    // la fiche reflète le nouvel état
+      };
+    });
+  });
+};
+
+/* Quand le serveur change, rendre() ne redessine que l'écran de fond : une
+   fenêtre ouverte gardait d'anciens nombres (« Mes appareils (3) » alors qu'il
+   y en avait 4). Appelée à chaque changement du document de la famille :
+   - la liste des appareils se redessine en entier (rien à y saisir), à la
+     même hauteur de défilement ;
+   - ailleurs, seul le nombre des boutons « Mes appareils » / « Appareils de … »
+     est corrigé : le reste de la fiche peut être en cours de saisie.
+   Une confirmation ouverte par-dessus n'a pas ces repères : elle n'est pas touchée. */
+Formulaires.rafraichirAppareils = function () {
+  if (!document.querySelector("#voile").classList.contains("on")) return;
+  const f = document.querySelector("#feuille");
+  const liste = f.querySelector("[data-feuille-appareils]");
+  if (liste) {
+    const haut = f.scrollTop;
+    Formulaires.appareils(liste.dataset.feuilleAppareils);
+    f.scrollTop = haut;
+    return;
+  }
+  f.querySelectorAll("[data-compte-appareils]").forEach((b) => {
+    const n = appareilsDe(b.dataset.compteAppareils).length;
+    b.textContent = b.textContent.replace(/\(\d+\)\s*$/, "(" + n + ")");
+  });
+};
+
 /* Un membre non-admin peut changer son prenom, son avatar et son code. */
 Formulaires.monProfilSimple = function () {
   const html = '<form id="f-moi">' +
@@ -1894,7 +2487,7 @@ Formulaires.monProfilSimple = function () {
     '<input type="text" name="prenom" value="' + esc(moi.prenom) + '" required maxlength="20"></label>' +
     '<label class="champ"><span>Avatar</span></label>' + grilleEmojis(EMOJIS_MEMBRES, moi.emoji) +
     '<label class="champ"><span>Nouveau code à 4 chiffres (facultatif)</span>' +
-    '<input type="tel" name="pin" inputmode="numeric" maxlength="4" placeholder="••••"></label>' +
+    champPin('placeholder="••••"') + "</label>" +
     '<div class="rangee-btn" style="margin-top:1.2rem">' +
     '<button type="button" class="btn" data-action="fermer">Annuler</button>' +
     '<button type="submit" class="btn principal">Enregistrer</button></div></form>';
@@ -1991,12 +2584,21 @@ Formulaires.consulterRecette = function (rid) {
       'style="margin-top:.6rem;text-decoration:none">Ouvrir la recette d\'origine ↗</a>';
   }
 
-  html += '<div class="rangee-btn" style="margin-top:1.2rem">' +
+  /* Le favori se marque ici aussi : c'est en lisant la recette qu'on se dit
+     « celle-là, on la refera ». Chacun a les siens. */
+  html += '<button class="btn plein ' + (estFavori(r) ? "doux" : "") + '" data-role="favori" ' +
+    'style="margin-top:.8rem">' +
+    (estFavori(r) ? "⭐ Dans vos favoris — retirer" : "☆ Ajouter à mes favoris") + "</button>";
+
+  html += '<div class="rangee-btn" style="margin-top:.6rem">' +
     '<button class="btn" data-action="fermer">Fermer</button>' +
     '<button class="btn principal" data-role="modifier">✏️ Modifier</button></div></div>';
 
   ouvrirFeuille(r.nom, html, (f) => {
     f.querySelector('[data-role="modifier"]').onclick = () => Formulaires.recette(r.id);
+    const bf = f.querySelector('[data-role="favori"]');
+    /* On rouvre la fiche : le bouton reflète le nouvel état, sans la fermer. */
+    if (bf) bf.onclick = () => { basculerFavori(r.id); Formulaires.consulterRecette(r.id); };
   });
 };
 
@@ -2017,7 +2619,7 @@ Formulaires.publierRecette = function (rid) {
   const dejaPartagee = !!r.partageId;
 
   const html = '<div id="f-publier">' +
-    '<div class="bandeau' + (dejaPartagee ? " info" : "") + '">' + (dejaPartagee ? "🌍" : "⚠️") +
+    '<div class="bandeau' + (dejaPartagee ? " info" : "") + '">' + (dejaPartagee ? "🏘️" : "⚠️") +
     "<div>" +
     (dejaPartagee
       ? "<b>" + esc(r.nom) + "</b> est actuellement visible par toutes les familles " +
@@ -2032,9 +2634,12 @@ Formulaires.publierRecette = function (rid) {
     '<div class="ligne"><span class="etape ok">✓</span><div class="ligne-corps">' +
     "<b>Le nom de votre tribu</b><small>« " + esc(etat.famille.nom || "Une famille") +
     " » — pour dire d'où vient la recette.</small></div></div>" +
+    '<div class="ligne"><span class="etape ok">✓</span><div class="ligne-corps">' +
+    "<b>Le repère technique de votre tribu</b><small>Il ne donne aucun accès à " +
+    "votre famille ; il sert seulement à pouvoir retirer la recette plus tard.</small></div></div>" +
     '<div class="ligne"><span class="etape">✗</span><div class="ligne-corps">' +
-    "<b>Rien d'autre</b><small>Ni le repère de la famille, ni les prénoms, " +
-    "ni les points, ni les courses.</small></div></div></div>" +
+    "<b>Rien d'autre</b><small>Ni les prénoms, ni les points, ni les courses, " +
+    "ni le contenu de votre famille.</small></div></div></div>" +
 
     (dejaPartagee ? "" :
       '<p class="aide" style="margin-bottom:1rem">C\'est la version <b>enregistrée</b> qui ' +
@@ -2043,7 +2648,7 @@ Formulaires.publierRecette = function (rid) {
     '<div class="rangee-btn">' +
     '<button class="btn" data-action="fermer">Annuler</button>' +
     '<button class="btn ' + (dejaPartagee ? "danger" : "principal") + '" data-role="ok">' +
-    (dejaPartagee ? "Retirer du catalogue" : "🌍 Publier") + "</button></div></div>";
+    (dejaPartagee ? "Retirer du catalogue" : "🏘️ Publier") + "</button></div></div>";
 
   ouvrirFeuille(dejaPartagee ? "Recette partagée" : "Partager la recette", html, (f) => {
     const b = f.querySelector('[data-role="ok"]');
@@ -2052,7 +2657,7 @@ Formulaires.publierRecette = function (rid) {
       const ok = dejaPartagee ? await Partage.retirer(r.id) : await Partage.publier(r.id);
       b.disabled = false;
       if (!ok) return;                       // le message d'échec est déjà affiché
-      toast(dejaPartagee ? "Recette retirée du catalogue" : "Recette partagée 🌍");
+      toast(dejaPartagee ? "Recette retirée du catalogue" : "Recette partagée 🏘️");
       Formulaires.recette(r.id);
     };
   });
@@ -2063,7 +2668,7 @@ Formulaires.publierRecette = function (rid) {
 Formulaires.catalogue = function () {
   if (Store.mode !== "nuage") {
     ouvrirFeuille("Recettes partagées",
-      '<div class="bandeau">🌍<div>Le catalogue commun demande la connexion familiale ' +
+      '<div class="bandeau">🏘️<div>Le catalogue commun demande la connexion familiale ' +
       "(Firebase). Sur cet appareil, l'application fonctionne en local : vos recettes " +
       "restent chez vous.</div></div>" +
       '<button class="btn plein" data-action="fermer">Fermer</button>');
@@ -2120,7 +2725,7 @@ Formulaires.catalogue = function () {
 
       let h = "";
       if (!fiches.length) {
-        h += rienDu("🌍", "Le catalogue est vide pour l'instant.<br>" +
+        h += rienDu("🏘️", "Le catalogue est vide pour l'instant.<br>" +
           "Publiez une de vos recettes : ouvrez-la, <b>Modifier</b>, puis " +
           "<b>Partager avec les autres familles</b>.");
       }
@@ -2129,7 +2734,7 @@ Formulaires.catalogue = function () {
           '<span class="etiquette">' + autres.length + "</span></div>" +
           '<div class="carte">' + autres.map((x) => carte(x, false)).join("") + "</div>";
       } else if (fiches.length) {
-        h += rienDu("🌍", "Aucune autre famille n'a encore publié de recette.");
+        h += rienDu("🏘️", "Aucune autre famille n'a encore publié de recette.");
       }
       if (miennes.length) {
         h += '<div class="sous-titre"><h3>Vos publications</h3>' +
@@ -2684,4 +3289,210 @@ Formulaires.bilanSemaine = function (cleSem) {
     '<button class="btn plein" data-action="fermer" style="margin-top:1rem">Fermer</button></div>';
 
   ouvrirFeuille("🏁 La semaine en bref", html);
+};
+
+/* ============ EFFACER LES DONNÉES DE CET APPAREIL ============
+
+   Une application qui garde des choses dans le téléphone doit offrir le moyen
+   de les reprendre. C'est un droit, et c'est aussi une politesse : on prête
+   son téléphone, on change d'appareil, on veut simplement faire le ménage.
+
+   Deux situations très différentes, et c'est tout l'enjeu de cette fenêtre :
+
+   - EN MODE PARTAGÉ, la famille vit sur le serveur. Effacer ici ne retire que
+     la session et les préférences : on se reconnecte, tout revient.
+   - EN MODE HORS PARTAGE, ce téléphone EST la base de données. Effacer, c'est
+     perdre la famille pour de bon. On l'écrit en toutes lettres et on demande
+     de recopier un mot : une pression malheureuse ne doit pas suffire.
+
+   Ce qui n'est PAS touché : la session Firebase, rangée ailleurs par le
+   navigateur. La retirer ferait perdre l'accès de cet appareil à la famille,
+   et il faudrait une nouvelle invitation — ce serait une punition, pas un
+   ménage. Le bouton le dit. */
+
+Formulaires.effacerAppareil = function () {
+  const partage = Store.mode === "nuage";
+  /* En partage, on GARDE le repère de la tribu : l'appareil reste membre
+     (sa session n'est pas retirée) et l'écran promet qu'on pourra rechoisir
+     son profil. Sans ce repère, l'application oubliait quelle tribu ouvrir :
+     plus de « Continuer sur cet appareil », et l'invitation était refusée
+     puisque l'appareil était déjà inscrit — une impasse (11/09/2026). */
+  const garde = partage ? ["tribu:derniereFamille"] : [];
+  const cles = Object.keys(localStorage)
+    .filter((k) => k.indexOf("tribu:") === 0 && garde.indexOf(k) === -1);
+  const familleLocale = cles.filter((k) => k.indexOf("tribu:donnees:") === 0);
+
+  const detail = partage
+    ? '<div class="bandeau info">☁️<div><b>Votre famille reste sur le serveur.</b><br>' +
+      "Elle n'est pas touchée : ni les tâches, ni les points, ni les recettes. " +
+      "Les autres membres ne verront aucun changement.</div></div>" +
+      "<p>Sur <b>cet appareil</b>, seront effacés :</p><ul>" +
+      "<li>le profil avec lequel vous êtes connecté (il faudra le rechoisir et " +
+      "retaper votre code à 4 chiffres) ;</li>" +
+      "<li>la copie de la famille gardée sur cet appareil pour aller vite " +
+      "(elle sera retéléchargée à la prochaine ouverture) ;</li>" +
+      "<li>vos préférences : thème, dernier onglet, bandeaux masqués ;</li>" +
+      "<li>l'adresse e-mail éventuellement en attente de connexion.</li></ul>" +
+      "<p>Pour revenir, touchez <b>« Continuer sur cet appareil »</b> sur l'écran " +
+      "d'accueil : seul le repère de la tribu est gardé pour cela.</p>"
+    : '<div class="bandeau">🔴<div><b>Attention : il n\'y a pas de copie ailleurs.</b><br>' +
+      "Cette application fonctionne <b>hors partage</b> : ce téléphone est le seul " +
+      "endroit où votre famille existe. Tout sera perdu — membres, tâches, points, " +
+      "menus, courses, recettes — et <b>rien ne pourra être récupéré</b>." +
+      "</div></div>" +
+      (familleLocale.length
+        ? "<p>Famille enregistrée sur cet appareil : <b>" +
+          esc(familleLocale.map((k) => k.replace("tribu:donnees:", "")).join(", ")) +
+          "</b>.</p>"
+        : "<p>Aucune famille n'est enregistrée sur cet appareil.</p>");
+
+  const html = '<form id="f-effacer">' + detail +
+    '<p class="aide">' + cles.length + " élément" + (cles.length > 1 ? "s" : "") +
+    " enregistré" + (cles.length > 1 ? "s" : "") + " par Ma Tribu sur cet appareil. " +
+    "La session de connexion, elle, n'est pas retirée : cet appareil gardera son " +
+    "accès à la famille et n'aura pas besoin d'une nouvelle invitation.</p>" +
+    (partage
+      ? ""
+      : '<label class="champ" style="margin-top:1rem"><span>Recopiez <b>EFFACER</b> pour confirmer</span>' +
+        '<input type="text" name="mot" autocomplete="off" autocapitalize="characters" ' +
+        'spellcheck="false" style="text-align:center;font-weight:700;letter-spacing:.1em"></label>') +
+    '<div class="rangee-btn" style="margin-top:1.2rem">' +
+    '<button type="button" class="btn" data-action="fermer">Annuler</button>' +
+    '<button type="submit" class="btn danger">Effacer</button></div></form>';
+
+  ouvrirFeuille("Effacer les données de cet appareil", html, (f) => {
+    f.onsubmit = async (ev) => {
+      ev.preventDefault();
+      if (!partage) {
+        const mot = String(new FormData(ev.target).get("mot") || "").trim().toUpperCase();
+        if (mot !== "EFFACER") { toast("Recopiez EFFACER pour confirmer"); return; }
+      }
+      ev.target.querySelector('button[type="submit"]').disabled = true;
+      /* La copie locale de la famille (cache Firestore) part AVANT les
+         repères : c'est elle qui contient les données, pas localStorage.
+         Oubliée le 12/09/2026 en activant le cache — l'écran promettait
+         d'effacer et laissait la tribu entière dans IndexedDB. */
+      await Store.purgerCacheLocal();
+      Object.keys(localStorage)
+        .filter((k) => k.indexOf("tribu:") === 0 && garde.indexOf(k) === -1)
+        .forEach((k) => { try { localStorage.removeItem(k); } catch (e) { } });
+      fermerFeuille();
+      toast("Données effacées de cet appareil");
+      /* On repart d'une page vierge : garder l'état en mémoire donnerait une
+         application qui continue d'afficher ce qu'elle vient d'effacer. */
+      setTimeout(() => location.reload(), 700);
+    };
+  });
+};
+
+/* ==================== RÉCUPÉRER LES DONNÉES DE LA FAMILLE ====================
+
+   Le droit à la portabilité : tout ce que Ma Tribu garde sur la famille, dans
+   un fichier qu'une autre application peut relire. On dit ce qu'il contient,
+   et — tout aussi important — ce qu'il ne contient volontairement pas. */
+
+Formulaires.exporterDonnees = async function () {
+  if (!estAdmin()) { toast("Seul un administrateur peut exporter la famille"); return; }
+  if (Store.mode === "nuage") await Store.listerComptes(etat.famille.code);
+  const n = (v) => Array.isArray(v) ? v.length : Object.keys(v || {}).length;
+  const partage = peutPartagerFichier();
+
+  const html = '<div id="f-export">' +
+    "<p>Le fichier contient <b>tout le contenu de " + esc(etat.famille.nom) + "</b> :</p>" +
+    '<ul class="aide" style="margin:.2rem 0 .9rem">' +
+    "<li>" + n(etat.membres) + " membre(s) — prénom, avatar, rôle, adresse e-mail le cas échéant</li>" +
+    "<li>" + n(etat.taches) + " tâche(s), et " + n(etat.etats) + " suivi(s) de tâches</li>" +
+    "<li>" + n(etat.journal) + " ligne(s) de points, les cadeaux et les échanges</li>" +
+    "<li>" + n(etat.recettes) + " recette(s), les menus, les courses, la réserve, les pense-bêtes</li>" +
+    "<li>" + n(Store.comptesFamille) + " compte(s) adulte(s) — adresse e-mail et profil lié</li>" +
+    "<li>les appareils autorisés : type et date d’ajout, sans leurs identifiants</li>" +
+    "<li>les réglages de la famille</li></ul>" +
+    '<div class="bandeau">🔐<div><b>Ce qui n\'y est pas, volontairement :</b> les empreintes ' +
+    "des codes à 4 chiffres, les identifiants des appareils et les index de sécurité. Ils ne " +
+    "vous serviraient à rien, et un fichier d'export finit souvent dans un e-mail : ce serait " +
+    "les offrir au premier venu.</div></div>" +
+    '<p class="aide">Format <b>JSON</b> : un format texte ouvert, que n\'importe quel ' +
+    "logiciel sait relire. Gardez ce fichier en lieu sûr : il contient la vie de la maison.</p>" +
+    '<button class="btn principal plein" data-role="telecharger" style="margin-top:.6rem">⬇️ Télécharger le fichier</button>' +
+    (partage
+      ? '<button class="btn plein" data-role="partager" style="margin-top:.5rem">📤 Partager ou enregistrer…</button>' +
+        '<p class="aide centre" style="margin-top:.4rem">Sur iPhone, préférez « Partager » : ' +
+        "c'est lui qui permet de ranger le fichier dans Fichiers.</p>"
+      : "") +
+    "</div>";
+
+  ouvrirFeuille("Récupérer les données", html, (f) => {
+    f.querySelector('[data-role="telecharger"]').onclick = () => {
+      const fichier = telechargerExport();
+      toast("Fichier prêt : " + fichier.name);
+    };
+    const bp = f.querySelector('[data-role="partager"]');
+    if (bp) bp.onclick = async () => { await partagerExport(); };
+  });
+};
+
+/* ========================= SUPPRIMER LA FAMILLE =========================
+
+   Le droit à l'effacement, pour de bon : tout disparaît du serveur, pour tous
+   les membres. Irréversible, donc :
+   - on propose de récupérer les données AVANT, pas après ;
+   - on fait recopier le nom de la famille : un appui malheureux ne suffit pas ;
+   - on montre chaque étape pendant qu'elle se déroule ;
+   - et si ça s'interrompt, on dit pourquoi et on permet de reprendre. */
+
+Formulaires.supprimerFamille = function () {
+  if (!estAdmin()) { toast("Seul un administrateur peut supprimer la famille"); return; }
+  const nom = etat.famille.nom || "";
+  const code = etat.famille.code;
+  const partage = Store.mode === "nuage";
+  let drapeauPose = false;
+
+  const html = '<form id="f-suppr-famille">' +
+    '<div class="bandeau">🔴<div><b>Tout sera effacé, pour tous les membres, et rien ne pourra ' +
+    "être récupéré.</b><br>Membres, tâches, points et leur historique, cadeaux, menus, courses, " +
+    "réserve, recettes, pense-bêtes" +
+    (partage ? ", invitations en cours, et les recettes que vous avez publiées dans le catalogue commun" : "") +
+    ".</div></div>" +
+    '<button type="button" class="btn plein doux" data-role="exporter" style="margin:.4rem 0 1rem">' +
+    "📦 D'abord, récupérer les données</button>" +
+    '<label class="champ"><span>Pour confirmer, recopiez le nom de la famille : <b>' + esc(nom) + "</b></span>" +
+    '<input type="text" name="nom" autocomplete="off" spellcheck="false"></label>' +
+    '<p class="aide centre" id="suivi-suppr" style="min-height:1.4em;margin:.6rem 0"></p>' +
+    '<div class="rangee-btn" style="margin-top:.6rem">' +
+    '<button type="button" class="btn" data-action="fermer">Annuler</button>' +
+    '<button type="submit" class="btn danger">Supprimer définitivement</button></div></form>';
+
+  ouvrirFeuille("Supprimer la famille", html, (f) => {
+    f.querySelector('[data-role="exporter"]').onclick = () => Formulaires.exporterDonnees();
+    const suivi = f.querySelector("#suivi-suppr");
+    const bouton = f.querySelector('[type="submit"]');
+
+    f.onsubmit = async (ev) => {
+      ev.preventDefault();
+      /* Tolérant sur la forme (majuscules, accents, espaces), intransigeant
+         sur le fond : c'est bien CETTE famille qu'on veut supprimer. */
+      const saisi = pourChercher(String(new FormData(ev.target).get("nom") || "")).trim();
+      if (!saisi || saisi !== pourChercher(nom).trim()) {
+        toast("Recopiez exactement le nom de la famille");
+        return;
+      }
+      bouton.disabled = true;
+      f.querySelector('[data-action="fermer"]').disabled = true;
+      const bilan = await supprimerFamilleEntiere(code, (m) => { suivi.textContent = m; }, drapeauPose);
+      if (bilan.ok) {
+        fermerFeuille();
+        $("#ecran-app").hidden = true;
+        $("#ecran-connexion").hidden = false;
+        Connexion.aller("familleSupprimee", { bilan: bilan });
+        return;
+      }
+      /* Si l'on est allé au-delà du drapeau, il est posé : la prochaine
+         tentative ne doit pas essayer de le réécrire. */
+      if (bilan.etape !== "drapeau") drapeauPose = true;
+      bouton.disabled = false;
+      bouton.textContent = "Reprendre la suppression";
+      f.querySelector('[data-action="fermer"]').disabled = false;
+      suivi.textContent = "⚠️ " + motifEchecSuppression(bilan);
+    };
+  });
 };

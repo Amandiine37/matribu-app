@@ -63,6 +63,122 @@
   --shadow-lg:0 6px 16px rgba(0,0,0,.45), 0 20px 44px rgba(0,0,0,.5);
 }
 
+/* ---------- Palettes ----------
+   La palette change l'identité colorée ; le mode clair/sombre continue de
+   fonctionner pour chacune. Trois blocs par palette, comme pour le mode
+   sombre de base : les valeurs claires, les valeurs sombres du système, et
+   les valeurs sombres choisies à la main. Choisie par appareil. */
+
+/* 🫐 Myrtille */
+:root[data-palette="myrtille"]{
+  --bg:#EFF0F7; --bg-flou:rgba(239,240,247,.80); --surface:#FAFAFE;
+  --surface-flou:rgba(250,250,254,.84); --surface-2:#F0F1F9; --border:#DDDEEC;
+  --accent:#4C5BA8; --accent-strong:#3B4788; --accent-soft:#E5E8F6; --accent-ink:#FFFFFF;
+  --warm:#9B5FA8; --warm-soft:#F3E6F5; --gold:#8A6F1E; --gold-soft:#F6EFD8;
+}
+@media (prefers-color-scheme: dark){
+  :root[data-palette="myrtille"]:not([data-theme="light"]){
+    --bg:#14161F; --bg-flou:rgba(20,22,31,.80); --surface:#1C1F2B;
+    --surface-flou:rgba(28,31,43,.84); --surface-2:#242838; --border:#333850;
+    --accent:#93A5E8; --accent-strong:#B3C0F2; --accent-soft:#242A45; --accent-ink:#101425;
+    --warm:#C89BD8; --warm-soft:#2C2038; --gold:#D9B45C; --gold-soft:#332B18;
+  }
+}
+:root[data-theme="dark"][data-palette="myrtille"]{
+  --bg:#14161F; --bg-flou:rgba(20,22,31,.80); --surface:#1C1F2B;
+  --surface-flou:rgba(28,31,43,.84); --surface-2:#242838; --border:#333850;
+  --accent:#93A5E8; --accent-strong:#B3C0F2; --accent-soft:#242A45; --accent-ink:#101425;
+  --warm:#C89BD8; --warm-soft:#2C2038; --gold:#D9B45C; --gold-soft:#332B18;
+}
+
+/* 🌸 Pivoine */
+:root[data-palette="pivoine"]{
+  --bg:#F7EFF1; --bg-flou:rgba(247,239,241,.80); --surface:#FDF8F9;
+  --surface-flou:rgba(253,248,249,.84); --surface-2:#F6ECEF; --border:#EBD9DF;
+  --accent:#A84D6E; --accent-strong:#8A3A58; --accent-soft:#F6E4EB; --accent-ink:#FFFFFF;
+  --warm:#C4703F; --warm-soft:#F7E7DB; --gold:#9C7314; --gold-soft:#F8EFD5;
+}
+@media (prefers-color-scheme: dark){
+  :root[data-palette="pivoine"]:not([data-theme="light"]){
+    --bg:#1A1416; --bg-flou:rgba(26,20,22,.80); --surface:#241B1F;
+    --surface-flou:rgba(36,27,31,.84); --surface-2:#2D2227; --border:#3D2F35;
+    --accent:#E39BB6; --accent-strong:#F0B9CD; --accent-soft:#38222B; --accent-ink:#1F1014;
+    --warm:#DE9061; --warm-soft:#37271E; --gold:#D9AE4A; --gold-soft:#332D1B;
+  }
+}
+:root[data-theme="dark"][data-palette="pivoine"]{
+  --bg:#1A1416; --bg-flou:rgba(26,20,22,.80); --surface:#241B1F;
+  --surface-flou:rgba(36,27,31,.84); --surface-2:#2D2227; --border:#3D2F35;
+  --accent:#E39BB6; --accent-strong:#F0B9CD; --accent-soft:#38222B; --accent-ink:#1F1014;
+  --warm:#DE9061; --warm-soft:#37271E; --gold:#D9AE4A; --gold-soft:#332D1B;
+}
+
+/* 🌊 Lagon */
+:root[data-palette="lagon"]{
+  --bg:#EAF4F4; --bg-flou:rgba(234,244,244,.80); --surface:#F8FDFD;
+  --surface-flou:rgba(248,253,253,.84); --surface-2:#E6F1F1; --border:#D2E5E5;
+  --accent:#1F7A81; --accent-strong:#125E64; --accent-soft:#DCEEEF; --accent-ink:#FFFFFF;
+  --warm:#D2694F; --warm-soft:#F9E3DC; --gold:#96741B; --gold-soft:#F7EFD6;
+}
+@media (prefers-color-scheme: dark){
+  :root[data-palette="lagon"]:not([data-theme="light"]){
+    --bg:#101A1B; --bg-flou:rgba(16,26,27,.80); --surface:#172426;
+    --surface-flou:rgba(23,36,38,.84); --surface-2:#1E2E30; --border:#2B3E40;
+    --accent:#63C3C8; --accent-strong:#8ADCE0; --accent-soft:#1B3336; --accent-ink:#08191B;
+    --warm:#E8917A; --warm-soft:#35231E; --gold:#D7AE50; --gold-soft:#312B1A;
+  }
+}
+:root[data-theme="dark"][data-palette="lagon"]{
+  --bg:#101A1B; --bg-flou:rgba(16,26,27,.80); --surface:#172426;
+  --surface-flou:rgba(23,36,38,.84); --surface-2:#1E2E30; --border:#2B3E40;
+  --accent:#63C3C8; --accent-strong:#8ADCE0; --accent-soft:#1B3336; --accent-ink:#08191B;
+  --warm:#E8917A; --warm-soft:#35231E; --gold:#D7AE50; --gold-soft:#312B1A;
+}
+
+/* 🍁 Cannelle */
+:root[data-palette="cannelle"]{
+  --bg:#F6EFE3; --bg-flou:rgba(246,239,227,.80); --surface:#FDF9F1;
+  --surface-flou:rgba(253,249,241,.84); --surface-2:#F3EADC; --border:#E6D8C2;
+  --accent:#A8622A; --accent-strong:#8A4E1F; --accent-soft:#F5E6D6; --accent-ink:#FFFFFF;
+  --warm:#B5452F; --warm-soft:#F8E1DA; --gold:#93741A; --gold-soft:#F7EFD4;
+}
+@media (prefers-color-scheme: dark){
+  :root[data-palette="cannelle"]:not([data-theme="light"]){
+    --bg:#1A1611; --bg-flou:rgba(26,22,17,.80); --surface:#241E17;
+    --surface-flou:rgba(36,30,23,.84); --surface-2:#2D261D; --border:#3E3527;
+    --accent:#E0A063; --accent-strong:#F0BC86; --accent-soft:#33261A; --accent-ink:#1C1208;
+    --warm:#E08A72; --warm-soft:#38241F; --gold:#D9B45C; --gold-soft:#332C19;
+  }
+}
+:root[data-theme="dark"][data-palette="cannelle"]{
+  --bg:#1A1611; --bg-flou:rgba(26,22,17,.80); --surface:#241E17;
+  --surface-flou:rgba(36,30,23,.84); --surface-2:#2D261D; --border:#3E3527;
+  --accent:#E0A063; --accent-strong:#F0BC86; --accent-soft:#33261A; --accent-ink:#1C1208;
+  --warm:#E08A72; --warm-soft:#38241F; --gold:#D9B45C; --gold-soft:#332C19;
+}
+
+/* 🖤 Ardoise */
+:root[data-palette="ardoise"]{
+  --bg:#F1F2F3; --bg-flou:rgba(241,242,243,.80); --surface:#FBFBFC;
+  --surface-flou:rgba(251,251,252,.84); --surface-2:#ECEEF0; --border:#DCDFE3;
+  --accent:#3A4A5A; --accent-strong:#2A3745; --accent-soft:#E6EAEE; --accent-ink:#FFFFFF;
+  --warm:#B4562F; --warm-soft:#F6E4DB; --gold:#8A7420; --gold-soft:#F4EFD9;
+}
+@media (prefers-color-scheme: dark){
+  :root[data-palette="ardoise"]:not([data-theme="light"]){
+    --bg:#131517; --bg-flou:rgba(19,21,23,.80); --surface:#1B1E21;
+    --surface-flou:rgba(27,30,33,.84); --surface-2:#23272B; --border:#333940;
+    --accent:#9FB4C8; --accent-strong:#C0D0E0; --accent-soft:#242B33; --accent-ink:#0E1519;
+    --warm:#DE8E6C; --warm-soft:#35241D; --gold:#D3AE55; --gold-soft:#302A19;
+  }
+}
+:root[data-theme="dark"][data-palette="ardoise"]{
+  --bg:#131517; --bg-flou:rgba(19,21,23,.80); --surface:#1B1E21;
+  --surface-flou:rgba(27,30,33,.84); --surface-2:#23272B; --border:#333940;
+  --accent:#9FB4C8; --accent-strong:#C0D0E0; --accent-soft:#242B33; --accent-ink:#0E1519;
+  --warm:#DE8E6C; --warm-soft:#35241D; --gold:#D3AE55; --gold-soft:#302A19;
+}
+
 *{box-sizing:border-box;}
 html,body{height:100%;}
 body{
@@ -203,7 +319,7 @@ label.champ > span{
   display:block;font-size:.77rem;font-weight:600;color:var(--ink-muted);margin-bottom:.3rem;
 }
 input[type=text],input[type=number],input[type=date],input[type=time],
-input[type=url],input[type=password],input[type=tel],select,textarea{
+input[type=url],input[type=password],input[type=tel],input[type=email],select,textarea{
   width:100%;padding:.68rem .8rem;
   background:var(--surface-2);
   border:1px solid var(--border);border-radius:var(--radius-sm);
@@ -217,6 +333,21 @@ textarea{min-height:80px;resize:vertical;}
 .duo{display:flex;gap:.6rem;}
 .duo > *{flex:1;min-width:0;}
 
+/* Le code a 4 chiffres, masque comme un mot de passe, avec un oeil pour le
+   relire. On masque a l'AFFICHAGE seulement : le champ reste un `tel` avec
+   clavier numerique, car passer en `type=password` ramene le clavier de
+   lettres sur iPhone et reveille le gestionnaire de mots de passe — pour un
+   code a quatre chiffres, le remede serait pire que le mal.
+   Un navigateur qui ignore `-webkit-text-security` (vieux Firefox) affiche le
+   code en clair : moins bien, mais rien n'est casse et le clavier reste juste. */
+.champ-pin{position:relative;}
+.champ-pin input{padding-right:2.8rem;}
+.champ-pin input.pin-masque{-webkit-text-security:disc;text-security:disc;}
+.oeil-pin{
+  position:absolute;right:.15rem;top:50%;transform:translateY(-50%);
+  background:none;border:0;padding:.35rem .5rem;font-size:1rem;line-height:1;
+}
+
 .puces{display:flex;flex-wrap:wrap;gap:.4rem;}
 .puce{
   border:1px solid var(--border);background:var(--surface-2);
@@ -229,6 +360,24 @@ textarea{min-height:80px;resize:vertical;}
   background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
   box-shadow:0 2px 6px rgba(44,42,36,.12);
 }
+/* Choix unique (« Pour qui ? », durée, rôle…) : on le dessine comme une
+   liste d'options, pas comme des boutons. Un rond vide devant chaque option,
+   un rond plein et une teinte douce pour celle qui est retenue. Le vert plein
+   reste réservé aux vrais boutons (« Créer l'invitation »), sinon l'option
+   retenue donnait envie de cliquer dessus. Les émojis restent dans le texte. */
+.puces.unique .puce::before{
+  content:"";flex:none;width:.72rem;height:.72rem;border-radius:50%;
+  box-sizing:border-box;border:1.5px solid var(--ink-muted);
+}
+.puces.unique .puce.on{
+  background:var(--accent-soft);border-color:var(--accent);color:var(--accent-strong);
+  box-shadow:none;cursor:default;
+}
+.puces.unique .puce.on::before{
+  border-color:var(--accent);background:var(--accent);
+  box-shadow:inset 0 0 0 2px var(--accent-soft);
+}
+.puces.unique .puce.on:active{transform:none;}
 
 /* Un interrupteur à segments : pour les bascules « soit l'un, soit l'autre ».
    Sans lui, elles ressemblaient aux pastilles de filtre juste en dessous. */
@@ -333,6 +482,7 @@ textarea{min-height:80px;resize:vertical;}
 .voile.on{opacity:1;pointer-events:auto;}
 .feuille{
   width:100%;max-width:540px;max-height:88dvh;overflow-y:auto;
+  overscroll-behavior:contain;   /* arrivé au bout, le geste ne fait pas défiler la page derrière */
   background:var(--surface);
   border-radius:22px 22px 0 0;
   padding:1rem 1.1rem calc(1.3rem + env(safe-area-inset-bottom));
@@ -340,6 +490,16 @@ textarea{min-height:80px;resize:vertical;}
   box-shadow:var(--shadow-lg);
 }
 .voile.on .feuille{transform:none;}
+/* Page figée tant qu'une feuille est ouverte (figerPage / libererPage dans
+   app.js). Sans cela, sur téléphone, la page de derrière défilait sous la
+   feuille : la barre d'adresse se repliait, la hauteur d'écran changeait et
+   la feuille glissait vers le bas, emportant ses boutons (bug du 11/09/2026). */
+/* height:auto : la page garde sa vraie hauteur. Avec la hauteur d'écran
+   (html,body{height:100%}), remontée de N pixels, elle laissait un vide en bas. */
+body.feuille-ouverte{position:fixed;left:0;right:0;height:auto;}
+@media print{
+  body.feuille-ouverte{position:static !important;top:auto !important;overflow:visible !important;}
+}
 .feuille-poignee{
   width:40px;height:4px;border-radius:999px;background:var(--border);
   margin:0 auto .9rem;
@@ -387,10 +547,20 @@ textarea{min-height:80px;resize:vertical;}
 .pin-points{display:flex;gap:.55rem;justify-content:center;margin:1.1rem 0 1.3rem;}
 .pin-point{width:14px;height:14px;border-radius:999px;border:2px solid var(--border);}
 .pin-point.on{background:var(--accent);border-color:var(--accent);}
-.clavier{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem;max-width:270px;margin:0 auto;}
+/* Le clavier du code. Safari sur iPhone (surtout depuis l'icône) le
+   decalait : ses boutons gardent une largeur minimale et un style propres,
+   et des colonnes « 1fr » peuvent alors deborder de la grille. D'ou les
+   colonnes bornees (minmax(0,1fr)), l'apparence neutralisee, les chiffres
+   centres explicitement, et une hauteur minimale si aspect-ratio manque. */
+.clavier{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;
+  width:100%;max-width:270px;margin:0 auto;
+}
 .clavier button{
-  aspect-ratio:1.6;border-radius:var(--radius);border:1px solid var(--border);
-  background:var(--surface);font-size:1.25rem;font-weight:600;
+  -webkit-appearance:none;appearance:none;min-width:0;margin:0;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  aspect-ratio:1.6;min-height:2.9rem;border-radius:var(--radius);border:1px solid var(--border);
+  background:var(--surface);color:var(--ink);font-size:1.25rem;font-weight:600;
 }
 .clavier button.vide{background:none;border:none;box-shadow:none;}
 
@@ -482,6 +652,26 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
   background:var(--surface-2);border:1px dashed var(--border);
   border-radius:var(--radius-sm);padding:.7rem;text-align:center;
 }
+/* Le code avec son icone de copie : l icone contre le texte, pas ailleurs. */
+.code-famille.avec-copie{
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+  padding:.55rem .5rem;
+}
+.code-famille.avec-copie .code-texte{ flex:0 1 auto; word-break:break-all; }
+.btn-copie{
+  flex:0 0 auto;
+  border:1px solid var(--border);background:var(--surface);
+  border-radius:var(--radius-sm);
+  font-size:1rem;line-height:1;
+  padding:.4rem .5rem;cursor:pointer;
+  letter-spacing:0;
+  transition:background .15s, border-color .15s, transform .1s;
+}
+.btn-copie:hover{ background:var(--accent-soft); }
+.btn-copie:active{ transform:scale(.94); }
+.btn-copie.copie{ background:var(--accent-soft); border-color:var(--accent); }
+.btn-copie:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
 .etat-connexion{
   display:inline-flex;align-items:center;gap:.35rem;
   font-size:.72rem;color:var(--ink-muted);

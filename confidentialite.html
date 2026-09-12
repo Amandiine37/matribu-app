@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Confidentialité — Ma Tribu</title>
+<meta name="description" content="Ce que Ma Tribu collecte, où c'est stocké, et comment obtenir la suppression de vos données.">
+<meta name="theme-color" content="#4E7A6A">
+<meta name="robots" content="index, follow">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* Une page de texte, pas un écran d'application : elle doit rester lisible
+     seule, sans le cadre de l'app et sans JavaScript. */
+  .page-texte{
+    max-width:44rem;
+    margin:0 auto;
+    padding:1.6rem 1.1rem 4rem;
+    color:var(--ink);
+  }
+  .page-texte h1{
+    font-family:var(--font-display);
+    font-size:1.8rem;
+    line-height:1.2;
+    margin:.2rem 0 .3rem;
+  }
+  .page-texte h2{
+    font-family:var(--font-display);
+    font-size:1.25rem;
+    margin:2.2rem 0 .6rem;
+    padding-top:1.2rem;
+    border-top:1px solid var(--border);
+  }
+  .page-texte h3{
+    font-size:1rem;
+    margin:1.3rem 0 .35rem;
+  }
+  .page-texte p, .page-texte li{ line-height:1.6; }
+  .page-texte ul{ padding-left:1.2rem; }
+  .page-texte li{ margin:.35rem 0; }
+  .page-texte a{ color:var(--accent-strong); }
+  .date-maj{ color:var(--ink-muted); font-size:.9rem; margin:0 0 1.4rem; }
+  .encadre{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:.9rem 1.1rem;
+    margin:1rem 0;
+    box-shadow:var(--shadow);
+  }
+  .encadre.attention{ background:var(--warm-soft); border-color:var(--warm); }
+  .a-completer{
+    background:var(--gold-soft);
+    border:2px dashed var(--gold);
+    border-radius:var(--radius-sm);
+    padding:.7rem .9rem;
+    margin:.8rem 0;
+    font-weight:600;
+  }
+  .tableau-donnees{ width:100%; border-collapse:collapse; margin:1rem 0; font-size:.95rem; }
+  .tableau-donnees th, .tableau-donnees td{
+    text-align:left; vertical-align:top;
+    padding:.55rem .6rem;
+    border-bottom:1px solid var(--border);
+  }
+  .tableau-donnees th{ color:var(--ink-muted); font-weight:600; }
+  .enveloppe-tableau{ overflow-x:auto; }
+  .retour{ display:inline-block; margin-bottom:1.2rem; color:var(--accent-strong); }
+</style>
+</head>
+<body>
+<main class="page-texte">
+
+<a class="retour" href="./">← Retour à Ma Tribu</a>
+
+<h1>Confidentialité</h1>
+<p class="date-maj">Dernière mise à jour : 10 septembre 2026</p>
+
+<p>Ma Tribu est une application familiale : tâches, courses, menus, pense-bêtes
+et points à échanger contre des cadeaux. Cette page explique, sans détour, ce
+qu'elle enregistre, où, pourquoi, et comment vous pouvez tout faire effacer.</p>
+
+<div class="encadre">
+  <p style="margin:0"><b>L'essentiel en trois phrases.</b> Ma Tribu ne demande
+  ni numéro de téléphone, ni date de naissance, ni photo — et l'adresse e-mail
+  n'est demandée que si vous choisissez ce mode de connexion. Elle ne contient
+  aucune publicité et aucun mouchard de mesure d'audience. Vos données ne sont
+  ni vendues, ni partagées avec qui que ce soit.</p>
+</div>
+
+<h2>Qui est responsable de ces données</h2>
+
+<p>Ma Tribu est un projet personnel, développé et administré par un particulier.
+C'est cette personne qu'il faut contacter pour toute question, ou pour demander
+la suppression de vos données.</p>
+
+<div class="a-completer">
+  À compléter : votre adresse e-mail de contact, celle que vous acceptez de
+  rendre publique sur cette page.
+</div>
+
+<h2>Ce que l'application enregistre</h2>
+
+<div class="enveloppe-tableau">
+<table class="tableau-donnees">
+  <thead>
+    <tr><th>Donnée</th><th>Pourquoi</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Le nom de votre tribu</b> et son repère (un code tiré au sort,
+      du type <code>MAISON-7K3P9Q</code>, sans signification)</td>
+      <td>Le nom, pour vous y retrouver ; le repère, pour que l'application
+      retrouve votre espace. Il n'est pas choisi par vous, justement pour
+      qu'il ne dise rien de vous.</td>
+    </tr>
+    <tr>
+      <td><b>Le prénom et l'avatar</b> (un emoji) de chaque membre</td>
+      <td>Pour savoir qui fait quoi. Rien n'oblige à mettre un vrai prénom.</td>
+    </tr>
+    <tr>
+      <td><b>L'empreinte du code à 4 chiffres</b> de chaque membre</td>
+      <td>Pour vérifier le code sans jamais l'enregistrer. Voir « Sécurité »
+      plus bas.</td>
+    </tr>
+    <tr>
+      <td><b>L'adresse e-mail</b>, uniquement pour les membres dont la famille
+      a choisi la connexion par lien e-mail</td>
+      <td>Pour rattacher un nouveau téléphone à votre profil, sans avoir à
+      demander une invitation. Elle est rangée dans une fiche à part, lisible
+      seulement par vous — une fois l'adresse prouvée par un lien — et par les
+      administrateurs de votre tribu. Les membres qui entrent par code n'en
+      donnent aucune. <b>Qui contrôle votre messagerie peut rattacher un
+      appareil à votre profil</b> : protégez-la.<br>
+      Pour vérifier l'adresse, Firebase crée une fiche de connexion à son nom.
+      L'application la <b>supprime aussitôt</b> le rattachement terminé, même
+      quand l'adresse n'appartient à aucune tribu.</td>
+    </tr>
+    <tr>
+      <td><b>Un identifiant technique anonyme</b> par appareil</td>
+      <td>Pour reconnaître les téléphones autorisés dans la famille. Ce n'est
+      pas un compte : il ne contient ni nom, ni e-mail, ni numéro.</td>
+    </tr>
+    <tr>
+      <td><b>Ce que vous créez</b> : tâches, menus de la semaine, listes de
+      courses, réserve, recettes, pense-bêtes et rendez-vous, points gagnés,
+      cadeaux</td>
+      <td>C'est le contenu de l'application. Il n'est lisible que par les
+      membres de votre tribu.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Ce que l'application n'enregistre pas</h3>
+<ul>
+  <li>Aucun numéro de téléphone, aucune adresse postale.</li>
+  <li>Aucune adresse e-mail pour les membres qui entrent par code — c'est le
+  mode par défaut, et celui des enfants.</li>
+  <li>Aucune photo : les avatars sont des emojis.</li>
+  <li>Aucune position géographique.</li>
+  <li>Aucune publicité, aucun profilage, aucun outil de mesure d'audience.</li>
+</ul>
+
+<h2>Deux cas particuliers</h2>
+
+<h3>Si vous envoyez un signalement ou une idée</h3>
+<p>Le bouton « Signaler un problème ou proposer une idée » transmet : votre
+message, votre prénom, le nom et le repère de votre tribu, la version de
+l'application, la date, et le type d'appareil utilisé, résumé en quelques
+mots (par exemple « iPhone · Safari »). Seul un membre de votre tribu peut
+envoyer un message en son nom. Ces messages ne servent qu'à corriger
+l'application et ne sont lus par personne d'autre. Ils sont conservés
+<b>12 mois au plus</b>, puis effacés — et ils sont effacés <b>immédiatement</b>
+si votre tribu est supprimée.</p>
+
+<h3>Si vous publiez une recette dans le catalogue commun</h3>
+<p>Publier une recette la rend visible par <b>toutes les autres familles</b>.
+Ne part alors que la recette elle-même — nom, ingrédients, déroulé, lien —,
+le <b>nom de votre tribu</b>, et son repère technique, qui ne donne aucun
+accès et sert uniquement à pouvoir la retirer. Aucun prénom, aucun point,
+aucun contenu de votre famille. Vous pouvez retirer à tout moment une recette
+que votre famille a publiée.</p>
+
+<div class="encadre attention">
+  <p style="margin:0">Le catalogue commun n'est pas relu avant publication.
+  Si vous y trouvez un contenu déplacé, signalez-le : il sera retiré.</p>
+</div>
+
+<h2>Où sont stockées ces données</h2>
+
+<p>Les données de votre tribu sont stockées chez <b>Google</b>, sur le service
+Firebase (base Cloud Firestore). Les fichiers de l'application (les pages, le
+code) sont servis par <b>GitHub Pages</b>.</p>
+
+<div class="a-completer">
+  À vérifier et compléter : la région de votre base Firestore. Elle est
+  affichée dans la console Firebase, sur la page « Firestore Database »,
+  à côté du nom de la base — par exemple <i>eur3 (europe-west)</i>. Si la
+  région est hors de l'Union européenne, il faut le dire ici.
+</div>
+
+<h3>Les tiers qui interviennent</h3>
+<ul>
+  <li><b>Google Firebase</b> — héberge la base de données, gère la
+  reconnaissance des appareils, et <b>envoie les e-mails de connexion</b>
+  quand ce mode est utilisé.</li>
+  <li><b>Google reCAPTCHA Enterprise</b> — vérifie que les requêtes viennent
+  bien de l'application et non d'une copie. Pour cela, Google analyse des
+  signaux techniques de votre navigateur et peut déposer un cookie. Voir la
+  <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">politique
+  de confidentialité de Google</a>.</li>
+  <li><b>GitHub</b> — distribue les fichiers de l'application. Comme tout
+  hébergeur, GitHub enregistre les adresses IP des visiteurs dans ses journaux
+  techniques.</li>
+</ul>
+
+<h2>Ce qui est gardé sur votre téléphone</h2>
+
+<p>L'application conserve dans la mémoire de votre navigateur : le repère de
+votre tribu et le profil avec lequel vous êtes connecté, vos préférences
+d'affichage (thème, dernier onglet, bandeaux masqués), et — si vous avez
+demandé un lien de connexion — l'adresse e-mail que vous venez de saisir, le
+temps de terminer la connexion.</p>
+<p>Elle garde aussi <b>une copie du contenu de votre famille</b> (tâches,
+menus, courses, recettes, membres, historique des points), pour s'ouvrir
+vite et rester utilisable sans réseau. Cette copie est celle du serveur : elle
+se met à jour à chaque changement. Elle est effacée quand vous utilisez
+« Effacer les données de cet appareil », « Quitter la tribu sur cet appareil »
+ou « Repartir de zéro », et quand un administrateur retire cet appareil de la
+tribu — dès l'ouverture suivante.</p>
+<p>Rien de tout cela ne sert à vous suivre, et tout disparaît si vous videz les
+données du site.</p>
+
+<h2>Combien de temps</h2>
+
+<p>Les données restent tant que la famille utilise l'application. Il n'y a pas
+d'effacement automatique — une tribu inactive n'est pas supprimée d'elle-même,
+justement pour ne pas faire disparaître les données de quelqu'un qui revient
+après six mois.</p>
+<p>Un administrateur de la tribu peut la supprimer lui-même, à tout moment,
+depuis l'application. Sinon, sur simple demande, elle est supprimée
+entièrement, sans condition ni justification à fournir.</p>
+<p>Seule exception à cette règle : les <b>signalements</b> envoyés avec le
+bouton « Signaler un problème ». Ils sont conservés 12 mois au plus, puis
+effacés, même si la tribu existe toujours.</p>
+
+<h2>Vos droits</h2>
+
+<p>Le règlement européen sur les données personnelles (RGPD) vous donne le droit
+de savoir ce qui est enregistré à votre sujet, de le faire corriger, de le
+récupérer, et de le faire effacer.</p>
+
+<h3>Sans attendre personne</h3>
+<p>Deux de ces droits s'exercent directement dans l'application, par un
+administrateur de la tribu, dans <b>Administration ▸ 🔒 Vos données</b> :</p>
+<ul>
+  <li><b>Récupérer les données</b> : un fichier contenant tout le contenu de la
+  tribu — membres, tâches, points et leur historique, cadeaux, menus, courses,
+  réserve, recettes, pense-bêtes, réglages — dans un format ouvert (JSON) que
+  d'autres logiciels savent relire. Les empreintes des codes à 4 chiffres et les
+  identifiants d'appareils n'y figurent volontairement pas.</li>
+  <li><b>Supprimer la famille</b> : tout est effacé du serveur, pour tous les
+  membres — y compris l'historique des points, les invitations en cours, les
+  recettes publiées dans le catalogue commun et le repère de la tribu. C'est
+  irréversible.</li>
+</ul>
+<p>Une trace peut subsister après une suppression, et il faut la dire : les
+<b>signalements</b> envoyés avec le bouton « Signaler un problème ». Ils
+contiennent un prénom, le nom et le repère de la tribu, et ne peuvent pas encore
+être effacés depuis l'application. Ils le sont à la main, par la personne
+responsable, sur simple demande à l'adresse indiquée en haut de cette page :
+précisez le nom et le repère de votre tribu.</p>
+<p>Pour exercer l'un de ces droits, écrivez à l'adresse indiquée en haut de
+cette page, en précisant le <b>nom de votre tribu</b> et son <b>repère</b> — ce
+sont eux qui permettent de retrouver votre espace. La réponse vous parviendra
+sous un mois.</p>
+<p>Vous pouvez aussi, si une réponse ne vous satisfait pas, saisir la
+<a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener">CNIL</a>.</p>
+
+<h2>Les enfants</h2>
+
+<p>Ma Tribu est faite pour être utilisée par toute la maison, enfants compris.
+Les informations concernant un enfant — son prénom, ses tâches, ses points —
+sont saisies par un parent, qui en reste responsable.</p>
+<p>Un conseil pratique : rien n'oblige à utiliser de vrais prénoms complets.
+Un surnom fonctionne aussi bien, et c'est une donnée de moins.</p>
+
+<h2>Sécurité</h2>
+
+<ul>
+  <li>Tous les échanges passent par une connexion chiffrée (HTTPS).</li>
+  <li>Le <b>code à 4 chiffres n'est jamais enregistré</b>. Seule une empreinte
+  irréversible en est conservée, calculée avec 150 000 tours de l'algorithme
+  PBKDF2-SHA256 et un sel propre à chaque membre.</li>
+  <li>L'accès à une tribu est lié aux <b>appareils</b> invités, pas au repère
+  de la famille : connaître le nom d'une tribu ne donne aucun accès.</li>
+  <li>Les règles d'accès sont appliquées <b>par le serveur</b>, et non par
+  l'application. Elles ne peuvent pas être contournées en modifiant
+  l'application.</li>
+  <li>La clé d'accès au projet est restreinte aux adresses officielles de Ma
+  Tribu, et une vérification supplémentaire (App Check) contrôle que les
+  requêtes viennent bien du site.</li>
+</ul>
+
+<div class="encadre attention">
+  <p style="margin:0"><b>Une limite, dite franchement.</b> Un code à 4 chiffres
+  reste un code à 4 chiffres. Il protège des regards ordinaires, mais quelqu'un
+  qui est <i>déjà membre de votre tribu</i> et qui s'en donne les moyens
+  techniques pourrait retrouver le code d'un autre membre. Ne réutilisez donc
+  jamais ici un code qui protège autre chose — votre téléphone, votre carte
+  bancaire.</p>
+</div>
+
+<h2>Le code de l'application est public</h2>
+
+<p>Ma Tribu est une application qui s'exécute dans votre navigateur : son code
+est, par nature, lisible par quiconque visite le site. Il est publié ouvertement
+plutôt que dissimulé, ce qui permet à n'importe qui de vérifier ce que
+l'application fait de vos données.</p>
+<p>Ce qui protège vos données n'est pas le secret de ce code, mais les règles
+appliquées par le serveur.</p>
+
+<h2>Version d'essai</h2>
+
+<p>Ma Tribu est en version bêta. Des anomalies restent possibles et la forme des
+données peut encore évoluer. Aucune perte n'est souhaitée, mais elle ne peut pas
+être formellement exclue : les données de votre tribu ne devraient pas être les
+seules à exister si elles comptent vraiment pour vous.</p>
+
+<h2>Modifications de cette page</h2>
+
+<p>Si ce qui est décrit ici change, la date en haut de page sera mise à jour.
+Les changements importants seront annoncés dans l'application.</p>
+
+<p style="margin-top:2.5rem"><a class="retour" href="./">← Retour à Ma Tribu</a></p>
+
+</main>
+</body>
+</html>

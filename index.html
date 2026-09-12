@@ -33,6 +33,19 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="styles.css">
 
+<!-- Demarrage : les modules Firebase viennent de gstatic, et app.js ne les
+     demande qu'une fois les 880 Ko de l'application analyses — soit environ
+     400 ms perdus (mesure du 12/09/2026). On ouvre la connexion tout de
+     suite et on precharge les modules, pour que le telechargement se fasse
+     PENDANT l'analyse au lieu de la suivre.
+     `crossorigin` est obligatoire : sans lui le navigateur telechargerait
+     deux fois. En mode local (localhost sans ?nuage=1) ces fichiers ne
+     servent pas : la console peut le signaler, c'est sans consequence. -->
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js" crossorigin>
+
 <!-- Filet de securite : attrape les erreurs AVANT que le reste ne soit chargé,
      pour ne jamais laisser une page blanche sans explication. -->
 <script>
@@ -101,6 +114,7 @@ setTimeout(function () {
     <section class="vue" id="vue-accueil"></section>
     <section class="vue" id="vue-taches"></section>
     <section class="vue" id="vue-courses"></section>
+    <section class="vue" id="vue-reserve"></section>
     <section class="vue" id="vue-menus"></section>
     <section class="vue" id="vue-notes"></section>
     <section class="vue" id="vue-points"></section>
@@ -124,9 +138,14 @@ setTimeout(function () {
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="recettes.js"></script>
-<script src="vues.js"></script>
-<script src="formulaires.js"></script>
-<script src="app.js"></script>
+<!-- `defer` : les quatre fichiers se telechargent EN PARALLELE, et s'executent
+     ensuite dans cet ordre, avant DOMContentLoaded — donc avant le demarrage,
+     qui s'y accroche (app.js). Sans lui, chacun attendait le precedent :
+     recettes.js et ses 343 Ko retardaient a eux seuls l'arrivee de app.js,
+     donc l'ouverture de l'application (mesure du 12/09/2026). -->
+<script src="recettes.js" defer></script>
+<script src="vues.js" defer></script>
+<script src="formulaires.js" defer></script>
+<script src="app.js" defer></script>
 </body>
 </html>
