@@ -27,6 +27,8 @@
      etapes       le deroule, une consigne par ligne. Ecrit pour l'appli :
                   aucune recette n'est recopiee d'un site.
      lien         adresse web de la recette (a vous de la remplir)
+     cuisine      (facultatif) pays ou region d'origine d'un plat de cuisine
+                  du monde : "Mexique", "Vietnam"... Sert au filtre « Du monde ».
      ingredients  liste { nom, qte, unite, rayon }
                   qte = un nombre ecrit en texte ("800", "1,2")
                   unite = "g", "kg", "cl", "l", "boite(s)"... ou "" pour un
@@ -92,7 +94,7 @@ window.RECETTES_DEPART = [
     {nom:"Ail", qte:"1", unite:"tête(s)", rayon:"Fruits & légumes"},
     {nom:"Thym", qte:"1", unite:"branche(s)", rayon:"Fruits & légumes"}]},
 
-  { nom:"Poulet au curry et riz", emoji:"🍛", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Coupez le poulet en morceaux et faites-le dorer dans une sauteuse.", "Ajoutez l'oignon émincé, puis le curry, et remuez pour enrober.", "Versez le lait de coco, laissez mijoter 20 minutes à feu doux.", "Servez sur le riz basmati cuit à part."], lien:"", ingredients:[
+  { nom:"Poulet au curry et riz", cuisine:"Inde", emoji:"🍛", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Coupez le poulet en morceaux et faites-le dorer dans une sauteuse.", "Ajoutez l'oignon émincé, puis le curry, et remuez pour enrober.", "Versez le lait de coco, laissez mijoter 20 minutes à feu doux.", "Servez sur le riz basmati cuit à part."], lien:"", ingredients:[
     {nom:"Blancs de poulet", qte:"600", unite:"g", rayon:"Boucherie"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
     {nom:"Curry en poudre", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
@@ -106,7 +108,7 @@ window.RECETTES_DEPART = [
     {nom:"Oignons", qte:"2", unite:"", rayon:"Fruits & légumes"},
     {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Chili con carne", emoji:"🌶️", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon et le poivron en dés.", "Ajoutez la viande hachée, laissez colorer, puis les tomates concassées.", "Incorporez les haricots rouges égouttés, épicez à votre goût.", "Laissez mijoter 30 minutes à découvert. Servez avec le riz."], lien:"", ingredients:[
+  { nom:"Chili con carne", cuisine:"Mexique", emoji:"🌶️", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon et le poivron en dés.", "Ajoutez la viande hachée, laissez colorer, puis les tomates concassées.", "Incorporez les haricots rouges égouttés, épicez à votre goût.", "Laissez mijoter 30 minutes à découvert. Servez avec le riz."], lien:"", ingredients:[
     {nom:"Bœuf haché", qte:"500", unite:"g", rayon:"Boucherie"},
     {nom:"Haricots rouges", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Tomates concassées", qte:"400", unite:"g", rayon:"Épicerie"},
@@ -114,7 +116,7 @@ window.RECETTES_DEPART = [
     {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Curry de pois chiches", emoji:"🥘", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon haché avec le curry pour libérer les arômes.", "Ajoutez les pois chiches égouttés et le lait de coco.", "Laissez mijoter 15 minutes, puis incorporez les épinards jusqu'à ce qu'ils tombent.", "Servez avec le riz basmati."], lien:"", ingredients:[
+  { nom:"Curry de pois chiches", cuisine:"Inde", emoji:"🥘", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon haché avec le curry pour libérer les arômes.", "Ajoutez les pois chiches égouttés et le lait de coco.", "Laissez mijoter 15 minutes, puis incorporez les épinards jusqu'à ce qu'ils tombent.", "Servez avec le riz basmati."], lien:"", ingredients:[
     {nom:"Pois chiches", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
     {nom:"Épinards", qte:"200", unite:"g", rayon:"Fruits & légumes"},
@@ -122,7 +124,7 @@ window.RECETTES_DEPART = [
     {nom:"Curry en poudre", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Riz basmati", qte:"300", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Dahl de lentilles corail", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon et le gingembre râpé.", "Ajoutez les lentilles rincées, les tomates et le lait de coco.", "Complétez d'eau à hauteur et laissez cuire 20 minutes en remuant de temps en temps.", "Les lentilles doivent se défaire : rectifiez le sel et servez."], lien:"", ingredients:[
+  { nom:"Dahl de lentilles corail", cuisine:"Inde", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon et le gingembre râpé.", "Ajoutez les lentilles rincées, les tomates et le lait de coco.", "Complétez d'eau à hauteur et laissez cuire 20 minutes en remuant de temps en temps.", "Les lentilles doivent se défaire : rectifiez le sel et servez."], lien:"", ingredients:[
     {nom:"Lentilles corail", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
     {nom:"Tomates concassées", qte:"400", unite:"g", rayon:"Épicerie"},
@@ -260,7 +262,7 @@ window.RECETTES_DEPART = [
     {nom:"Frites surgelées", qte:"1", unite:"kg", rayon:"Surgelés"},
     {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"}]},
 
-  { nom:"Couscous poulet-merguez", emoji:"🍛", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites dorer les cuisses de poulet, réservez. Faites griller les merguez à part.", "Faites revenir les légumes coupés en gros morceaux, couvrez d'eau, salez, épicez.", "Remettez le poulet, ajoutez les pois chiches, laissez mijoter 40 minutes.", "Préparez la semoule en la couvrant d'eau bouillante salée, égrenez à la fourchette.", "Servez la semoule, les légumes et les viandes séparément."], lien:"", ingredients:[
+  { nom:"Couscous poulet-merguez", cuisine:"Maghreb", emoji:"🍛", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites dorer les cuisses de poulet, réservez. Faites griller les merguez à part.", "Faites revenir les légumes coupés en gros morceaux, couvrez d'eau, salez, épicez.", "Remettez le poulet, ajoutez les pois chiches, laissez mijoter 40 minutes.", "Préparez la semoule en la couvrant d'eau bouillante salée, égrenez à la fourchette.", "Servez la semoule, les légumes et les viandes séparément."], lien:"", ingredients:[
     {nom:"Cuisses de poulet", qte:"4", unite:"", rayon:"Boucherie"},
     {nom:"Merguez", qte:"8", unite:"", rayon:"Boucherie"},
     {nom:"Semoule", qte:"400", unite:"g", rayon:"Épicerie"},
@@ -268,7 +270,7 @@ window.RECETTES_DEPART = [
     {nom:"Carottes", qte:"3", unite:"", rayon:"Fruits & légumes"},
     {nom:"Pois chiches", qte:"1", unite:"boîte(s)", rayon:"Épicerie"}]},
 
-  { nom:"Tajine de légumes", emoji:"🥘", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon avec le ras el-hanout.", "Ajoutez les carottes et les courgettes en gros tronçons, couvrez d'eau à mi-hauteur.", "Ajoutez les pois chiches et les abricots secs, couvrez et laissez mijoter 35 minutes.", "Servez sur la semoule préparée à part."], lien:"", ingredients:[
+  { nom:"Tajine de légumes", cuisine:"Maroc", emoji:"🥘", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon avec le ras el-hanout.", "Ajoutez les carottes et les courgettes en gros tronçons, couvrez d'eau à mi-hauteur.", "Ajoutez les pois chiches et les abricots secs, couvrez et laissez mijoter 35 minutes.", "Servez sur la semoule préparée à part."], lien:"", ingredients:[
     {nom:"Courgettes", qte:"2", unite:"", rayon:"Fruits & légumes"},
     {nom:"Carottes", qte:"3", unite:"", rayon:"Fruits & légumes"},
     {nom:"Pois chiches", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
@@ -341,7 +343,7 @@ window.RECETTES_DEPART = [
     {nom:"Œuf", qte:"1", unite:"", rayon:"Crèmerie"},
     {nom:"Spaghettis", qte:"400", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Wok de légumes et nouilles", emoji:"🥡", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Coupez les carottes et le poivron en fines lanières.", "Faites chauffer un wok très fort, saisissez les légumes 5 minutes en remuant sans cesse.", "Ajoutez les pousses de soja et la sauce soja.", "Incorporez les nouilles cuites, mélangez 2 minutes et servez aussitôt."], lien:"", ingredients:[
+  { nom:"Wok de légumes et nouilles", cuisine:"Asie", emoji:"🥡", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Coupez les carottes et le poivron en fines lanières.", "Faites chauffer un wok très fort, saisissez les légumes 5 minutes en remuant sans cesse.", "Ajoutez les pousses de soja et la sauce soja.", "Incorporez les nouilles cuites, mélangez 2 minutes et servez aussitôt."], lien:"", ingredients:[
     {nom:"Nouilles chinoises", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
     {nom:"Poivron", qte:"1", unite:"", rayon:"Fruits & légumes"},
@@ -404,7 +406,7 @@ window.RECETTES_DEPART = [
     {nom:"Bouillon de volaille", qte:"60", unite:"cl", rayon:"Épicerie"},
     {nom:"Crème fraîche", qte:"15", unite:"cl", rayon:"Crèmerie"}]},
 
-  { nom:"Gaspacho andalou", emoji:"🥒", type:"leger", vegetarien:true, rapide:true, thermomix:true, saisons:["ete"], etapes:["Coupez grossièrement les tomates, le concombre et le poivron.", "Mixez le tout avec l'ail et l'huile d'olive jusqu'à obtenir une texture bien lisse.", "Salez, poivrez, ajoutez un trait de vinaigre.", "Placez au moins 2 h au réfrigérateur : le gaspacho se sert très frais."], lien:"", ingredients:[
+  { nom:"Gaspacho andalou", cuisine:"Espagne", emoji:"🥒", type:"leger", vegetarien:true, rapide:true, thermomix:true, saisons:["ete"], etapes:["Coupez grossièrement les tomates, le concombre et le poivron.", "Mixez le tout avec l'ail et l'huile d'olive jusqu'à obtenir une texture bien lisse.", "Salez, poivrez, ajoutez un trait de vinaigre.", "Placez au moins 2 h au réfrigérateur : le gaspacho se sert très frais."], lien:"", ingredients:[
     {nom:"Tomates", qte:"800", unite:"g", rayon:"Fruits & légumes"},
     {nom:"Concombre", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Poivron", qte:"1", unite:"", rayon:"Fruits & légumes"},
@@ -467,7 +469,7 @@ window.RECETTES_DEPART = [
     {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
     {nom:"Basilic", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"}]},
 
-  { nom:"Bœuf Stroganoff", emoji:"🥘", type:"consistant", vegetarien:false, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites saisir la viande émincée à feu vif, réservez.", "Faites revenir les oignons puis les champignons dans la même poêle.", "Ajoutez la moutarde et la crème, laissez épaissir 5 minutes.", "Remettez la viande juste pour la réchauffer. Servez sur les tagliatelles."], lien:"", ingredients:[
+  { nom:"Bœuf Stroganoff", cuisine:"Russie", emoji:"🥘", type:"consistant", vegetarien:false, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites saisir la viande émincée à feu vif, réservez.", "Faites revenir les oignons puis les champignons dans la même poêle.", "Ajoutez la moutarde et la crème, laissez épaissir 5 minutes.", "Remettez la viande juste pour la réchauffer. Servez sur les tagliatelles."], lien:"", ingredients:[
     {nom:"Bœuf à mijoter", qte:"700", unite:"g", rayon:"Boucherie"},
     {nom:"Champignons de Paris", qte:"300", unite:"g", rayon:"Fruits & légumes"},
     {nom:"Oignons", qte:"2", unite:"", rayon:"Fruits & légumes"},
@@ -475,7 +477,7 @@ window.RECETTES_DEPART = [
     {nom:"Moutarde", qte:"1", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Tagliatelles", qte:"400", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Poulet tikka masala", emoji:"🍛", type:"consistant", vegetarien:false, rapide:false, thermomix:true, saisons:[], etapes:["Faites mariner le poulet en morceaux dans le yaourt et les épices, 30 minutes si possible.", "Faites-le dorer à feu vif, réservez.", "Faites revenir le gingembre râpé, ajoutez les tomates, laissez réduire 10 minutes.", "Remettez le poulet, mijotez 15 minutes. Servez avec le riz basmati."], lien:"", ingredients:[
+  { nom:"Poulet tikka masala", cuisine:"Inde", emoji:"🍛", type:"consistant", vegetarien:false, rapide:false, thermomix:true, saisons:[], etapes:["Faites mariner le poulet en morceaux dans le yaourt et les épices, 30 minutes si possible.", "Faites-le dorer à feu vif, réservez.", "Faites revenir le gingembre râpé, ajoutez les tomates, laissez réduire 10 minutes.", "Remettez le poulet, mijotez 15 minutes. Servez avec le riz basmati."], lien:"", ingredients:[
     {nom:"Blancs de poulet", qte:"700", unite:"g", rayon:"Boucherie"},
     {nom:"Tomates concassées", qte:"400", unite:"g", rayon:"Épicerie"},
     {nom:"Yaourt nature", qte:"2", unite:"pot(s)", rayon:"Crèmerie"},
@@ -483,7 +485,7 @@ window.RECETTES_DEPART = [
     {nom:"Garam masala", qte:"2", unite:"c. à café", rayon:"Épicerie"},
     {nom:"Riz basmati", qte:"300", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Curry de légumes au lait de coco", emoji:"🥘", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon avec la pâte de curry.", "Ajoutez les carottes en rondelles et le chou-fleur en bouquets.", "Versez le lait de coco, couvrez et laissez cuire 20 minutes.", "Servez avec le riz basmati."], lien:"", ingredients:[
+  { nom:"Curry de légumes au lait de coco", cuisine:"Inde", emoji:"🥘", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon avec la pâte de curry.", "Ajoutez les carottes en rondelles et le chou-fleur en bouquets.", "Versez le lait de coco, couvrez et laissez cuire 20 minutes.", "Servez avec le riz basmati."], lien:"", ingredients:[
     {nom:"Carottes", qte:"3", unite:"", rayon:"Fruits & légumes"},
     {nom:"Chou-fleur", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
@@ -498,7 +500,7 @@ window.RECETTES_DEPART = [
     {nom:"Farine", qte:"40", unite:"g", rayon:"Épicerie"},
     {nom:"Gruyère râpé", qte:"120", unite:"g", rayon:"Crèmerie"}]},
 
-  { nom:"Houmous et légumes croquants", emoji:"🫘", type:"leger", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Égouttez et rincez les pois chiches.", "Mixez-les avec le tahini, le jus de citron, un peu d'eau et de l'huile d'olive.", "Mixez longuement : c'est ce qui rend le houmous crémeux. Salez.", "Servez avec les carottes et le concombre en bâtonnets, et le pain pita tiède."], lien:"", ingredients:[
+  { nom:"Houmous et légumes croquants", cuisine:"Liban", emoji:"🫘", type:"leger", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Égouttez et rincez les pois chiches.", "Mixez-les avec le tahini, le jus de citron, un peu d'eau et de l'huile d'olive.", "Mixez longuement : c'est ce qui rend le houmous crémeux. Salez.", "Servez avec les carottes et le concombre en bâtonnets, et le pain pita tiède."], lien:"", ingredients:[
     {nom:"Pois chiches", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Tahini", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
@@ -561,21 +563,21 @@ window.RECETTES_DEPART = [
     {nom:"Crème liquide", qte:"20", unite:"cl", rayon:"Crèmerie"},
     {nom:"Gruyère râpé", qte:"100", unite:"g", rayon:"Crèmerie"}]},
 
-  { nom:"Nouilles sautées au bœuf", emoji:"🥡", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Émincez le bœuf très finement et faites-le mariner 10 minutes dans la sauce soja.", "Saisissez-le à feu très vif 2 minutes, réservez.", "Faites sauter les carottes et le poivron en lanières.", "Ajoutez les nouilles cuites et la viande, mélangez 2 minutes."], lien:"", ingredients:[
+  { nom:"Nouilles sautées au bœuf", cuisine:"Chine", emoji:"🥡", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Émincez le bœuf très finement et faites-le mariner 10 minutes dans la sauce soja.", "Saisissez-le à feu très vif 2 minutes, réservez.", "Faites sauter les carottes et le poivron en lanières.", "Ajoutez les nouilles cuites et la viande, mélangez 2 minutes."], lien:"", ingredients:[
     {nom:"Bœuf émincé", qte:"500", unite:"g", rayon:"Boucherie"},
     {nom:"Nouilles chinoises", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Poivron", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
     {nom:"Sauce soja", qte:"5", unite:"cl", rayon:"Épicerie"}]},
 
-  { nom:"Riz cantonais", emoji:"🍚", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Utilisez du riz cuit la veille : il tient mieux à la poêle.", "Faites une omelette fine, roulez-la et coupez-la en lanières.", "Faites sauter le riz à feu vif, ajoutez le jambon en dés et les petits pois.", "Incorporez l'omelette et la sauce soja, mélangez et servez."], lien:"", ingredients:[
+  { nom:"Riz cantonais", cuisine:"Chine", emoji:"🍚", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Utilisez du riz cuit la veille : il tient mieux à la poêle.", "Faites une omelette fine, roulez-la et coupez-la en lanières.", "Faites sauter le riz à feu vif, ajoutez le jambon en dés et les petits pois.", "Incorporez l'omelette et la sauce soja, mélangez et servez."], lien:"", ingredients:[
     {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Jambon blanc", qte:"3", unite:"tranche(s)", rayon:"Boucherie"},
     {nom:"Œufs", qte:"3", unite:"", rayon:"Crèmerie"},
     {nom:"Petits pois", qte:"200", unite:"g", rayon:"Surgelés"},
     {nom:"Sauce soja", qte:"3", unite:"c. à soupe", rayon:"Épicerie"}]},
 
-  { nom:"Pad thaï aux crevettes", emoji:"🍜", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites tremper les nouilles de riz 10 minutes dans l'eau chaude.", "Saisissez les crevettes 2 minutes, réservez.", "Brouillez les œufs dans le wok, ajoutez les nouilles égouttées et la sauce.", "Remettez les crevettes, ajoutez les pousses de soja.", "Servez avec les cacahuètes concassées et le citron vert."], lien:"", ingredients:[
+  { nom:"Pad thaï aux crevettes", cuisine:"Thaïlande", emoji:"🍜", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites tremper les nouilles de riz 10 minutes dans l'eau chaude.", "Saisissez les crevettes 2 minutes, réservez.", "Brouillez les œufs dans le wok, ajoutez les nouilles égouttées et la sauce.", "Remettez les crevettes, ajoutez les pousses de soja.", "Servez avec les cacahuètes concassées et le citron vert."], lien:"", ingredients:[
     {nom:"Nouilles de riz", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Crevettes décortiquées", qte:"300", unite:"g", rayon:"Poissonnerie"},
     {nom:"Œufs", qte:"2", unite:"", rayon:"Crèmerie"},
@@ -583,7 +585,7 @@ window.RECETTES_DEPART = [
     {nom:"Cacahuètes", qte:"60", unite:"g", rayon:"Épicerie"},
     {nom:"Citron vert", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
 
-  { nom:"Paella express", emoji:"🥘", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:["ete"], etapes:["Faites dorer les morceaux de poulet dans une grande poêle.", "Ajoutez les poivrons en lanières, puis le riz, remuez pour l'enrober.", "Versez deux fois son volume d'eau chaude avec le safran, laissez cuire 15 minutes sans remuer.", "Ajoutez les fruits de mer et les petits pois, poursuivez 5 minutes.", "Laissez reposer 5 minutes hors du feu avant de servir."], lien:"", ingredients:[
+  { nom:"Paella express", cuisine:"Espagne", emoji:"🥘", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:["ete"], etapes:["Faites dorer les morceaux de poulet dans une grande poêle.", "Ajoutez les poivrons en lanières, puis le riz, remuez pour l'enrober.", "Versez deux fois son volume d'eau chaude avec le safran, laissez cuire 15 minutes sans remuer.", "Ajoutez les fruits de mer et les petits pois, poursuivez 5 minutes.", "Laissez reposer 5 minutes hors du feu avant de servir."], lien:"", ingredients:[
     {nom:"Riz rond", qte:"350", unite:"g", rayon:"Épicerie"},
     {nom:"Cuisses de poulet", qte:"4", unite:"", rayon:"Boucherie"},
     {nom:"Fruits de mer surgelés", qte:"400", unite:"g", rayon:"Surgelés"},
@@ -636,7 +638,7 @@ window.RECETTES_DEPART = [
 
   /* ---------------- Végétarien ---------------- */
 
-  { nom:"Chili sin carne", emoji:"🌶️", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon et le poivron en dés.", "Ajoutez les tomates concassées, les haricots rouges et le maïs égouttés.", "Épicez généreusement et laissez mijoter 25 minutes.", "Servez avec le riz."], lien:"", ingredients:[
+  { nom:"Chili sin carne", cuisine:"Mexique", emoji:"🌶️", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon et le poivron en dés.", "Ajoutez les tomates concassées, les haricots rouges et le maïs égouttés.", "Épicez généreusement et laissez mijoter 25 minutes.", "Servez avec le riz."], lien:"", ingredients:[
     {nom:"Haricots rouges", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Tomates concassées", qte:"400", unite:"g", rayon:"Épicerie"},
     {nom:"Poivron", qte:"1", unite:"", rayon:"Fruits & légumes"},
@@ -681,7 +683,7 @@ window.RECETTES_DEPART = [
     {nom:"Féta", qte:"150", unite:"g", rayon:"Crèmerie"},
     {nom:"Noix", qte:"50", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Tortilla espagnole", emoji:"🍳", type:"consistant", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Coupez les pommes de terre en fines rondelles et l'oignon en lamelles.", "Faites-les cuire doucement dans l'huile 20 minutes, sans les colorer. Égouttez.", "Battez les œufs, mélangez-y les pommes de terre, laissez reposer 10 minutes.", "Cuisez à feu doux 8 minutes, retournez à l'aide d'une assiette, 5 minutes de plus."], lien:"", ingredients:[
+  { nom:"Tortilla espagnole", cuisine:"Espagne", emoji:"🍳", type:"consistant", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Coupez les pommes de terre en fines rondelles et l'oignon en lamelles.", "Faites-les cuire doucement dans l'huile 20 minutes, sans les colorer. Égouttez.", "Battez les œufs, mélangez-y les pommes de terre, laissez reposer 10 minutes.", "Cuisez à feu doux 8 minutes, retournez à l'aide d'une assiette, 5 minutes de plus."], lien:"", ingredients:[
     {nom:"Pommes de terre", qte:"700", unite:"g", rayon:"Fruits & légumes"},
     {nom:"Œufs", qte:"6", unite:"", rayon:"Crèmerie"},
     {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
@@ -763,7 +765,7 @@ window.RECETTES_DEPART = [
     {nom:"Farine", qte:"80", unite:"g", rayon:"Épicerie"},
     {nom:"Chèvre", qte:"1", unite:"bûche(s)", rayon:"Crèmerie"}]},
 
-  { nom:"Soupe thaï au poulet", emoji:"🍜", type:"leger", vegetarien:false, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir le gingembre râpé, ajoutez le poulet en lanières.", "Versez le lait de coco et autant d'eau, laissez frémir 10 minutes.", "Ajoutez les nouilles de riz, poursuivez 4 minutes.", "Hors du feu, ajoutez le jus de citron vert et la coriandre."], lien:"", ingredients:[
+  { nom:"Soupe thaï au poulet", cuisine:"Thaïlande", emoji:"🍜", type:"leger", vegetarien:false, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir le gingembre râpé, ajoutez le poulet en lanières.", "Versez le lait de coco et autant d'eau, laissez frémir 10 minutes.", "Ajoutez les nouilles de riz, poursuivez 4 minutes.", "Hors du feu, ajoutez le jus de citron vert et la coriandre."], lien:"", ingredients:[
     {nom:"Blancs de poulet", qte:"400", unite:"g", rayon:"Boucherie"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
     {nom:"Nouilles de riz", qte:"200", unite:"g", rayon:"Épicerie"},
@@ -771,7 +773,7 @@ window.RECETTES_DEPART = [
     {nom:"Citron vert", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Coriandre", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"}]},
 
-  { nom:"Boulettes de poulet à l'indienne", emoji:"🍖", type:"consistant", vegetarien:false, rapide:true, thermomix:true, saisons:[], etapes:["Mélangez le poulet haché, la chapelure et le curry, formez des boulettes.", "Faites-les dorer de tous côtés.", "Versez le lait de coco, laissez mijoter 15 minutes à feu doux.", "Servez avec le riz basmati."], lien:"", ingredients:[
+  { nom:"Boulettes de poulet à l'indienne", cuisine:"Inde", emoji:"🍖", type:"consistant", vegetarien:false, rapide:true, thermomix:true, saisons:[], etapes:["Mélangez le poulet haché, la chapelure et le curry, formez des boulettes.", "Faites-les dorer de tous côtés.", "Versez le lait de coco, laissez mijoter 15 minutes à feu doux.", "Servez avec le riz basmati."], lien:"", ingredients:[
     {nom:"Poulet haché", qte:"600", unite:"g", rayon:"Boucherie"},
     {nom:"Chapelure", qte:"50", unite:"g", rayon:"Épicerie"},
     {nom:"Lait de coco", qte:"25", unite:"cl", rayon:"Épicerie"},
@@ -784,7 +786,7 @@ window.RECETTES_DEPART = [
     {nom:"Crème liquide", qte:"25", unite:"cl", rayon:"Crèmerie"},
     {nom:"Gruyère râpé", qte:"80", unite:"g", rayon:"Crèmerie"}]},
 
-  { nom:"Cari de poisson créole", emoji:"🐟", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites revenir les oignons avec le curcuma et le gingembre râpé.", "Ajoutez les tomates coupées en morceaux, laissez compoter 10 minutes.", "Posez les filets de poisson dessus, couvrez, laissez cuire 10 minutes à feu doux.", "Servez avec le riz."], lien:"", ingredients:[
+  { nom:"Cari de poisson créole", cuisine:"La Réunion", emoji:"🐟", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites revenir les oignons avec le curcuma et le gingembre râpé.", "Ajoutez les tomates coupées en morceaux, laissez compoter 10 minutes.", "Posez les filets de poisson dessus, couvrez, laissez cuire 10 minutes à feu doux.", "Servez avec le riz."], lien:"", ingredients:[
     {nom:"Filets de poisson blanc", qte:"600", unite:"g", rayon:"Poissonnerie"},
     {nom:"Tomates", qte:"4", unite:"", rayon:"Fruits & légumes"},
     {nom:"Oignons", qte:"2", unite:"", rayon:"Fruits & légumes"},
@@ -806,7 +808,7 @@ window.RECETTES_DEPART = [
     {nom:"Œufs", qte:"3", unite:"", rayon:"Crèmerie"},
     {nom:"Crème fraîche", qte:"20", unite:"cl", rayon:"Crèmerie"}]},
 
-  { nom:"Chakchouka", emoji:"🍳", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:["ete"], etapes:["Faites revenir l'oignon et les poivrons en lanières 15 minutes.", "Ajoutez les tomates en morceaux et le cumin, laissez réduire 15 minutes.", "Creusez quatre puits, cassez un œuf dans chacun.", "Couvrez et laissez cuire 6 minutes : le blanc doit être pris, le jaune coulant.", "Servez à la poêle avec le pain."], lien:"", ingredients:[
+  { nom:"Chakchouka", cuisine:"Maghreb", emoji:"🍳", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:["ete"], etapes:["Faites revenir l'oignon et les poivrons en lanières 15 minutes.", "Ajoutez les tomates en morceaux et le cumin, laissez réduire 15 minutes.", "Creusez quatre puits, cassez un œuf dans chacun.", "Couvrez et laissez cuire 6 minutes : le blanc doit être pris, le jaune coulant.", "Servez à la poêle avec le pain."], lien:"", ingredients:[
     {nom:"Poivrons", qte:"3", unite:"", rayon:"Fruits & légumes"},
     {nom:"Tomates", qte:"5", unite:"", rayon:"Fruits & légumes"},
     {nom:"Œufs", qte:"4", unite:"", rayon:"Crèmerie"},
@@ -862,7 +864,7 @@ window.RECETTES_DEPART = [
     {nom:"Crème fraîche", qte:"15", unite:"cl", rayon:"Crèmerie"},
     {nom:"Pommes de terre", qte:"800", unite:"g", rayon:"Fruits & légumes"}]},
 
-  { nom:"Curry de crevettes au lait de coco", emoji:"🍤", type:"consistant", vegetarien:false, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon émincé et l'ail dans un peu d'huile.", "Ajoutez la pâte de curry et remuez 1 minute pour la réveiller.", "Versez le lait de coco et laissez frémir 5 minutes.", "Ajoutez les crevettes et comptez 3 minutes : au-delà, elles durcissent.", "Servez avec le riz et un peu de coriandre."], lien:"", ingredients:[
+  { nom:"Curry de crevettes au lait de coco", cuisine:"Thaïlande", emoji:"🍤", type:"consistant", vegetarien:false, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon émincé et l'ail dans un peu d'huile.", "Ajoutez la pâte de curry et remuez 1 minute pour la réveiller.", "Versez le lait de coco et laissez frémir 5 minutes.", "Ajoutez les crevettes et comptez 3 minutes : au-delà, elles durcissent.", "Servez avec le riz et un peu de coriandre."], lien:"", ingredients:[
     {nom:"Crevettes décortiquées", qte:"400", unite:"g", rayon:"Poissonnerie"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
     {nom:"Pâte de curry", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
@@ -935,7 +937,7 @@ window.RECETTES_DEPART = [
     {nom:"Farine", qte:"50", unite:"g", rayon:"Épicerie"},
     {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"}]},
 
-  { nom:"Wok de crevettes aux légumes", emoji:"🍤", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Coupez tous les légumes en fines lanières avant d'allumer le feu : après, tout va très vite.", "Saisissez les crevettes 2 minutes à feu vif, réservez-les.", "Faites sauter les légumes 5 minutes : ils doivent rester croquants.", "Remettez les crevettes, ajoutez la sauce soja et le gingembre râpé.", "Servez aussitôt sur des nouilles."], lien:"", ingredients:[
+  { nom:"Wok de crevettes aux légumes", cuisine:"Asie", emoji:"🍤", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Coupez tous les légumes en fines lanières avant d'allumer le feu : après, tout va très vite.", "Saisissez les crevettes 2 minutes à feu vif, réservez-les.", "Faites sauter les légumes 5 minutes : ils doivent rester croquants.", "Remettez les crevettes, ajoutez la sauce soja et le gingembre râpé.", "Servez aussitôt sur des nouilles."], lien:"", ingredients:[
     {nom:"Crevettes décortiquées", qte:"400", unite:"g", rayon:"Poissonnerie"},
     {nom:"Poivrons", qte:"2", unite:"", rayon:"Fruits & légumes"},
     {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
@@ -981,14 +983,14 @@ window.RECETTES_DEPART = [
     {nom:"Ail", qte:"3", unite:"gousse(s)", rayon:"Fruits & légumes"},
     {nom:"Farine", qte:"2", unite:"c. à soupe", rayon:"Épicerie"}]},
 
-  { nom:"Poulet yassa", emoji:"🍗", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites mariner le poulet au moins 2 heures avec le jus de citron, l'oignon émincé et l'huile.", "Égouttez les morceaux et faites-les dorer à la poêle.", "Faites confire les oignons de la marinade 20 minutes à feu doux : ils doivent fondre.", "Remettez le poulet, ajoutez la moutarde et un verre d'eau.", "Laissez mijoter 30 minutes et servez avec du riz."], lien:"", ingredients:[
+  { nom:"Poulet yassa", cuisine:"Sénégal", emoji:"🍗", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites mariner le poulet au moins 2 heures avec le jus de citron, l'oignon émincé et l'huile.", "Égouttez les morceaux et faites-les dorer à la poêle.", "Faites confire les oignons de la marinade 20 minutes à feu doux : ils doivent fondre.", "Remettez le poulet, ajoutez la moutarde et un verre d'eau.", "Laissez mijoter 30 minutes et servez avec du riz."], lien:"", ingredients:[
     {nom:"Cuisses de poulet", qte:"6", unite:"", rayon:"Boucherie"},
     {nom:"Oignons", qte:"6", unite:"", rayon:"Fruits & légumes"},
     {nom:"Citron", qte:"3", unite:"", rayon:"Fruits & légumes"},
     {nom:"Moutarde", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Keftas d'agneau et boulgour", emoji:"🍢", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:["ete"], etapes:["Mélangez la viande hachée avec l'oignon râpé, le cumin, la menthe et un peu de sel.", "Formez des boudins autour de piques, ou de simples boulettes allongées.", "Faites-les griller 4 minutes par face.", "Faites gonfler le boulgour dans le double d'eau bouillante, à couvert.", "Servez avec du yaourt et un filet de citron."], lien:"", ingredients:[
+  { nom:"Keftas d'agneau et boulgour", cuisine:"Maroc", emoji:"🍢", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:["ete"], etapes:["Mélangez la viande hachée avec l'oignon râpé, le cumin, la menthe et un peu de sel.", "Formez des boudins autour de piques, ou de simples boulettes allongées.", "Faites-les griller 4 minutes par face.", "Faites gonfler le boulgour dans le double d'eau bouillante, à couvert.", "Servez avec du yaourt et un filet de citron."], lien:"", ingredients:[
     {nom:"Agneau haché", qte:"600", unite:"g", rayon:"Boucherie"},
     {nom:"Boulgour", qte:"250", unite:"g", rayon:"Épicerie"},
     {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
@@ -996,7 +998,7 @@ window.RECETTES_DEPART = [
     {nom:"Yaourt nature", qte:"2", unite:"pot(s)", rayon:"Crèmerie"},
     {nom:"Cumin", qte:"1", unite:"c. à café", rayon:"Épicerie"}]},
 
-  { nom:"Porc au caramel", emoji:"🥢", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Coupez le porc en cubes réguliers.", "Faites un caramel à sec avec le sucre, puis stoppez-le avec la sauce soja — attention aux projections.", "Ajoutez la viande et enrobez-la bien.", "Versez un verre d'eau, le gingembre râpé, et laissez réduire 20 minutes à feu doux.", "La sauce doit napper la viande. Servez avec du riz."], lien:"", ingredients:[
+  { nom:"Porc au caramel", cuisine:"Vietnam", emoji:"🥢", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Coupez le porc en cubes réguliers.", "Faites un caramel à sec avec le sucre, puis stoppez-le avec la sauce soja — attention aux projections.", "Ajoutez la viande et enrobez-la bien.", "Versez un verre d'eau, le gingembre râpé, et laissez réduire 20 minutes à feu doux.", "La sauce doit napper la viande. Servez avec du riz."], lien:"", ingredients:[
     {nom:"Filet mignon de porc", qte:"700", unite:"g", rayon:"Boucherie"},
     {nom:"Sucre", qte:"4", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Sauce soja", qte:"6", unite:"c. à soupe", rayon:"Épicerie"},
@@ -1023,14 +1025,14 @@ window.RECETTES_DEPART = [
     {nom:"Beurre", qte:"40", unite:"g", rayon:"Crèmerie"},
     {nom:"Pommes de terre", qte:"800", unite:"g", rayon:"Fruits & légumes"}]},
 
-  { nom:"Poulet tandoori et riz", emoji:"🍗", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Mélangez le yaourt, les épices tandoori, l'ail et le jus de citron.", "Entaillez les morceaux de poulet et enrobez-les de cette marinade.", "Laissez reposer au frais au moins 2 heures, une nuit si vous pouvez.", "Enfournez 35 minutes à 200 °C en retournant à mi-cuisson.", "Servez avec du riz basmati et du concombre au yaourt."], lien:"", ingredients:[
+  { nom:"Poulet tandoori et riz", cuisine:"Inde", emoji:"🍗", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Mélangez le yaourt, les épices tandoori, l'ail et le jus de citron.", "Entaillez les morceaux de poulet et enrobez-les de cette marinade.", "Laissez reposer au frais au moins 2 heures, une nuit si vous pouvez.", "Enfournez 35 minutes à 200 °C en retournant à mi-cuisson.", "Servez avec du riz basmati et du concombre au yaourt."], lien:"", ingredients:[
     {nom:"Cuisses de poulet", qte:"6", unite:"", rayon:"Boucherie"},
     {nom:"Yaourt nature", qte:"2", unite:"pot(s)", rayon:"Crèmerie"},
     {nom:"Épices tandoori", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Riz basmati", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Concombre", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
 
-  { nom:"Boulettes suédoises", emoji:"🍽️", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:["automne", "hiver"], etapes:["Trempez la chapelure dans le lait, puis mélangez-la à la viande, l'œuf et l'oignon râpé.", "Assaisonnez de muscade et formez des boulettes de la taille d'une noix.", "Faites-les dorer à la poêle en les roulant, réservez.", "Dans la même poêle, faites un roux avec le beurre et la farine, mouillez de bouillon puis de crème.", "Remettez les boulettes 10 minutes dans la sauce. Servez avec une purée."], lien:"", ingredients:[
+  { nom:"Boulettes suédoises", cuisine:"Suède", emoji:"🍽️", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:["automne", "hiver"], etapes:["Trempez la chapelure dans le lait, puis mélangez-la à la viande, l'œuf et l'oignon râpé.", "Assaisonnez de muscade et formez des boulettes de la taille d'une noix.", "Faites-les dorer à la poêle en les roulant, réservez.", "Dans la même poêle, faites un roux avec le beurre et la farine, mouillez de bouillon puis de crème.", "Remettez les boulettes 10 minutes dans la sauce. Servez avec une purée."], lien:"", ingredients:[
     {nom:"Bœuf haché", qte:"600", unite:"g", rayon:"Boucherie"},
     {nom:"Chapelure", qte:"60", unite:"g", rayon:"Épicerie"},
     {nom:"Crème fraîche", qte:"20", unite:"cl", rayon:"Crèmerie"},
@@ -1044,7 +1046,7 @@ window.RECETTES_DEPART = [
     {nom:"Moutarde", qte:"1", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Tagliatelles", qte:"400", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Bo bun au bœuf", emoji:"🥗", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:["ete"], etapes:["Faites tremper les vermicelles de riz dans l'eau bouillante, puis rincez-les à l'eau froide.", "Faites mariner le bœuf émincé avec la sauce soja, l'ail et un peu de sucre.", "Saisissez-le 2 minutes à feu très vif.", "Dressez dans un grand bol : vermicelles, carotte râpée, concombre, salade, viande.", "Arrosez de sauce nuoc-mâm allongée d'eau et de citron, parsemez de cacahuètes."], lien:"", ingredients:[
+  { nom:"Bo bun au bœuf", cuisine:"Vietnam", emoji:"🥗", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:["ete"], etapes:["Faites tremper les vermicelles de riz dans l'eau bouillante, puis rincez-les à l'eau froide.", "Faites mariner le bœuf émincé avec la sauce soja, l'ail et un peu de sucre.", "Saisissez-le 2 minutes à feu très vif.", "Dressez dans un grand bol : vermicelles, carotte râpée, concombre, salade, viande.", "Arrosez de sauce nuoc-mâm allongée d'eau et de citron, parsemez de cacahuètes."], lien:"", ingredients:[
     {nom:"Bœuf à griller", qte:"500", unite:"g", rayon:"Boucherie"},
     {nom:"Vermicelles de riz", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
@@ -1061,7 +1063,7 @@ window.RECETTES_DEPART = [
     {nom:"Oignon", qte:"2", unite:"", rayon:"Fruits & légumes"},
     {nom:"Farine", qte:"2", unite:"c. à soupe", rayon:"Épicerie"}]},
 
-  { nom:"Rougail saucisse", emoji:"🌶️", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites bouillir les saucisses 10 minutes pour les dessaler, puis coupez-les en tronçons.", "Faites-les dorer à la poêle, réservez.", "Faites revenir les oignons, l'ail, le gingembre et le curcuma.", "Ajoutez les tomates, laissez compoter 10 minutes.", "Remettez les saucisses, couvrez et laissez mijoter 25 minutes. Servez avec du riz."], lien:"", ingredients:[
+  { nom:"Rougail saucisse", cuisine:"La Réunion", emoji:"🌶️", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites bouillir les saucisses 10 minutes pour les dessaler, puis coupez-les en tronçons.", "Faites-les dorer à la poêle, réservez.", "Faites revenir les oignons, l'ail, le gingembre et le curcuma.", "Ajoutez les tomates, laissez compoter 10 minutes.", "Remettez les saucisses, couvrez et laissez mijoter 25 minutes. Servez avec du riz."], lien:"", ingredients:[
     {nom:"Saucisses fumées", qte:"6", unite:"", rayon:"Boucherie"},
     {nom:"Tomates", qte:"6", unite:"", rayon:"Fruits & légumes"},
     {nom:"Oignons", qte:"3", unite:"", rayon:"Fruits & légumes"},
@@ -1090,7 +1092,7 @@ window.RECETTES_DEPART = [
     {nom:"Farine", qte:"80", unite:"g", rayon:"Épicerie"},
     {nom:"Menthe", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"}]},
 
-  { nom:"Curry de patate douce", emoji:"🍠", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le gingembre.", "Ajoutez le curry et remuez 1 minute.", "Versez les patates douces en cubes, le lait de coco et un verre d'eau.", "Laissez mijoter 25 minutes à couvert.", "Ajoutez les épinards en fin de cuisson, juste le temps qu'ils tombent."], lien:"", ingredients:[
+  { nom:"Curry de patate douce", cuisine:"Inde", emoji:"🍠", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le gingembre.", "Ajoutez le curry et remuez 1 minute.", "Versez les patates douces en cubes, le lait de coco et un verre d'eau.", "Laissez mijoter 25 minutes à couvert.", "Ajoutez les épinards en fin de cuisson, juste le temps qu'ils tombent."], lien:"", ingredients:[
     {nom:"Patates douces", qte:"800", unite:"g", rayon:"Fruits & légumes"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
     {nom:"Épinards", qte:"200", unite:"g", rayon:"Fruits & légumes"},
@@ -1098,14 +1100,14 @@ window.RECETTES_DEPART = [
     {nom:"Gingembre", qte:"1", unite:"morceau(x)", rayon:"Fruits & légumes"},
     {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Soupe de nouilles au miso", emoji:"🍜", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:["automne", "hiver"], etapes:["Portez un litre d'eau à frémissement — surtout pas à ébullition.", "Délayez le miso dans une louche d'eau chaude avant de l'incorporer.", "Ajoutez les champignons émincés et le tofu en dés, laissez 5 minutes.", "Faites cuire les nouilles à part et répartissez-les dans les bols.", "Versez le bouillon dessus, parsemez d'oignons nouveaux."], lien:"", ingredients:[
+  { nom:"Soupe de nouilles au miso", cuisine:"Japon", emoji:"🍜", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:["automne", "hiver"], etapes:["Portez un litre d'eau à frémissement — surtout pas à ébullition.", "Délayez le miso dans une louche d'eau chaude avant de l'incorporer.", "Ajoutez les champignons émincés et le tofu en dés, laissez 5 minutes.", "Faites cuire les nouilles à part et répartissez-les dans les bols.", "Versez le bouillon dessus, parsemez d'oignons nouveaux."], lien:"", ingredients:[
     {nom:"Pâte de miso", qte:"3", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Nouilles chinoises", qte:"250", unite:"g", rayon:"Épicerie"},
     {nom:"Tofu", qte:"200", unite:"g", rayon:"Crèmerie"},
     {nom:"Champignons de Paris", qte:"200", unite:"g", rayon:"Fruits & légumes"},
     {nom:"Oignons nouveaux", qte:"3", unite:"", rayon:"Fruits & légumes"}]},
 
-  { nom:"Riz sauté aux légumes et œuf", emoji:"🍚", type:"consistant", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Utilisez du riz cuit la veille : froid, il ne colle pas.", "Faites sauter les légumes en petits dés 5 minutes à feu vif.", "Poussez-les sur le côté, versez les œufs battus et brouillez-les rapidement.", "Ajoutez le riz, mélangez tout et laissez-le grésiller sans trop remuer.", "Assaisonnez de sauce soja et servez aussitôt."], lien:"", ingredients:[
+  { nom:"Riz sauté aux légumes et œuf", cuisine:"Chine", emoji:"🍚", type:"consistant", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Utilisez du riz cuit la veille : froid, il ne colle pas.", "Faites sauter les légumes en petits dés 5 minutes à feu vif.", "Poussez-les sur le côté, versez les œufs battus et brouillez-les rapidement.", "Ajoutez le riz, mélangez tout et laissez-le grésiller sans trop remuer.", "Assaisonnez de sauce soja et servez aussitôt."], lien:"", ingredients:[
     {nom:"Riz", qte:"400", unite:"g", rayon:"Épicerie"},
     {nom:"Œufs", qte:"3", unite:"", rayon:"Crèmerie"},
     {nom:"Petits pois", qte:"200", unite:"g", rayon:"Surgelés"},
@@ -1141,7 +1143,7 @@ window.RECETTES_DEPART = [
     {nom:"Vinaigre balsamique", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Miel", qte:"1", unite:"c. à café", rayon:"Épicerie"}]},
 
-  { nom:"Taboulé libanais", emoji:"🌿", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:["ete"], etapes:["Faites gonfler le boulgour 15 minutes dans un peu d'eau tiède.", "Hachez le persil très finement : dans ce taboulé-là, c'est l'ingrédient principal.", "Coupez les tomates en tout petits dés et ciselez les oignons nouveaux.", "Mélangez le tout avec le jus de citron et l'huile d'olive.", "Laissez reposer 1 heure au frais avant de servir."], lien:"", ingredients:[
+  { nom:"Taboulé libanais", cuisine:"Liban", emoji:"🌿", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:["ete"], etapes:["Faites gonfler le boulgour 15 minutes dans un peu d'eau tiède.", "Hachez le persil très finement : dans ce taboulé-là, c'est l'ingrédient principal.", "Coupez les tomates en tout petits dés et ciselez les oignons nouveaux.", "Mélangez le tout avec le jus de citron et l'huile d'olive.", "Laissez reposer 1 heure au frais avant de servir."], lien:"", ingredients:[
     {nom:"Boulgour", qte:"150", unite:"g", rayon:"Épicerie"},
     {nom:"Persil", qte:"3", unite:"bouquet(s)", rayon:"Fruits & légumes"},
     {nom:"Tomates", qte:"4", unite:"", rayon:"Fruits & légumes"},
@@ -1149,7 +1151,7 @@ window.RECETTES_DEPART = [
     {nom:"Citron", qte:"2", unite:"", rayon:"Fruits & légumes"},
     {nom:"Menthe", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"}]},
 
-  { nom:"Salade grecque", emoji:"🥗", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:["ete"], etapes:["Coupez les tomates en quartiers généreux et le concombre en demi-rondelles épaisses.", "Émincez l'oignon rouge très finement.", "Ajoutez les olives et la féta en gros cubes — surtout pas émiettée.", "Arrosez d'huile d'olive et d'origan, ne salez qu'à peine : la féta l'est déjà.", "Servez sans laisser attendre, avec du pain."], lien:"", ingredients:[
+  { nom:"Salade grecque", cuisine:"Grèce", emoji:"🥗", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:["ete"], etapes:["Coupez les tomates en quartiers généreux et le concombre en demi-rondelles épaisses.", "Émincez l'oignon rouge très finement.", "Ajoutez les olives et la féta en gros cubes — surtout pas émiettée.", "Arrosez d'huile d'olive et d'origan, ne salez qu'à peine : la féta l'est déjà.", "Servez sans laisser attendre, avec du pain."], lien:"", ingredients:[
     {nom:"Tomates", qte:"5", unite:"", rayon:"Fruits & légumes"},
     {nom:"Concombre", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Féta", qte:"200", unite:"g", rayon:"Crèmerie"},
@@ -1192,7 +1194,7 @@ window.RECETTES_DEPART = [
     {nom:"Ail", qte:"1", unite:"gousse(s)", rayon:"Fruits & légumes"},
     {nom:"Fromage râpé", qte:"100", unite:"g", rayon:"Crèmerie"}]},
 
-  { nom:"Curry de chou-fleur et pois chiches", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon avec les épices jusqu'à ce que ça sente bon.", "Ajoutez le chou-fleur en bouquets et enrobez-le bien.", "Versez les tomates et les pois chiches égouttés.", "Laissez mijoter 25 minutes à couvert.", "Terminez avec un filet de citron et de la coriandre."], lien:"", ingredients:[
+  { nom:"Curry de chou-fleur et pois chiches", cuisine:"Inde", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon avec les épices jusqu'à ce que ça sente bon.", "Ajoutez le chou-fleur en bouquets et enrobez-le bien.", "Versez les tomates et les pois chiches égouttés.", "Laissez mijoter 25 minutes à couvert.", "Terminez avec un filet de citron et de la coriandre."], lien:"", ingredients:[
     {nom:"Chou-fleur", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Pois chiches", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Tomates concassées", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
@@ -1293,7 +1295,7 @@ window.RECETTES_DEPART = [
     {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Pommes de terre", qte:"700", unite:"g", rayon:"Fruits & légumes"}]},
 
-  { nom:"Curry de poisson aux épinards", emoji:"🐟", type:"consistant", vegetarien:false, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon avec le curry et le gingembre râpé.", "Versez le lait de coco et laissez frémir 5 minutes.", "Ajoutez les épinards et laissez-les tomber.", "Déposez les morceaux de poisson et couvrez : 8 minutes à feu doux suffisent.", "Ne remuez pas, le poisson se déferait. Servez avec du riz."], lien:"", ingredients:[
+  { nom:"Curry de poisson aux épinards", cuisine:"Inde", emoji:"🐟", type:"consistant", vegetarien:false, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon avec le curry et le gingembre râpé.", "Versez le lait de coco et laissez frémir 5 minutes.", "Ajoutez les épinards et laissez-les tomber.", "Déposez les morceaux de poisson et couvrez : 8 minutes à feu doux suffisent.", "Ne remuez pas, le poisson se déferait. Servez avec du riz."], lien:"", ingredients:[
     {nom:"Filets de poisson blanc", qte:"600", unite:"g", rayon:"Poissonnerie"},
     {nom:"Épinards", qte:"400", unite:"g", rayon:"Fruits & légumes"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
@@ -1321,7 +1323,7 @@ window.RECETTES_DEPART = [
     {nom:"Pommes de terre", qte:"600", unite:"g", rayon:"Fruits & légumes"},
     {nom:"Poivrons", qte:"2", unite:"", rayon:"Fruits & légumes"}]},
 
-  { nom:"Tacos de poisson", emoji:"🌮", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:["ete"], etapes:["Coupez le poisson en gros morceaux, enrobez-les de paprika et de cumin.", "Faites-les saisir 4 minutes à la poêle.", "Râpez le chou et mélangez-le au yaourt et au jus de citron vert.", "Réchauffez les tortillas 30 secondes à la poêle sèche.", "Garnissez de poisson, de salade de chou et d'avocat."], lien:"", ingredients:[
+  { nom:"Tacos de poisson", cuisine:"Mexique", emoji:"🌮", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:["ete"], etapes:["Coupez le poisson en gros morceaux, enrobez-les de paprika et de cumin.", "Faites-les saisir 4 minutes à la poêle.", "Râpez le chou et mélangez-le au yaourt et au jus de citron vert.", "Réchauffez les tortillas 30 secondes à la poêle sèche.", "Garnissez de poisson, de salade de chou et d'avocat."], lien:"", ingredients:[
     {nom:"Filets de poisson blanc", qte:"600", unite:"g", rayon:"Poissonnerie"},
     {nom:"Tortillas", qte:"8", unite:"", rayon:"Boulangerie"},
     {nom:"Chou blanc", qte:"1", unite:"", rayon:"Fruits & légumes"},
@@ -1329,7 +1331,7 @@ window.RECETTES_DEPART = [
     {nom:"Yaourt nature", qte:"2", unite:"pot(s)", rayon:"Crèmerie"},
     {nom:"Citron vert", qte:"2", unite:"", rayon:"Fruits & légumes"}]},
 
-  { nom:"Soupe thaï aux crevettes", emoji:"🍜", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:["automne", "hiver"], etapes:["Faites frémir le lait de coco avec la citronnelle, le gingembre et la pâte de curry.", "Laissez infuser 10 minutes à feu doux, sans bouillir.", "Ajoutez les champignons émincés, puis les crevettes.", "Comptez 3 minutes : elles sont cuites dès qu'elles rosissent.", "Terminez au jus de citron vert et à la coriandre."], lien:"", ingredients:[
+  { nom:"Soupe thaï aux crevettes", cuisine:"Thaïlande", emoji:"🍜", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:["automne", "hiver"], etapes:["Faites frémir le lait de coco avec la citronnelle, le gingembre et la pâte de curry.", "Laissez infuser 10 minutes à feu doux, sans bouillir.", "Ajoutez les champignons émincés, puis les crevettes.", "Comptez 3 minutes : elles sont cuites dès qu'elles rosissent.", "Terminez au jus de citron vert et à la coriandre."], lien:"", ingredients:[
     {nom:"Crevettes décortiquées", qte:"400", unite:"g", rayon:"Poissonnerie"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
     {nom:"Champignons de Paris", qte:"200", unite:"g", rayon:"Fruits & légumes"},
@@ -1406,7 +1408,7 @@ window.RECETTES_DEPART = [
     {nom:"Semoule", qte:"250", unite:"g", rayon:"Épicerie"},
     {nom:"Yaourt nature", qte:"2", unite:"pot(s)", rayon:"Crèmerie"}]},
 
-  { nom:"Curry de poulet aux épinards", emoji:"🍗", type:"consistant", vegetarien:false, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon, l'ail et le gingembre.", "Ajoutez le curry et le poulet en morceaux, enrobez bien.", "Versez le yaourt cuillère par cuillère en remuant : versé d'un coup, il tranche.", "Laissez mijoter 25 minutes à couvert.", "Ajoutez les épinards en fin de cuisson, juste le temps qu'ils fondent."], lien:"", ingredients:[
+  { nom:"Curry de poulet aux épinards", cuisine:"Inde", emoji:"🍗", type:"consistant", vegetarien:false, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon, l'ail et le gingembre.", "Ajoutez le curry et le poulet en morceaux, enrobez bien.", "Versez le yaourt cuillère par cuillère en remuant : versé d'un coup, il tranche.", "Laissez mijoter 25 minutes à couvert.", "Ajoutez les épinards en fin de cuisson, juste le temps qu'ils fondent."], lien:"", ingredients:[
     {nom:"Blancs de poulet", qte:"600", unite:"g", rayon:"Boucherie"},
     {nom:"Épinards", qte:"400", unite:"g", rayon:"Fruits & légumes"},
     {nom:"Yaourt nature", qte:"3", unite:"pot(s)", rayon:"Crèmerie"},
@@ -1465,7 +1467,7 @@ window.RECETTES_DEPART = [
     {nom:"Fécule de maïs", qte:"1", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Poulet mafé", emoji:"🥜", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites dorer les morceaux de poulet, réservez.", "Faites revenir l'oignon, ajoutez le concentré de tomate et laissez cuire 2 minutes.", "Délayez la pâte d'arachide dans un peu d'eau chaude et versez-la.", "Remettez le poulet, ajoutez les carottes et le chou en gros morceaux.", "Laissez mijoter 45 minutes : la sauce doit épaissir et prendre une couleur ambrée."], lien:"", ingredients:[
+  { nom:"Poulet mafé", cuisine:"Afrique de l'Ouest", emoji:"🥜", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites dorer les morceaux de poulet, réservez.", "Faites revenir l'oignon, ajoutez le concentré de tomate et laissez cuire 2 minutes.", "Délayez la pâte d'arachide dans un peu d'eau chaude et versez-la.", "Remettez le poulet, ajoutez les carottes et le chou en gros morceaux.", "Laissez mijoter 45 minutes : la sauce doit épaissir et prendre une couleur ambrée."], lien:"", ingredients:[
     {nom:"Cuisses de poulet", qte:"6", unite:"", rayon:"Boucherie"},
     {nom:"Pâte d'arachide", qte:"150", unite:"g", rayon:"Épicerie"},
     {nom:"Concentré de tomate", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
@@ -1473,7 +1475,7 @@ window.RECETTES_DEPART = [
     {nom:"Chou blanc", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Colombo de porc", emoji:"🌶️", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites mariner le porc 1 heure avec l'ail, le citron vert et la poudre à colombo.", "Faites-le dorer, ajoutez l'oignon et les courgettes en cubes.", "Versez de l'eau à hauteur et laissez mijoter 45 minutes.", "Ajoutez les pommes de terre 20 minutes avant la fin.", "Rectifiez au citron vert juste avant de servir."], lien:"", ingredients:[
+  { nom:"Colombo de porc", cuisine:"Antilles", emoji:"🌶️", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites mariner le porc 1 heure avec l'ail, le citron vert et la poudre à colombo.", "Faites-le dorer, ajoutez l'oignon et les courgettes en cubes.", "Versez de l'eau à hauteur et laissez mijoter 45 minutes.", "Ajoutez les pommes de terre 20 minutes avant la fin.", "Rectifiez au citron vert juste avant de servir."], lien:"", ingredients:[
     {nom:"Sauté de porc", qte:"800", unite:"g", rayon:"Boucherie"},
     {nom:"Poudre à colombo", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Courgettes", qte:"2", unite:"", rayon:"Fruits & légumes"},
@@ -1503,7 +1505,7 @@ window.RECETTES_DEPART = [
     {nom:"Poireaux", qte:"3", unite:"", rayon:"Fruits & légumes"},
     {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
 
-  { nom:"Curry rouge de bœuf", emoji:"🌶️", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites chauffer la pâte de curry dans un peu de lait de coco jusqu'à ce qu'elle parfume.", "Ajoutez le bœuf en cubes et enrobez-le.", "Versez le reste du lait de coco et laissez mijoter 1 h 15 à petit feu.", "Ajoutez les haricots verts et les poivrons 15 minutes avant la fin.", "Terminez au basilic thaï et servez avec du riz."], lien:"", ingredients:[
+  { nom:"Curry rouge de bœuf", cuisine:"Thaïlande", emoji:"🌶️", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites chauffer la pâte de curry dans un peu de lait de coco jusqu'à ce qu'elle parfume.", "Ajoutez le bœuf en cubes et enrobez-le.", "Versez le reste du lait de coco et laissez mijoter 1 h 15 à petit feu.", "Ajoutez les haricots verts et les poivrons 15 minutes avant la fin.", "Terminez au basilic thaï et servez avec du riz."], lien:"", ingredients:[
     {nom:"Bœuf à mijoter", qte:"800", unite:"g", rayon:"Boucherie"},
     {nom:"Pâte de curry rouge", qte:"3", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
@@ -1525,7 +1527,7 @@ window.RECETTES_DEPART = [
     {nom:"Vin blanc", qte:"10", unite:"cl", rayon:"Boissons"},
     {nom:"Haricots verts", qte:"600", unite:"g", rayon:"Fruits & légumes"}]},
 
-  { nom:"Wok de porc aux légumes croquants", emoji:"🥢", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Taillez tous les légumes en fines lanières avant d'allumer le feu.", "Saisissez le porc émincé 3 minutes à feu vif, réservez.", "Faites sauter les légumes 4 minutes : ils doivent rester fermes.", "Remettez la viande, ajoutez la sauce soja et le gingembre.", "Servez immédiatement, sur du riz ou des nouilles."], lien:"", ingredients:[
+  { nom:"Wok de porc aux légumes croquants", cuisine:"Asie", emoji:"🥢", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Taillez tous les légumes en fines lanières avant d'allumer le feu.", "Saisissez le porc émincé 3 minutes à feu vif, réservez.", "Faites sauter les légumes 4 minutes : ils doivent rester fermes.", "Remettez la viande, ajoutez la sauce soja et le gingembre.", "Servez immédiatement, sur du riz ou des nouilles."], lien:"", ingredients:[
     {nom:"Filet mignon de porc", qte:"500", unite:"g", rayon:"Boucherie"},
     {nom:"Brocoli", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
@@ -1621,7 +1623,7 @@ window.RECETTES_DEPART = [
     {nom:"Moutarde", qte:"1", unite:"c. à café", rayon:"Épicerie"},
     {nom:"Huile d'olive", qte:"3", unite:"c. à soupe", rayon:"Épicerie"}]},
 
-  { nom:"Wok de tofu aux légumes", emoji:"🥢", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Pressez le tofu 15 minutes entre deux assiettes pour en chasser l'eau.", "Coupez-le en cubes et faites-le dorer sur toutes les faces.", "Réservez-le, faites sauter les légumes 5 minutes à feu vif.", "Remettez le tofu, ajoutez la sauce soja et le sésame.", "Servez sur du riz, aussitôt."], lien:"", ingredients:[
+  { nom:"Wok de tofu aux légumes", cuisine:"Asie", emoji:"🥢", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Pressez le tofu 15 minutes entre deux assiettes pour en chasser l'eau.", "Coupez-le en cubes et faites-le dorer sur toutes les faces.", "Réservez-le, faites sauter les légumes 5 minutes à feu vif.", "Remettez le tofu, ajoutez la sauce soja et le sésame.", "Servez sur du riz, aussitôt."], lien:"", ingredients:[
     {nom:"Tofu", qte:"400", unite:"g", rayon:"Crèmerie"},
     {nom:"Brocoli", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
@@ -1629,7 +1631,7 @@ window.RECETTES_DEPART = [
     {nom:"Graines de sésame", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Chili de patate douce", emoji:"🍠", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le poivron.", "Ajoutez les épices et remuez 1 minute pour les réveiller.", "Versez les patates douces en cubes, les tomates et les haricots rouges.", "Laissez mijoter 30 minutes à couvert.", "Servez avec du riz, du yaourt et de la coriandre."], lien:"", ingredients:[
+  { nom:"Chili de patate douce", cuisine:"Mexique", emoji:"🍠", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le poivron.", "Ajoutez les épices et remuez 1 minute pour les réveiller.", "Versez les patates douces en cubes, les tomates et les haricots rouges.", "Laissez mijoter 30 minutes à couvert.", "Servez avec du riz, du yaourt et de la coriandre."], lien:"", ingredients:[
     {nom:"Patates douces", qte:"600", unite:"g", rayon:"Fruits & légumes"},
     {nom:"Haricots rouges", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Tomates concassées", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
@@ -1708,7 +1710,7 @@ window.RECETTES_DEPART = [
     {nom:"Concombre", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Yaourt nature", qte:"2", unite:"pot(s)", rayon:"Crèmerie"}]},
 
-  { nom:"Curry de haricots rouges", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon, l'ail et le gingembre.", "Ajoutez les épices et laissez-les crépiter quelques secondes.", "Versez les tomates et les haricots rouges égouttés.", "Laissez mijoter 20 minutes en écrasant un peu de haricots pour épaissir.", "Servez avec du riz et de la coriandre."], lien:"", ingredients:[
+  { nom:"Curry de haricots rouges", cuisine:"Inde", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Faites revenir l'oignon, l'ail et le gingembre.", "Ajoutez les épices et laissez-les crépiter quelques secondes.", "Versez les tomates et les haricots rouges égouttés.", "Laissez mijoter 20 minutes en écrasant un peu de haricots pour épaissir.", "Servez avec du riz et de la coriandre."], lien:"", ingredients:[
     {nom:"Haricots rouges", qte:"3", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Tomates concassées", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Gingembre", qte:"1", unite:"morceau(x)", rayon:"Fruits & légumes"},
@@ -1716,7 +1718,7 @@ window.RECETTES_DEPART = [
     {nom:"Coriandre", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
     {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
 
-  { nom:"Nouilles soba aux légumes", emoji:"🍜", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Faites cuire les nouilles de sarrasin 5 minutes, rincez-les à l'eau froide.", "Faites sauter les légumes en julienne 4 minutes à feu vif.", "Mélangez sauce soja, vinaigre de riz, sésame et un peu de miel.", "Réunissez nouilles, légumes et sauce hors du feu.", "Parsemez de graines de sésame et d'oignons nouveaux."], lien:"", ingredients:[
+  { nom:"Nouilles soba aux légumes", cuisine:"Japon", emoji:"🍜", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Faites cuire les nouilles de sarrasin 5 minutes, rincez-les à l'eau froide.", "Faites sauter les légumes en julienne 4 minutes à feu vif.", "Mélangez sauce soja, vinaigre de riz, sésame et un peu de miel.", "Réunissez nouilles, légumes et sauce hors du feu.", "Parsemez de graines de sésame et d'oignons nouveaux."], lien:"", ingredients:[
     {nom:"Nouilles de sarrasin", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
     {nom:"Chou blanc", qte:"1", unite:"", rayon:"Fruits & légumes"},
@@ -1745,7 +1747,7 @@ window.RECETTES_DEPART = [
     {nom:"Pois chiches", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Huile d'olive", qte:"3", unite:"c. à soupe", rayon:"Épicerie"}]},
 
-  { nom:"Tofu mariné au sésame", emoji:"🍚", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Pressez le tofu puis coupez-le en cubes.", "Laissez-le mariner 30 minutes dans la sauce soja, le sésame, l'ail et le gingembre.", "Faites-le dorer à la poêle sans le remuer trop souvent.", "Versez le reste de marinade en fin de cuisson pour le laquer.", "Servez sur du riz avec des oignons nouveaux."], lien:"", ingredients:[
+  { nom:"Tofu mariné au sésame", cuisine:"Asie", emoji:"🍚", type:"leger", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Pressez le tofu puis coupez-le en cubes.", "Laissez-le mariner 30 minutes dans la sauce soja, le sésame, l'ail et le gingembre.", "Faites-le dorer à la poêle sans le remuer trop souvent.", "Versez le reste de marinade en fin de cuisson pour le laquer.", "Servez sur du riz avec des oignons nouveaux."], lien:"", ingredients:[
     {nom:"Tofu", qte:"400", unite:"g", rayon:"Crèmerie"},
     {nom:"Sauce soja", qte:"5", unite:"c. à soupe", rayon:"Épicerie"},
     {nom:"Graines de sésame", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
@@ -2295,7 +2297,7 @@ window.RECETTES_DEPART = [
     {nom:"Pavés de saumon", qte:"300", unite:"g", rayon:"Poissonnerie"},
     {nom:"Œufs", qte:"3", unite:"", rayon:"Crèmerie"},
     {nom:"Crème fraîche", qte:"20", unite:"cl", rayon:"Crèmerie"}]},
-  { nom:"Poke bowl au saumon", emoji:"🥗", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites cuire le riz et laissez-le tiédir.", "Coupez le saumon très frais en cubes réguliers, au couteau.", "Faites-le mariner 15 minutes dans le jus de citron vert et l'huile de sésame.", "Dressez le riz au fond du bol, puis chaque garniture par secteurs : avocat, concombre, edamames.", "Parsemez de graines de sésame et servez frais."], lien:"", ingredients:[
+  { nom:"Poke bowl au saumon", cuisine:"Hawaï", emoji:"🥗", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites cuire le riz et laissez-le tiédir.", "Coupez le saumon très frais en cubes réguliers, au couteau.", "Faites-le mariner 15 minutes dans le jus de citron vert et l'huile de sésame.", "Dressez le riz au fond du bol, puis chaque garniture par secteurs : avocat, concombre, edamames.", "Parsemez de graines de sésame et servez frais."], lien:"", ingredients:[
     {nom:"Saumon très frais", qte:"400", unite:"g", rayon:"Poissonnerie"},
     {nom:"Riz", qte:"250", unite:"g", rayon:"Épicerie"},
     {nom:"Avocats", qte:"2", unite:"", rayon:"Fruits & légumes"},
@@ -2367,7 +2369,7 @@ window.RECETTES_DEPART = [
     {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Huile d'olive", qte:"3", unite:"c. à soupe", rayon:"Épicerie"}]},
 
-  { nom:"Curry de lentilles au potiron", emoji:"🎃", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le gingembre avec le curcuma et le cumin.", "Ajoutez le potiron en cubes et les lentilles corail rincées.", "Versez le lait de coco et deux verres d'eau.", "Laissez mijoter 25 minutes : les lentilles corail se défont et lient le plat.", "Terminez au citron vert et à la coriandre."], lien:"", ingredients:[
+  { nom:"Curry de lentilles au potiron", cuisine:"Inde", emoji:"🎃", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le gingembre avec le curcuma et le cumin.", "Ajoutez le potiron en cubes et les lentilles corail rincées.", "Versez le lait de coco et deux verres d'eau.", "Laissez mijoter 25 minutes : les lentilles corail se défont et lient le plat.", "Terminez au citron vert et à la coriandre."], lien:"", ingredients:[
     {nom:"Lentilles corail", qte:"250", unite:"g", rayon:"Épicerie"},
     {nom:"Potiron", qte:"600", unite:"g", rayon:"Fruits & légumes"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
@@ -2383,7 +2385,7 @@ window.RECETTES_DEPART = [
     {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Cumin", qte:"1", unite:"c. à café", rayon:"Épicerie"}]},
 
-  { nom:"Chili de quinoa aux haricots noirs", emoji:"🌶️", type:"consistant", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Faites revenir oignon, poivron et ail.", "Ajoutez le cumin et le paprika, remuez pour les réveiller.", "Versez le quinoa rincé, les haricots noirs et les tomates.", "Ajoutez un verre d'eau et laissez mijoter 20 minutes à couvert.", "Servez avec de l'avocat en dés et de la coriandre."], lien:"", ingredients:[
+  { nom:"Chili de quinoa aux haricots noirs", cuisine:"Mexique", emoji:"🌶️", type:"consistant", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Faites revenir oignon, poivron et ail.", "Ajoutez le cumin et le paprika, remuez pour les réveiller.", "Versez le quinoa rincé, les haricots noirs et les tomates.", "Ajoutez un verre d'eau et laissez mijoter 20 minutes à couvert.", "Servez avec de l'avocat en dés et de la coriandre."], lien:"", ingredients:[
     {nom:"Quinoa", qte:"200", unite:"g", rayon:"Épicerie"},
     {nom:"Haricots noirs", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Tomates concassées", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
@@ -2431,7 +2433,7 @@ window.RECETTES_DEPART = [
     {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
     {nom:"Huile d'olive", qte:"2", unite:"c. à soupe", rayon:"Épicerie"}]},
 
-  { nom:"Curry de pois cassés au lait de coco", emoji:"🍛", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Rincez les pois cassés, inutile de les tremper.", "Faites revenir oignon, ail et gingembre avec le curcuma.", "Ajoutez les pois cassés et trois fois leur volume d'eau.", "Laissez cuire 45 minutes, jusqu'à ce qu'ils se défassent.", "Incorporez le lait de coco et le citron vert en fin de cuisson."], lien:"", ingredients:[
+  { nom:"Curry de pois cassés au lait de coco", cuisine:"Inde", emoji:"🍛", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Rincez les pois cassés, inutile de les tremper.", "Faites revenir oignon, ail et gingembre avec le curcuma.", "Ajoutez les pois cassés et trois fois leur volume d'eau.", "Laissez cuire 45 minutes, jusqu'à ce qu'ils se défassent.", "Incorporez le lait de coco et le citron vert en fin de cuisson."], lien:"", ingredients:[
     {nom:"Pois cassés", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Lait de coco", qte:"20", unite:"cl", rayon:"Épicerie"},
     {nom:"Gingembre", qte:"1", unite:"morceau(x)", rayon:"Fruits & légumes"},
@@ -2439,7 +2441,7 @@ window.RECETTES_DEPART = [
     {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Citron vert", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
 
-  { nom:"Salade de vermicelles de riz aux crevettes", emoji:"🍜", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:["ete"], etapes:["Faites tremper les vermicelles de riz 5 minutes dans l'eau bouillante, rincez à l'eau froide.", "Râpez la carotte, taillez le concombre en bâtonnets.", "Ajoutez les crevettes, la menthe et la coriandre.", "Assaisonnez de citron vert, d'un peu de sucre et d'huile — pas de sauce salée, le citron suffit.", "Parsemez de cacahuètes concassées."], lien:"", ingredients:[
+  { nom:"Salade de vermicelles de riz aux crevettes", cuisine:"Vietnam", emoji:"🍜", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:["ete"], etapes:["Faites tremper les vermicelles de riz 5 minutes dans l'eau bouillante, rincez à l'eau froide.", "Râpez la carotte, taillez le concombre en bâtonnets.", "Ajoutez les crevettes, la menthe et la coriandre.", "Assaisonnez de citron vert, d'un peu de sucre et d'huile — pas de sauce salée, le citron suffit.", "Parsemez de cacahuètes concassées."], lien:"", ingredients:[
     {nom:"Vermicelles de riz", qte:"250", unite:"g", rayon:"Épicerie"},
     {nom:"Crevettes décortiquées", qte:"300", unite:"g", rayon:"Poissonnerie"},
     {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
@@ -2576,7 +2578,7 @@ window.RECETTES_DEPART = [
     {nom:"Paprika", qte:"1", unite:"cuillère(s) à café", rayon:"Épicerie"},
     {nom:"Huile d'olive", qte:"3", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
 
-  { nom:"Dahl de lentilles corail aux épinards", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le gingembre râpé dans un peu d'huile.", "Ajoutez le curcuma, laissez chauffer quelques secondes pour réveiller les épices.", "Versez les lentilles corail rincées, les tomates concassées et le lait de coco, complétez d'un peu d'eau.", "Laissez mijoter 20 minutes à découvert : les lentilles doivent se défaire.", "Ajoutez les épinards en fin de cuisson, le temps qu'ils tombent. Servez avec le riz complet."], lien:"", ingredients:[
+  { nom:"Dahl de lentilles corail aux épinards", cuisine:"Inde", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le gingembre râpé dans un peu d'huile.", "Ajoutez le curcuma, laissez chauffer quelques secondes pour réveiller les épices.", "Versez les lentilles corail rincées, les tomates concassées et le lait de coco, complétez d'un peu d'eau.", "Laissez mijoter 20 minutes à découvert : les lentilles doivent se défaire.", "Ajoutez les épinards en fin de cuisson, le temps qu'ils tombent. Servez avec le riz complet."], lien:"", ingredients:[
     {nom:"Lentilles corail", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Riz complet", qte:"250", unite:"g", rayon:"Épicerie"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
@@ -2621,7 +2623,7 @@ window.RECETTES_DEPART = [
     {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
     {nom:"Huile d'olive", qte:"3", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
 
-  { nom:"Chili de haricots rouges et quinoa", emoji:"🌶️", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le poivron coupé en dés.", "Ajoutez le cumin et le paprika, mélangez quelques secondes.", "Versez les tomates concassées, les haricots rouges égouttés et le quinoa avec un verre d'eau.", "Laissez mijoter 25 minutes à couvert, en remuant de temps en temps : le quinoa cuit dans la sauce.", "Ajoutez le maïs en fin de cuisson et rectifiez l'assaisonnement."], lien:"", ingredients:[
+  { nom:"Chili de haricots rouges et quinoa", cuisine:"Mexique", emoji:"🌶️", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon, l'ail et le poivron coupé en dés.", "Ajoutez le cumin et le paprika, mélangez quelques secondes.", "Versez les tomates concassées, les haricots rouges égouttés et le quinoa avec un verre d'eau.", "Laissez mijoter 25 minutes à couvert, en remuant de temps en temps : le quinoa cuit dans la sauce.", "Ajoutez le maïs en fin de cuisson et rectifiez l'assaisonnement."], lien:"", ingredients:[
     {nom:"Haricots rouges", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Quinoa", qte:"200", unite:"g", rayon:"Épicerie"},
     {nom:"Tomates concassées", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
@@ -2632,7 +2634,7 @@ window.RECETTES_DEPART = [
     {nom:"Cumin", qte:"1", unite:"cuillère(s) à café", rayon:"Épicerie"},
     {nom:"Paprika", qte:"1", unite:"cuillère(s) à café", rayon:"Épicerie"}]},
 
-  { nom:"Wok de poulet, riz complet et légumes croquants", emoji:"🥢", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites cuire le riz complet à l'eau salée : il demande une bonne vingtaine de minutes.", "Coupez le poulet en lanières fines et les légumes en bâtonnets réguliers.", "Saisissez le poulet dans un wok très chaud, réservez-le dès qu'il est doré.", "Faites sauter les légumes deux à trois minutes seulement, ils doivent rester croquants.", "Remettez le poulet, ajoutez le gingembre râpé et la sauce soja, mélangez et servez sur le riz."], lien:"", ingredients:[
+  { nom:"Wok de poulet, riz complet et légumes croquants", cuisine:"Asie", emoji:"🥢", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites cuire le riz complet à l'eau salée : il demande une bonne vingtaine de minutes.", "Coupez le poulet en lanières fines et les légumes en bâtonnets réguliers.", "Saisissez le poulet dans un wok très chaud, réservez-le dès qu'il est doré.", "Faites sauter les légumes deux à trois minutes seulement, ils doivent rester croquants.", "Remettez le poulet, ajoutez le gingembre râpé et la sauce soja, mélangez et servez sur le riz."], lien:"", ingredients:[
     {nom:"Blancs de poulet", qte:"600", unite:"g", rayon:"Boucherie"},
     {nom:"Riz complet", qte:"300", unite:"g", rayon:"Épicerie"},
     {nom:"Carottes", qte:"3", unite:"", rayon:"Fruits & légumes"},
@@ -2668,7 +2670,7 @@ window.RECETTES_DEPART = [
     {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
     {nom:"Huile d'olive", qte:"2", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
 
-  { nom:"Curry de pois chiches au lait de coco et riz complet", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Lancez la cuisson du riz complet, qui sera le plus long.", "Faites revenir l'oignon et l'ail, ajoutez la pâte de curry et laissez-la chauffer une minute.", "Versez les pois chiches égouttés, les tomates concassées et le lait de coco.", "Laissez mijoter 15 minutes à découvert pour que la sauce épaississe.", "Ajoutez les épinards en fin de cuisson et un trait de jus de citron avant de servir."], lien:"", ingredients:[
+  { nom:"Curry de pois chiches au lait de coco et riz complet", cuisine:"Inde", emoji:"🍛", type:"consistant", vegetarien:true, rapide:true, thermomix:true, saisons:[], etapes:["Lancez la cuisson du riz complet, qui sera le plus long.", "Faites revenir l'oignon et l'ail, ajoutez la pâte de curry et laissez-la chauffer une minute.", "Versez les pois chiches égouttés, les tomates concassées et le lait de coco.", "Laissez mijoter 15 minutes à découvert pour que la sauce épaississe.", "Ajoutez les épinards en fin de cuisson et un trait de jus de citron avant de servir."], lien:"", ingredients:[
     {nom:"Pois chiches", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
     {nom:"Riz complet", qte:"250", unite:"g", rayon:"Épicerie"},
     {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
@@ -2686,5 +2688,343 @@ window.RECETTES_DEPART = [
     {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
     {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
-    {nom:"Huile d'olive", qte:"2", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]}
+    {nom:"Huile d'olive", qte:"2", unite:"cuillère(s) à soupe", rayon:"Épicerie"}]},
+
+  /* --- Cuisine du monde (ajoutée le 11 septembre 2026) --------------------
+     Écrites pour l'appli, comme le reste du cahier : aucune recette recopiée. */
+
+  { nom:"Nems au porc", cuisine:"Vietnam", emoji:"🥢", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Réhydratez les champignons noirs et les vermicelles 10 minutes dans l'eau chaude, égouttez et coupez-les aux ciseaux.", "Mélangez le porc haché, les carottes râpées, l'oignon haché, l'œuf, les champignons, les vermicelles et le nuoc-mâm.", "Trempez une galette de riz quelques secondes dans l'eau tiède, posez une cuillerée de farce, rabattez les côtés et roulez bien serré.", "Faites cuire les nems dans l'huile chaude 8 à 10 minutes en les retournant, jusqu'à ce qu'ils soient bien dorés.", "Servez chaud avec la salade et la menthe : chacun enroule son nem dans une feuille avant de le tremper dans la sauce."], lien:"", ingredients:[
+    {nom:"Galettes de riz", qte:"1", unite:"paquet(s)", rayon:"Épicerie"},
+    {nom:"Porc haché", qte:"400", unite:"g", rayon:"Boucherie"},
+    {nom:"Vermicelles de riz", qte:"50", unite:"g", rayon:"Épicerie"},
+    {nom:"Champignons noirs séchés", qte:"20", unite:"g", rayon:"Épicerie"},
+    {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Œufs", qte:"1", unite:"", rayon:"Crèmerie"},
+    {nom:"Nuoc-mâm", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Salade verte", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Menthe", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Huile de friture", qte:"50", unite:"cl", rayon:"Épicerie"}]},
+
+  { nom:"Rouleaux de printemps aux crevettes", cuisine:"Vietnam", emoji:"🥬", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:["printemps", "ete"], etapes:["Faites tremper les vermicelles 5 minutes dans l'eau bouillante, puis rincez-les à l'eau froide.", "Taillez les carottes en fins bâtonnets, lavez la salade, la menthe et la coriandre.", "Trempez une galette de riz quelques secondes dans l'eau tiède et posez-la sur un torchon humide.", "Garnissez d'une feuille de salade, de vermicelles, de carottes, d'herbes et de crevettes, puis roulez serré en rabattant les côtés.", "Servez frais avec la sauce hoisin allongée d'un peu d'eau."], lien:"", ingredients:[
+    {nom:"Galettes de riz", qte:"1", unite:"paquet(s)", rayon:"Épicerie"},
+    {nom:"Crevettes cuites décortiquées", qte:"300", unite:"g", rayon:"Poissonnerie"},
+    {nom:"Vermicelles de riz", qte:"100", unite:"g", rayon:"Épicerie"},
+    {nom:"Salade verte", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Menthe", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Coriandre", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Sauce hoisin", qte:"4", unite:"c. à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Phở au bœuf", cuisine:"Vietnam", emoji:"🍜", type:"leger", vegetarien:false, rapide:false, thermomix:false, saisons:["automne", "hiver"], etapes:["Faites griller à sec l'oignon coupé en deux et le gingembre en tranches, jusqu'à ce qu'ils noircissent un peu.", "Ajoutez-les au bouillon avec l'anis étoilé et la cannelle, laissez frémir 30 minutes, puis relevez de nuoc-mâm.", "Cuisez les nouilles de riz selon le paquet et répartissez-les dans de grands bols.", "Déposez dessus le bœuf tranché très finement, cru : le bouillon brûlant le cuira.", "Versez le bouillon filtré, puis chacun ajoute germes de soja, herbes et citron vert à son goût."], lien:"", ingredients:[
+    {nom:"Rumsteck", qte:"400", unite:"g", rayon:"Boucherie"},
+    {nom:"Bouillon de bœuf", qte:"2", unite:"l", rayon:"Épicerie"},
+    {nom:"Nouilles de riz plates", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Gingembre", qte:"1", unite:"morceau(x)", rayon:"Fruits & légumes"},
+    {nom:"Anis étoilé", qte:"3", unite:"", rayon:"Épicerie"},
+    {nom:"Cannelle", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Nuoc-mâm", qte:"3", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Germes de soja", qte:"200", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Coriandre", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Citron vert", qte:"2", unite:"", rayon:"Fruits & légumes"}]},
+
+  { nom:"Bœuf lok lak", cuisine:"Cambodge", emoji:"🥩", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Coupez le bœuf en cubes et faites-le mariner 10 minutes avec la sauce soja, la sauce huître, le sucre et l'ail écrasé.", "Lancez la cuisson du riz.", "Faites sauter la viande 3 à 4 minutes à feu très vif dans un wok : elle doit rester tendre.", "Préparez une petite sauce avec le jus des citrons verts, du sel et beaucoup de poivre.", "Servez la viande sur un lit de salade, avec les tomates, l'oignon rouge émincé, le riz et la sauce à part."], lien:"", ingredients:[
+    {nom:"Rumsteck", qte:"600", unite:"g", rayon:"Boucherie"},
+    {nom:"Sauce soja", qte:"3", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Sauce huître", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Sucre", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Salade verte", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Tomates", qte:"3", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon rouge", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Citron vert", qte:"2", unite:"", rayon:"Fruits & légumes"}]},
+
+  { nom:"Porc aigre-doux", cuisine:"Chine", emoji:"🍍", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Coupez le porc en cubes, roulez-les dans la maïzena et faites-les dorer à la poêle, puis réservez.", "Faites revenir l'oignon et les poivrons en morceaux 5 minutes : ils doivent rester croquants.", "Mélangez le ketchup, le vinaigre, la sauce soja, le sucre et le jus de l'ananas.", "Remettez la viande, ajoutez l'ananas et la sauce, laissez épaissir 5 minutes en remuant.", "Servez avec le riz."], lien:"", ingredients:[
+    {nom:"Filet mignon de porc", qte:"600", unite:"g", rayon:"Boucherie"},
+    {nom:"Ananas en morceaux", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Poivrons", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ketchup", qte:"3", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Vinaigre de riz", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Sauce soja", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Sucre", qte:"1", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Maïzena", qte:"3", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
+
+  { nom:"Gyozas poêlés au porc", cuisine:"Japon", emoji:"🥟", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Hachez finement le chou, salez-le et pressez-le au bout de 10 minutes pour en retirer l'eau.", "Mélangez le porc, le chou, le gingembre râpé, la ciboulette ciselée, un peu de sauce soja et d'huile de sésame.", "Déposez une cuillerée de farce au centre de chaque galette, mouillez le bord et refermez en pinçant.", "Faites dorer le dessous des gyozas à la poêle, versez un fond d'eau, couvrez et laissez cuire 6 minutes à la vapeur.", "Servez avec une sauce faite de sauce soja et d'un trait de vinaigre de riz."], lien:"", ingredients:[
+    {nom:"Galettes pour gyozas", qte:"1", unite:"paquet(s)", rayon:"Surgelés"},
+    {nom:"Porc haché", qte:"400", unite:"g", rayon:"Boucherie"},
+    {nom:"Chou chinois", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Gingembre", qte:"1", unite:"morceau(x)", rayon:"Fruits & légumes"},
+    {nom:"Ciboulette", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Sauce soja", qte:"4", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Huile de sésame", qte:"1", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Vinaigre de riz", qte:"1", unite:"c. à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Ramen au porc et œuf mollet", cuisine:"Japon", emoji:"🍜", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:["automne", "hiver"], etapes:["Faites dorer la poitrine de porc en tranches, arrosez de sauce soja et laissez caraméliser.", "Cuisez les œufs 6 minutes dans l'eau bouillante, plongez-les dans l'eau froide et écalez-les.", "Faites chauffer le bouillon avec les champignons émincés, puis délayez-y la pâte miso hors du feu.", "Cuisez les nouilles à part et répartissez-les dans les bols.", "Versez le bouillon, disposez le porc, les œufs coupés en deux, le maïs et les cives émincées."], lien:"", ingredients:[
+    {nom:"Nouilles ramen", qte:"400", unite:"g", rayon:"Épicerie"},
+    {nom:"Poitrine de porc", qte:"400", unite:"g", rayon:"Boucherie"},
+    {nom:"Bouillon de volaille", qte:"1,5", unite:"l", rayon:"Épicerie"},
+    {nom:"Œufs", qte:"4", unite:"", rayon:"Crèmerie"},
+    {nom:"Pâte miso", qte:"3", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Sauce soja", qte:"3", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Champignons de Paris", qte:"200", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Maïs", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Cives", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"}]},
+
+  { nom:"Poulet teriyaki et riz", cuisine:"Japon", emoji:"🍗", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Lancez la cuisson du riz et celle du brocoli en petits bouquets à la vapeur.", "Mélangez la sauce soja, le miel, le gingembre râpé et l'ail écrasé.", "Faites dorer le poulet en morceaux 6 à 8 minutes à la poêle.", "Versez la sauce et laissez-la réduire 3 minutes en enrobant bien le poulet : elle doit devenir brillante.", "Parsemez de graines de sésame et servez avec le riz et le brocoli."], lien:"", ingredients:[
+    {nom:"Cuisses de poulet désossées", qte:"600", unite:"g", rayon:"Boucherie"},
+    {nom:"Sauce soja", qte:"5", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Miel", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Gingembre", qte:"1", unite:"morceau(x)", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"1", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Graines de sésame", qte:"1", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Brocoli", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
+
+  { nom:"Chirashi au saumon", cuisine:"Japon", emoji:"🍣", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Rincez le riz jusqu'à ce que l'eau soit claire, puis cuisez-le.", "Assaisonnez le riz tiède avec le vinaigre de riz, une pincée de sucre et de sel.", "Coupez le saumon en fines tranches, l'avocat et le concombre en dés, les radis en rondelles.", "Répartissez le riz dans des bols et disposez joliment le saumon et les légumes par-dessus.", "Parsemez de sésame et servez avec la sauce soja."], lien:"", ingredients:[
+    {nom:"Saumon qualité sashimi", qte:"400", unite:"g", rayon:"Poissonnerie"},
+    {nom:"Riz rond", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Vinaigre de riz", qte:"3", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Avocats", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Concombre", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Radis", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Graines de sésame", qte:"1", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Sauce soja", qte:"4", unite:"c. à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Poulet katsu curry", cuisine:"Japon", emoji:"🍛", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites revenir l'oignon, les carottes et les pommes de terre en dés, saupoudrez de curry et d'une cuillerée de farine.", "Mouillez d'eau à hauteur et laissez mijoter 20 minutes : la sauce doit épaissir.", "Passez les escalopes dans la farine, l'œuf battu puis la chapelure panko.", "Faites-les dorer 4 minutes de chaque côté dans un fond d'huile, puis coupez-les en lanières.", "Servez le poulet croustillant sur le riz, nappé de sauce au curry."], lien:"", ingredients:[
+    {nom:"Escalopes de poulet", qte:"4", unite:"", rayon:"Boucherie"},
+    {nom:"Chapelure panko", qte:"100", unite:"g", rayon:"Épicerie"},
+    {nom:"Œufs", qte:"2", unite:"", rayon:"Crèmerie"},
+    {nom:"Farine", qte:"80", unite:"g", rayon:"Épicerie"},
+    {nom:"Pommes de terre", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Curry en poudre", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
+
+  { nom:"Bibimbap au bœuf", cuisine:"Corée", emoji:"🍚", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites mariner le bœuf en fines lamelles avec la sauce soja et l'huile de sésame.", "Faites sauter séparément, chacun 2 à 3 minutes : les épinards, les carottes en bâtonnets, la courgette, les germes de soja.", "Saisissez le bœuf à feu vif, puis faites cuire les œufs au plat.", "Répartissez le riz dans les bols et disposez chaque garniture en petit tas, l'œuf au centre.", "Servez avec la pâte de piment : chacun mélange tout avant de manger."], lien:"", ingredients:[
+    {nom:"Rumsteck", qte:"400", unite:"g", rayon:"Boucherie"},
+    {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Œufs", qte:"4", unite:"", rayon:"Crèmerie"},
+    {nom:"Épinards frais", qte:"200", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Carottes", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Courgette", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Germes de soja", qte:"150", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Sauce soja", qte:"4", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Huile de sésame", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Pâte de piment gochujang", qte:"2", unite:"c. à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Curry vert de poulet", cuisine:"Thaïlande", emoji:"🍛", type:"consistant", vegetarien:false, rapide:true, thermomix:true, saisons:[], etapes:["Lancez la cuisson du riz.", "Faites revenir la pâte de curry 1 minute dans un peu d'huile, puis versez le lait de coco.", "Ajoutez le poulet en lamelles et les haricots verts coupés en deux, laissez frémir 10 minutes.", "Ajoutez la courgette en demi-rondelles et cuisez encore 5 minutes : elle doit rester ferme.", "Parsemez de basilic et servez avec le riz."], lien:"", ingredients:[
+    {nom:"Blancs de poulet", qte:"600", unite:"g", rayon:"Boucherie"},
+    {nom:"Pâte de curry vert", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Lait de coco", qte:"40", unite:"cl", rayon:"Épicerie"},
+    {nom:"Haricots verts", qte:"200", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Courgette", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Basilic", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"}]},
+
+  { nom:"Nasi goreng au poulet", cuisine:"Indonésie", emoji:"🍳", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Utilisez de préférence un riz cuit la veille : il ne colle pas.", "Faites revenir les échalotes et l'ail hachés, puis le poulet en petits dés jusqu'à ce qu'il soit doré.", "Ajoutez les petits pois et le riz, faites sauter 5 minutes à feu vif.", "Arrosez de sauce soja sucrée et mélangez bien.", "Servez chaque assiette surmontée d'un œuf au plat, avec des rondelles de concombre."], lien:"", ingredients:[
+    {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Blancs de poulet", qte:"400", unite:"g", rayon:"Boucherie"},
+    {nom:"Œufs", qte:"4", unite:"", rayon:"Crèmerie"},
+    {nom:"Échalotes", qte:"3", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Petits pois surgelés", qte:"150", unite:"g", rayon:"Surgelés"},
+    {nom:"Sauce soja sucrée", qte:"4", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Concombre", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
+
+  { nom:"Butter chicken", cuisine:"Inde", emoji:"🍛", type:"consistant", vegetarien:false, rapide:false, thermomix:true, saisons:[], etapes:["Faites mariner le poulet en morceaux 30 minutes dans le yaourt avec la moitié du garam masala.", "Faites fondre le beurre, faites-y revenir l'oignon, l'ail et le gingembre hachés.", "Ajoutez le reste des épices et le coulis de tomates, laissez mijoter 10 minutes.", "Ajoutez le poulet égoutté, cuisez 15 minutes, puis incorporez la crème.", "Servez avec le riz basmati."], lien:"", ingredients:[
+    {nom:"Blancs de poulet", qte:"600", unite:"g", rayon:"Boucherie"},
+    {nom:"Yaourt nature", qte:"1", unite:"pot(s)", rayon:"Crèmerie"},
+    {nom:"Beurre", qte:"40", unite:"g", rayon:"Crèmerie"},
+    {nom:"Coulis de tomates", qte:"40", unite:"cl", rayon:"Épicerie"},
+    {nom:"Crème fraîche", qte:"20", unite:"cl", rayon:"Crèmerie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Gingembre", qte:"1", unite:"morceau(x)", rayon:"Fruits & légumes"},
+    {nom:"Garam masala", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Riz basmati", qte:"300", unite:"g", rayon:"Épicerie"}]},
+
+  { nom:"Palak paneer", cuisine:"Inde", emoji:"🥬", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:[], etapes:["Faites cuire les épinards 5 minutes, puis mixez-les grossièrement.", "Faites revenir l'oignon, l'ail et le gingembre hachés, ajoutez les tomates en dés et le garam masala.", "Ajoutez les épinards et la crème, laissez mijoter 10 minutes à feu doux.", "Faites dorer le fromage en cubes à la poêle, puis ajoutez-le à la sauce au dernier moment.", "Servez avec le riz basmati."], lien:"", ingredients:[
+    {nom:"Épinards surgelés", qte:"600", unite:"g", rayon:"Surgelés"},
+    {nom:"Paneer ou halloumi", qte:"250", unite:"g", rayon:"Crèmerie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Gingembre", qte:"1", unite:"morceau(x)", rayon:"Fruits & légumes"},
+    {nom:"Tomates", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Garam masala", qte:"1", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Crème fraîche", qte:"10", unite:"cl", rayon:"Crèmerie"},
+    {nom:"Riz basmati", qte:"300", unite:"g", rayon:"Épicerie"}]},
+
+  { nom:"Samoussas aux légumes", cuisine:"Inde", emoji:"🥟", type:"consistant", vegetarien:true, rapide:false, thermomix:false, saisons:[], etapes:["Cuisez les pommes de terre en dés 10 minutes à l'eau salée, égouttez.", "Faites revenir l'oignon haché avec le curry, ajoutez les pommes de terre, les petits pois et la coriandre, écrasez légèrement.", "Coupez les feuilles de brick en deux, pliez chaque bande en triangle autour d'une cuillerée de farce.", "Badigeonnez d'un peu d'huile et enfournez 15 minutes à 200 °C jusqu'à ce qu'ils soient dorés.", "Servez avec le yaourt mélangé à la menthe ciselée et une salade."], lien:"", ingredients:[
+    {nom:"Feuilles de brick", qte:"1", unite:"paquet(s)", rayon:"Crèmerie"},
+    {nom:"Pommes de terre", qte:"600", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Petits pois surgelés", qte:"200", unite:"g", rayon:"Surgelés"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Curry en poudre", qte:"2", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Coriandre", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Yaourt nature", qte:"2", unite:"pot(s)", rayon:"Crèmerie"},
+    {nom:"Menthe", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Salade verte", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
+
+  { nom:"Falafels, pita et sauce au yaourt", cuisine:"Liban", emoji:"🧆", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:[], etapes:["Égouttez les pois chiches et séchez-les bien dans un torchon.", "Mixez-les avec l'oignon, l'ail, le persil, la coriandre, le cumin et la farine, sans en faire une purée.", "Façonnez de petites boulettes et faites-les dorer à la poêle dans un fond d'huile, 3 minutes de chaque côté.", "Mélangez le yaourt avec un filet de citron, du sel et un peu de cumin.", "Servez dans les pitas tièdes avec la salade, les tomates et la sauce."], lien:"", ingredients:[
+    {nom:"Pois chiches", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"2", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Persil", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Coriandre", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Cumin", qte:"2", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Farine", qte:"40", unite:"g", rayon:"Épicerie"},
+    {nom:"Pains pita", qte:"4", unite:"", rayon:"Boulangerie"},
+    {nom:"Yaourt grec", qte:"2", unite:"pot(s)", rayon:"Crèmerie"},
+    {nom:"Citron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Tomates", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Salade verte", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
+
+  { nom:"Pastilla au poulet", cuisine:"Maroc", emoji:"🥧", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites mijoter les cuisses de poulet 40 minutes avec les oignons émincés, la cannelle, le gingembre et un verre d'eau.", "Effilochez la viande, faites réduire les oignons et liez-les avec les œufs battus, en remuant sur feu doux.", "Faites griller les amandes à sec.", "Beurrez un moule, tapissez-le de feuilles de brick qui débordent, garnissez de poulet, d'oignons et d'amandes, puis refermez.", "Badigeonnez de beurre fondu et enfournez 20 minutes à 180 °C. Saupoudrez d'un peu de cannelle avant de servir."], lien:"", ingredients:[
+    {nom:"Cuisses de poulet", qte:"4", unite:"", rayon:"Boucherie"},
+    {nom:"Feuilles de brick", qte:"1", unite:"paquet(s)", rayon:"Crèmerie"},
+    {nom:"Oignons", qte:"3", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Œufs", qte:"3", unite:"", rayon:"Crèmerie"},
+    {nom:"Amandes effilées", qte:"100", unite:"g", rayon:"Épicerie"},
+    {nom:"Cannelle", qte:"2", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Gingembre en poudre", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Beurre", qte:"50", unite:"g", rayon:"Crèmerie"}]},
+
+  { nom:"Couscous aux sept légumes", cuisine:"Maroc", emoji:"🥘", type:"consistant", vegetarien:true, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites revenir l'oignon avec le ras el hanout, ajoutez les tomates en morceaux et 1,5 l d'eau.", "Ajoutez les carottes et les navets en tronçons, laissez cuire 20 minutes.", "Ajoutez les courgettes, le potiron en cubes et les pois chiches égouttés, cuisez encore 15 minutes.", "Préparez la semoule : couvrez-la d'eau bouillante salée, laissez gonfler 5 minutes puis égrainez avec un peu de beurre.", "Servez la semoule avec les légumes et le bouillon à part."], lien:"", ingredients:[
+    {nom:"Semoule", qte:"400", unite:"g", rayon:"Épicerie"},
+    {nom:"Carottes", qte:"3", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Navets", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Courgettes", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Potiron", qte:"400", unite:"g", rayon:"Fruits & légumes"},
+    {nom:"Tomates", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Pois chiches", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Ras el hanout", qte:"1", unite:"c. à soupe", rayon:"Épicerie"}]},
+
+  { nom:"Moussaka", cuisine:"Grèce", emoji:"🍆", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:["ete", "automne"], etapes:["Coupez les aubergines en tranches, badigeonnez-les d'huile et faites-les dorer 20 minutes au four à 200 °C.", "Faites revenir l'oignon et la viande, ajoutez le coulis de tomates et la cannelle, laissez mijoter 15 minutes.", "Préparez une béchamel avec le lait, un peu de beurre et de farine.", "Alternez dans un plat : aubergines, viande, aubergines, puis couvrez de béchamel et de parmesan.", "Enfournez 35 minutes à 180 °C et laissez reposer 10 minutes avant de couper."], lien:"", ingredients:[
+    {nom:"Aubergines", qte:"3", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Agneau haché", qte:"500", unite:"g", rayon:"Boucherie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Coulis de tomates", qte:"40", unite:"cl", rayon:"Épicerie"},
+    {nom:"Cannelle", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Lait", qte:"50", unite:"cl", rayon:"Crèmerie"},
+    {nom:"Farine", qte:"40", unite:"g", rayon:"Épicerie"},
+    {nom:"Parmesan râpé", qte:"60", unite:"g", rayon:"Crèmerie"}]},
+
+  { nom:"Goulash", cuisine:"Hongrie", emoji:"🍲", type:"consistant", vegetarien:false, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites dorer la viande en cubes dans une cocotte, puis réservez.", "Faites fondre les oignons émincés, ajoutez le paprika hors du feu pour qu'il ne brûle pas.", "Remettez la viande, ajoutez le concentré de tomates, les poivrons en lanières et 1 l d'eau.", "Couvrez et laissez mijoter 1 h 30 à feu doux.", "Ajoutez les pommes de terre en gros cubes et cuisez encore 30 minutes."], lien:"", ingredients:[
+    {nom:"Bœuf à mijoter", qte:"800", unite:"g", rayon:"Boucherie"},
+    {nom:"Oignons", qte:"3", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Poivrons", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Paprika", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Concentré de tomates", qte:"2", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Pommes de terre", qte:"800", unite:"g", rayon:"Fruits & légumes"}]},
+
+  { nom:"Enchiladas au poulet", cuisine:"Mexique", emoji:"🌯", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites revenir l'oignon et le poulet en petits morceaux avec le cumin et le paprika.", "Ajoutez les haricots rouges égouttés et la moitié du coulis de tomates, laissez cuire 10 minutes.", "Garnissez chaque tortilla de ce mélange, roulez-les et rangez-les serrées dans un plat.", "Nappez du reste de coulis et parsemez de cheddar.", "Enfournez 20 minutes à 190 °C et servez avec la crème fraîche et la coriandre."], lien:"", ingredients:[
+    {nom:"Tortillas", qte:"8", unite:"", rayon:"Boulangerie"},
+    {nom:"Blancs de poulet", qte:"500", unite:"g", rayon:"Boucherie"},
+    {nom:"Haricots rouges", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Coulis de tomates", qte:"50", unite:"cl", rayon:"Épicerie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Cumin", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Paprika", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Cheddar râpé", qte:"150", unite:"g", rayon:"Crèmerie"},
+    {nom:"Crème fraîche", qte:"20", unite:"cl", rayon:"Crèmerie"},
+    {nom:"Coriandre", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"}]},
+
+  { nom:"Enchiladas aux haricots noirs", cuisine:"Mexique", emoji:"🌯", type:"consistant", vegetarien:true, rapide:false, thermomix:false, saisons:[], etapes:["Faites revenir l'oignon et le poivron en dés avec le cumin.", "Ajoutez les haricots noirs et le maïs égouttés, écrasez grossièrement une partie des haricots.", "Garnissez chaque tortilla, roulez-les et rangez-les dans un plat.", "Nappez de coulis de tomates et parsemez de cheddar.", "Enfournez 20 minutes à 190 °C et servez avec l'avocat en tranches et un filet de citron vert."], lien:"", ingredients:[
+    {nom:"Tortillas", qte:"8", unite:"", rayon:"Boulangerie"},
+    {nom:"Haricots noirs", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Maïs", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Poivron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Cumin", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Coulis de tomates", qte:"50", unite:"cl", rayon:"Épicerie"},
+    {nom:"Cheddar râpé", qte:"150", unite:"g", rayon:"Crèmerie"},
+    {nom:"Avocat", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Citron vert", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
+
+  { nom:"Fajitas de bœuf aux poivrons", cuisine:"Mexique", emoji:"🫑", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:["ete", "automne"], etapes:["Coupez la viande en fines lanières et faites-la mariner 10 minutes avec le jus d'un citron vert, le cumin et le paprika.", "Faites sauter les poivrons et l'oignon en lanières à feu vif 5 minutes.", "Ajoutez la viande et saisissez-la 3 minutes : elle doit rester rosée.", "Faites tiédir les tortillas à la poêle.", "Chacun garnit sa tortilla de viande, de légumes et d'une cuillerée de crème, puis la roule."], lien:"", ingredients:[
+    {nom:"Bavette", qte:"500", unite:"g", rayon:"Boucherie"},
+    {nom:"Poivrons", qte:"3", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Citron vert", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Cumin", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Paprika", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Tortillas", qte:"8", unite:"", rayon:"Boulangerie"},
+    {nom:"Crème fraîche", qte:"20", unite:"cl", rayon:"Crèmerie"}]},
+
+  { nom:"Quesadillas au fromage et maïs", cuisine:"Mexique", emoji:"🧀", type:"consistant", vegetarien:true, rapide:true, thermomix:false, saisons:[], etapes:["Égouttez le maïs et coupez le poivron en petits dés.", "Parsemez la moitié de chaque tortilla de cheddar, de maïs, de poivron et de coriandre.", "Repliez les tortillas en deux.", "Faites-les dorer à sec dans une poêle, 2 minutes de chaque côté, jusqu'à ce que le fromage fonde.", "Coupez en triangles et servez avec une salade et la crème fraîche."], lien:"", ingredients:[
+    {nom:"Tortillas", qte:"8", unite:"", rayon:"Boulangerie"},
+    {nom:"Cheddar râpé", qte:"200", unite:"g", rayon:"Crèmerie"},
+    {nom:"Maïs", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Poivron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Coriandre", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Salade verte", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Crème fraîche", qte:"20", unite:"cl", rayon:"Crèmerie"}]},
+
+  { nom:"Burritos au bœuf et haricots rouges", cuisine:"Mexique", emoji:"🌯", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Cuisez le riz.", "Faites revenir l'oignon et la viande avec le cumin, ajoutez les haricots rouges égouttés et les tomates en dés, laissez cuire 10 minutes.", "Faites tiédir les grandes tortillas.", "Garnissez-les de riz, de viande et de cheddar, rabattez les côtés puis roulez bien serré.", "Faites-les dorer 2 minutes de chaque côté à la poêle avant de servir."], lien:"", ingredients:[
+    {nom:"Grandes tortillas", qte:"4", unite:"", rayon:"Boulangerie"},
+    {nom:"Bœuf haché", qte:"400", unite:"g", rayon:"Boucherie"},
+    {nom:"Haricots rouges", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Riz", qte:"150", unite:"g", rayon:"Épicerie"},
+    {nom:"Tomates", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Cumin", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Cheddar râpé", qte:"120", unite:"g", rayon:"Crèmerie"}]},
+
+  { nom:"Tacos de poulet mariné", cuisine:"Mexique", emoji:"🌮", type:"consistant", vegetarien:false, rapide:true, thermomix:false, saisons:[], etapes:["Faites mariner le poulet en lamelles 10 minutes avec le jus d'un citron vert, le paprika et un filet d'huile.", "Coupez les tomates et l'avocat en dés, émincez finement l'oignon rouge.", "Faites dorer le poulet 6 à 8 minutes à la poêle.", "Faites tiédir les petites tortillas.", "Garnissez-les de poulet, de tomates, d'avocat, d'oignon et de coriandre, avec un dernier filet de citron vert."], lien:"", ingredients:[
+    {nom:"Tortillas", qte:"12", unite:"", rayon:"Boulangerie"},
+    {nom:"Blancs de poulet", qte:"500", unite:"g", rayon:"Boucherie"},
+    {nom:"Citron vert", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Paprika", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Tomates", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Avocats", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon rouge", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Coriandre", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"}]},
+
+  { nom:"Feijoada", cuisine:"Brésil", emoji:"🫘", type:"consistant", vegetarien:false, rapide:false, thermomix:true, saisons:["automne", "hiver"], etapes:["Faites dorer les lardons, l'échine en cubes et les saucisses en rondelles dans une cocotte.", "Ajoutez l'oignon et l'ail hachés, laissez fondre 5 minutes.", "Ajoutez les haricots noirs avec leur jus, une feuille de laurier et un verre d'eau.", "Couvrez et laissez mijoter 1 h à feu doux, en écrasant quelques haricots pour épaissir.", "Servez avec le riz et des quartiers d'orange, comme au Brésil."], lien:"", ingredients:[
+    {nom:"Haricots noirs", qte:"2", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Échine de porc", qte:"400", unite:"g", rayon:"Boucherie"},
+    {nom:"Saucisses fumées", qte:"2", unite:"", rayon:"Boucherie"},
+    {nom:"Lardons", qte:"150", unite:"g", rayon:"Boucherie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"3", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Oranges", qte:"2", unite:"", rayon:"Fruits & légumes"}]},
+
+  { nom:"Empanadas au bœuf", cuisine:"Argentine", emoji:"🥟", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Faites revenir l'oignon et le poivron en petits dés, puis la viande avec le cumin et le paprika.", "Hors du feu, ajoutez l'œuf dur haché et les olives coupées en rondelles.", "Découpez des disques dans la pâte, garnissez-en la moitié et refermez en chausson en pinçant le bord.", "Dorez au jaune d'œuf et enfournez 20 minutes à 200 °C.", "Servez chaud ou tiède, avec une salade verte."], lien:"", ingredients:[
+    {nom:"Pâte brisée", qte:"2", unite:"", rayon:"Crèmerie"},
+    {nom:"Bœuf haché", qte:"400", unite:"g", rayon:"Boucherie"},
+    {nom:"Oignon", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Poivron", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Œufs", qte:"2", unite:"", rayon:"Crèmerie"},
+    {nom:"Olives vertes", qte:"60", unite:"g", rayon:"Épicerie"},
+    {nom:"Cumin", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Paprika", qte:"1", unite:"c. à café", rayon:"Épicerie"},
+    {nom:"Salade verte", qte:"1", unite:"", rayon:"Fruits & légumes"}]},
+
+  { nom:"Poulet jerk, riz aux haricots rouges", cuisine:"Jamaïque", emoji:"🍗", type:"consistant", vegetarien:false, rapide:false, thermomix:false, saisons:[], etapes:["Mixez les cives, l'ail, le piment, le thym, la sauce soja et le jus des citrons verts pour faire la marinade.", "Enrobez-en les cuisses de poulet et laissez mariner au moins 1 h au frais.", "Faites rôtir le poulet 40 minutes à 200 °C en l'arrosant de temps en temps.", "Pendant ce temps, cuisez le riz dans le lait de coco allongé d'eau, avec les haricots rouges égouttés.", "Servez le poulet bien doré avec le riz."], lien:"", ingredients:[
+    {nom:"Cuisses de poulet", qte:"4", unite:"", rayon:"Boucherie"},
+    {nom:"Cives", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Ail", qte:"3", unite:"gousse(s)", rayon:"Fruits & légumes"},
+    {nom:"Piment", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Thym", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Sauce soja", qte:"3", unite:"c. à soupe", rayon:"Épicerie"},
+    {nom:"Citron vert", qte:"2", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Riz", qte:"300", unite:"g", rayon:"Épicerie"},
+    {nom:"Haricots rouges", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Lait de coco", qte:"20", unite:"cl", rayon:"Épicerie"}]},
+
+  { nom:"Ceviche de daurade au citron vert", cuisine:"Pérou", emoji:"🐟", type:"leger", vegetarien:false, rapide:true, thermomix:false, saisons:["ete"], etapes:["Cuisez les patates douces en rondelles à la vapeur, laissez refroidir.", "Coupez le poisson, très frais, en petits cubes et mettez-le dans un saladier bien froid.", "Arrosez du jus des citrons verts, ajoutez l'oignon rouge en fines lamelles et le piment haché, laissez « cuire » 10 minutes au frais.", "Ajoutez le maïs égoutté et la coriandre ciselée, salez.", "Servez tout de suite, avec les rondelles de patate douce."], lien:"", ingredients:[
+    {nom:"Filets de daurade", qte:"500", unite:"g", rayon:"Poissonnerie"},
+    {nom:"Citron vert", qte:"5", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Oignon rouge", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Piment", qte:"1", unite:"", rayon:"Fruits & légumes"},
+    {nom:"Maïs", qte:"1", unite:"boîte(s)", rayon:"Épicerie"},
+    {nom:"Coriandre", qte:"1", unite:"bouquet(s)", rayon:"Fruits & légumes"},
+    {nom:"Patates douces", qte:"2", unite:"", rayon:"Fruits & légumes"}]}
 ];

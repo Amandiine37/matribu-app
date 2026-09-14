@@ -132,8 +132,10 @@ question, et pour toute demande d'accès, de correction ou d'effacement.</p>
       donnent aucune. <b>Qui contrôle votre messagerie peut rattacher un
       appareil à votre profil</b> : protégez-la.<br>
       Pour vérifier l'adresse, Firebase crée une fiche de connexion à son nom.
-      L'application la <b>supprime aussitôt</b> le rattachement terminé, même
-      quand l'adresse n'appartient à aucune tribu.</td>
+      Ma Tribu <b>tente de supprimer immédiatement</b> cette identité
+      temporaire une fois le rattachement terminé, même quand l'adresse
+      n'appartient à aucune tribu. En cas d'échec technique, la session est
+      simplement fermée.</td>
     </tr>
     <tr>
       <td><b>Un identifiant technique anonyme</b> par appareil</td>
@@ -202,8 +204,9 @@ GitHub Pages ne contiennent aucune donnée de famille.</p>
   <li><b>Google Firebase</b> — héberge la base de données, gère la
   reconnaissance des appareils, et <b>envoie les e-mails de connexion</b>
   quand ce mode est utilisé.</li>
-  <li><b>Google reCAPTCHA Enterprise</b> — vérifie que les requêtes viennent
-  bien de l'application et non d'une copie. Pour cela, Google analyse des
+  <li><b>Google reCAPTCHA Enterprise</b> — sert à vérifier l'origine des
+  requêtes (App Check, aujourd'hui en mode de surveillance, voir « Sécurité »).
+  Pour cela, Google analyse des
   signaux techniques de votre navigateur et peut déposer un cookie. Voir la
   <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">politique
   de confidentialité de Google</a>.</li>
@@ -225,7 +228,10 @@ vite et rester utilisable sans réseau. Cette copie est celle du serveur : elle
 se met à jour à chaque changement. Elle est effacée quand vous utilisez
 « Effacer les données de cet appareil », « Quitter la tribu sur cet appareil »
 ou « Repartir de zéro », et quand un administrateur retire cet appareil de la
-tribu — dès l'ouverture suivante.</p>
+tribu — <b>dès que l'appareil révoqué se reconnecte à Ma Tribu</b>. Une limite
+qu'il faut dire : un appareil perdu qui reste hors ligne ne reçoit pas l'ordre
+de révocation et garde sa copie jusqu'à sa prochaine reconnexion. Personne ne
+peut effacer à distance la mémoire d'un téléphone qui ne communique plus.</p>
 <p>Rien de tout cela ne sert à vous suivre, et tout disparaît si vous videz les
 données du site.</p>
 
@@ -292,8 +298,10 @@ Un surnom fonctionne aussi bien, et c'est une donnée de moins.</p>
   l'application. Elles ne peuvent pas être contournées en modifiant
   l'application.</li>
   <li>La clé d'accès au projet est restreinte aux adresses officielles de Ma
-  Tribu, et une vérification supplémentaire (App Check) contrôle que les
-  requêtes viennent bien du site.</li>
+  Tribu. Une vérification supplémentaire, App Check, vérifie l'origine des
+  requêtes ; elle est actuellement utilisée en mode de surveillance pendant la
+  période de migration, et ne bloque donc pas encore une requête sans
+  attestation valide.</li>
 </ul>
 
 <div class="encadre attention">

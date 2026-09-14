@@ -1954,17 +1954,13 @@ const Connexion = {
 
     /* Étape 3 : l'écran neutre après une perte d'accès. */
     if (etape === "accesPerdu") {
-      el.querySelector("#b-reessayer-acces").onclick = async (ev) => {
+      /* La copie locale a été purgée et Firestore arrêté (accesPerdu) : on
+         repart d'une page neuve. La session est gardée : si l'accès est
+         revenu, l'application rouvre la tribu toute seule ; sinon, elle
+         revient sur cet écran. */
+      el.querySelector("#b-reessayer-acces").onclick = (ev) => {
         ev.target.disabled = true;
-        const s = lireSession();
-        if (s && s.code && s.membreId) {
-          if (await entrerDansFamille(s.code, s.membreId)) return;
-        } else if (d.code) {
-          const donnees = await Store.charger(d.code);
-          if (donnees) { this.aller("profils", { code: d.code, donnees: donnees, jeton: null }); return; }
-        }
-        ev.target.disabled = false;
-        toast("Toujours pas d’accès à la tribu");
+        location.href = adresseNette();
       };
       el.querySelector("#b-repartir").onclick = async () => {
         const ok = await confirmer("Ma Tribu oubliera tout ce qu’elle garde sur cet appareil, qui " +
@@ -2069,10 +2065,12 @@ const Connexion = {
           nom: String(f.get("nomFamille")).trim(), code: code,
           creeLe: new Date().toISOString(), version: 2
         };
+        const verrou = await champsPin(pin);
+        if (!verrou) { toast("Connexion non sécurisée : le code ne peut pas être enregistré"); bouton.disabled = false; return; }
         donnees.membres = [Object.assign({
           id: moiId, prenom: String(f.get("prenom")).trim(), emoji: emojiChoisi(),
           role: "admin", creeLe: new Date().toISOString()
-        }, await champsPin(pin))];
+        }, verrou)];
         donnees.appareils = { [Store.uid]: moiId };
         donnees.appareilsInfos = { [Store.uid]: infoAppareil("creation") };
         donnees.recettes = (window.RECETTES_DEPART || [])
@@ -2168,10 +2166,12 @@ const Connexion = {
         const r = await Invitations.valider(d.jeton);
         if (!r.ok) { toast(r.message); bouton.disabled = false; return; }
 
+        const verrou = await champsPin(pin);
+        if (!verrou) { toast("Connexion non sécurisée : le code ne peut pas être enregistré"); bouton.disabled = false; return; }
         const nouveau = Object.assign({
           id: id(), prenom: String(f.get("prenom")).trim(), emoji: emojiChoisi(),
           role: "membre", creeLe: new Date().toISOString()
-        }, await champsPin(pin));
+        }, verrou);
 
         Store.code = d.code;
         /* On RESERVE le jeton avant d'entrer : c'est ce qui le rend vraiment

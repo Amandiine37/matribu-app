@@ -1685,7 +1685,11 @@ Formulaires.membre = async function (mid) {
         m.role = role;
         m.sansAppareil = sansAppareil;
 
-        if (!sansAppareil && pin) Object.assign(m, await champsPin(pin));
+        if (!sansAppareil && pin) {
+          const verrou = await champsPin(pin);
+          if (!verrou) { toast("Connexion non sécurisée : le code ne peut pas être enregistré"); return; }
+          Object.assign(m, verrou);
+        }
         if (sansAppareil) { m.pin = null; m.pinHash = null; m.pinSel = null; }
       } else {
         if (!sansAppareil && !pin) { toast("Choisissez un code à 4 chiffres"); return; }
@@ -1694,7 +1698,11 @@ Formulaires.membre = async function (mid) {
           role: role, sansAppareil: sansAppareil,
           creeLe: new Date().toISOString()
         };
-        if (!sansAppareil) Object.assign(nouveau, await champsPin(pin));
+        if (!sansAppareil) {
+          const verrou = await champsPin(pin);
+          if (!verrou) { toast("Connexion non sécurisée : le code ne peut pas être enregistré"); return; }
+          Object.assign(nouveau, verrou);
+        }
         etat.membres.push(nouveau);
       }
 
@@ -2603,7 +2611,11 @@ Formulaires.monProfilSimple = function () {
       if (pin && !/^[0-9]{4}$/.test(pin)) { toast("Le code doit faire 4 chiffres"); return; }
       moi.prenom = String(d.get("prenom")).trim();
       moi.emoji = emojiChoisi(f, "😀");
-      if (pin) Object.assign(moi, await champsPin(pin));
+      if (pin) {
+        const verrou = await champsPin(pin);
+        if (!verrou) { toast("Connexion non sécurisée : le code ne peut pas être enregistré"); return; }
+        Object.assign(moi, verrou);
+      }
       fermerFeuille();
       sauver("membres");
       toast("Profil enregistré");

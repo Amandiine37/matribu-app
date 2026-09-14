@@ -785,7 +785,13 @@ async function hachePin(pin, selHex) {
 }
 
 /* Fabrique les champs a enregistrer pour un membre. */
+/* Hors contexte securise (page en http simple), WebCrypto est absent et le
+   code partirait EN CLAIR dans la base (audit du 13/09/2026). On refuse :
+   renvoie null, et chaque endroit qui cree un code le dit a la personne.
+   Les sites publies sont en https, localhost compte comme securise : cela
+   ne se produit qu'en cas de mauvaise configuration. */
 async function champsPin(pin) {
+  if (!CRYPTO_DISPO) return null;
   const r = await hachePin(pin);
   return r.hash ? { pinHash: r.hash, pinSel: r.sel, pin: null } : { pin: pin, pinHash: null, pinSel: null };
 }
@@ -1530,19 +1536,41 @@ const Store = {
          le démarrage s'arrêtait sans rien dire, sur « Ça coince — aucun
          message technique » (constaté le 11/09/2026). On borne donc l'attente
          et on le dit clairement. */
+      /* EN DEUX TEMPS (13/09/2026, écran revu par Amandine sur Android).
+         Un téléphone lent peut mettre plus de 4 s à relire sa session sans
+         que rien ne soit « bloqué » : on le dit, et on patiente jusqu'à
+         DELAI_SESSION_MAX avant de renoncer. Le garde-fou des 8 s
+         d'index.html est mis en veille pendant cette attente (__attenteSession).
+         La durée réelle est consignée sur l'appareil (tribu:diag:session)
+         pour comprendre les récidives. */
+      const t0 = performance.now();
+      window.__attenteSession = true;
+      const patience = setTimeout(() => {
+        const intro = document.querySelector("#chargement .intro");
+        if (intro) intro.textContent = "Ça prend un peu plus de temps que d'habitude… on patiente.";
+      }, this.DELAI_SESSION);
+      const fin = (f, v) => {
+        clearTimeout(patience); clearTimeout(minuterie);
+        window.__attenteSession = false;
+        const ms = Math.round(performance.now() - t0);
+        this.dureeSession = ms;
+        try { localStorage.setItem("tribu:diag:session", String(ms)); } catch (e) { /* sans importance */ }
+        if (ms > this.DELAI_SESSION) console.info("Session relue en " + ms + " ms");
+        f(v);
+      };
       const minuterie = setTimeout(() => {
         const e = new Error("La mémoire du navigateur ne répond pas.");
         e.code = "stockage-bloque";
-        ko(e);
-      }, this.DELAI_SESSION);
+        fin(ko, e);
+      }, this.DELAI_SESSION_MAX);
       const stop = this._auth.onAuthStateChanged(this._au, (u) => {
-        clearTimeout(minuterie); stop(); ok(u || null);
+        stop(); fin(ok, u || null);
       });
     });
   },
-  /* Assez long pour un vieux téléphone, assez court pour répondre avant le
-     garde-fou des 8 secondes d'index.html. */
+  /* Au-delà, on prévient que c'est long ; au-delà du maximum, on renonce. */
   DELAI_SESSION: 4000,
+  DELAI_SESSION_MAX: 12000,
 
   /* --- Connexion par lien magique ---------------------------------------
 
@@ -1981,13 +2009,33 @@ const Store = {
 
   /* Reserve la place. Echoue si une autre tribu l'a prise entre-temps : c'est
      exactement ce qu'on attend, et le seul endroit ou l'unicite se joue. */
+  /* UNE SEULE ECRITURE pour la place ET la preuve de la famille
+     (famillesFondatrices/{tribu}) : les regles exigent l'une pour accepter
+     l'autre, et refusent une seconde preuve pour la meme tribu. C'est ce qui
+     rend « une famille <-> un numero » vrai cote serveur (audit du
+     13/09/2026). Si le numero est deja pris, tout est refuse d'un bloc et on
+     essaie le suivant : rien ne reste a moitie. */
   async reserverPlaceFondatrice(numero, genre, code) {
     if (this.mode !== "nuage") return false;
     try {
-      await this._fs.setDoc(this._fs.doc(this._db, "fondateurs", String(numero)), {
-        famille: code, genre: genre, statut: "reservee",
-        reserveeLe: this._fs.serverTimestamp()
+      const fs = this._fs;
+      const lot = fs.writeBatch(this._db);
+      lot.set(fs.doc(this._db, "fondateurs", String(numero)), {
+        famille: code, genre: genre, statut: "reservee", reserveeLe: fs.serverTimestamp()
       });
+      lot.set(fs.doc(this._db, "famillesFondatrices", code), { numero: Number(numero), genre: genre });
+      await lot.commit();
+      return true;
+    } catch (err) { return false; }
+  },
+
+  /* La preuve s'efface quand la place n'existe plus (expiree, rendue) — pour
+     pouvoir retenter — ou pendant la suppression de la tribu. Les regles
+     refusent tant que la place est encore la. */
+  async supprimerPreuveFondatrice(code) {
+    if (this.mode !== "nuage") return true;
+    try {
+      await this._fs.deleteDoc(this._fs.doc(this._db, "famillesFondatrices", code));
       return true;
     } catch (err) { return false; }
   },
@@ -2149,6 +2197,13 @@ const Store = {
       if (d) { cb(d, "tout"); this.abonner(code, cb); }
       return Promise.resolve(d);
     }
+    /* Comme l'ancienne lecture directe, on renseigne derniereErreur : c'est
+       elle que le demarrage regarde pour distinguer un REFUS (appareil retire,
+       tribu supprimee -> ecran « acces perdu », copie locale purgee) d'une
+       PANNE (reseau -> on garde la session et on reessaiera). Sans cela, un
+       appareil revoque atterrissait sur l'accueil, session effacee, copie
+       locale intacte (constate au banc le 13/09/2026). */
+    this.derniereErreur = null;
     return new Promise((resoudre) => {
       let fini = false, duCache = null, delaiEcoule = false;
       const finir = (v) => {
@@ -2173,7 +2228,7 @@ const Store = {
         duCache = donnees;
         if (delaiEcoule) finir(donnees);     // cache arrive tard : on n'attend plus
       };
-      this._surRefus = () => finir(null);
+      this._surRefus = (err) => { this.derniereErreur = err || null; finir(null); };
       this.abonner(code, cb);
     });
   },
@@ -3089,6 +3144,16 @@ async function supprimerFamilleEntiere(code, suivi, dejaMarquee) {
      donc la vider explicitement, comme le journal et les etats. */
   if (!(await etape("rubriques", "Effacement des recettes de la famille…",
     () => Store.viderSousCollection(code, "rubriques")))) return bilan;
+  /* La place de Famille Fondatrice et sa preuve (audit du 13/09/2026 : elles
+     restaient apres la suppression). Les regles ne les laissent partir
+     qu'avec le drapeau de suppression pose — c'est le cas ici. */
+  if (!(await etape("fondatrice", "Effacement de la place fondatrice…",
+    async () => {
+      const p = etat.fondatrice;
+      if (p && p.numero && !(await Store.libererPlaceFondatrice(p.numero))) return { ok: false, n: 0 };
+      await Store.supprimerPreuveFondatrice(code);
+      return { ok: true, n: p && p.numero ? 1 : 0 };
+    }))) return bilan;
   if (!(await etape("repere", "Effacement du repère de la tribu…",
     () => Store.supprimerRepere(code)))) return bilan;
   /* La place du programme part avec la tribu, AVANT le document de la
@@ -3329,7 +3394,7 @@ const PROGRAMME = {
   /* Une tribu creee AVANT cette date etait deja la : elle n'a plus rien a
      prouver, c'est une PIONNIERE, validee d'emblee. A caler sur le jour de
      la mise en ligne du programme. */
-  depuis: "2026-09-13"
+  depuis: "2026-09-19"
 };
 
 /* LE PROGRAMME NE TOURNE QUE SUR LES VRAIES ADRESSES.
@@ -3361,8 +3426,8 @@ function estFondatrice() {
 
    La comparaison porte sur du TEXTE, et c'est volontaire : une date ISO
    («2026-09-12T21:05:00.000Z») se compare caractere par caractere dans le bon
-   ordre. « 2026-09-12T… » passe avant « 2026-09-13 », et « 2026-09-13T08:00 »
-   passe apres — donc une tribu creee le 13, meme a huit heures du matin, est
+   ordre. « 2026-09-18T… » passe avant « 2026-09-19 », et « 2026-09-19T08:00 »
+   passe apres — donc une tribu creee le 19, meme a huit heures du matin, est
    bien une fondatrice.
 
    SANS DATE DU TOUT : pionniere. Toute tribu creee par l'application en pose
@@ -3425,6 +3490,7 @@ async function inscrirePlace(numero, genre, statut) {
 
 async function oublierPlace() {
   if (!placeFondatrice()) return;
+  await Store.supprimerPreuveFondatrice(etat.famille.code);   // refuse si la place existe encore
   if (await Store.inscrirePlaceFondatrice(null)) etat.fondatrice = null;
 }
 
@@ -3578,9 +3644,22 @@ function viderEcranTribu() {
   $("#ecran-connexion").hidden = false;
 }
 
-function accesPerdu(code) {
+/* Refus CONFIRME par le serveur : l'ecran est vide, et la COPIE LOCALE de la
+   tribu (cache Firestore) est purgee aussi (13/09/2026, remarque d'Amandine).
+   Avant, elle ne partait que si la personne touchait « Repartir de zero » : un
+   telephone perdu, retire de la tribu, gardait sa copie tant que personne
+   n'appuyait dessus. Rien n'est perdu par cette purge — si l'acces est
+   retabli, tout se retelecharge. Ce qu'on garde : la session et le repere,
+   pour que « Reessayer » puisse rouvrir la tribu apres un simple accroc.
+   Limite structurelle, assumee sur la page de confidentialite : un appareil
+   qui reste HORS LIGNE ne recoit pas le refus, et garde sa copie jusqu'a sa
+   prochaine reconnexion. Personne ne peut effacer a distance la memoire d'un
+   telephone qui ne communique plus.
+   Firestore est arrete par la purge : « Reessayer » recharge donc la page. */
+async function accesPerdu(code) {
   viderEcranTribu();
   Connexion.aller("accesPerdu", { code: code });
+  await Store.purgerCacheLocal();
 }
 
 /* ============================ 6. Actions ============================ */
@@ -6447,6 +6526,7 @@ async function viderCacheLocal() {
 window.__signalerPanne = function () {
   const app = document.getElementById("ecran-app");
   if (app && !app.hidden) return;          // l'app tourne : ce n'est pas fatal
+  if (window.__attenteSession) return;     // la session se relit encore, elle a son propre délai
   if (!document.getElementById("chargement")) return;
   ecranPanne(null);
 };
