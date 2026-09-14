@@ -3394,7 +3394,7 @@ const PROGRAMME = {
   /* Une tribu creee AVANT cette date etait deja la : elle n'a plus rien a
      prouver, c'est une PIONNIERE, validee d'emblee. A caler sur le jour de
      la mise en ligne du programme. */
-  depuis: "2026-09-19"
+  depuis: "2026-09-13"
 };
 
 /* LE PROGRAMME NE TOURNE QUE SUR LES VRAIES ADRESSES.
@@ -3426,8 +3426,8 @@ function estFondatrice() {
 
    La comparaison porte sur du TEXTE, et c'est volontaire : une date ISO
    («2026-09-12T21:05:00.000Z») se compare caractere par caractere dans le bon
-   ordre. « 2026-09-18T… » passe avant « 2026-09-19 », et « 2026-09-19T08:00 »
-   passe apres — donc une tribu creee le 19, meme a huit heures du matin, est
+   ordre. « 2026-09-12T… » passe avant « 2026-09-13 », et « 2026-09-13T08:00 »
+   passe apres — donc une tribu creee le 13, meme a huit heures du matin, est
    bien une fondatrice.
 
    SANS DATE DU TOUT : pionniere. Toute tribu creee par l'application en pose
@@ -6526,19 +6526,38 @@ async function viderCacheLocal() {
 window.__signalerPanne = function () {
   const app = document.getElementById("ecran-app");
   if (app && !app.hidden) return;          // l'app tourne : ce n'est pas fatal
-  if (window.__attenteSession) return;     // la session se relit encore, elle a son propre délai
-  if (!document.getElementById("chargement")) return;
+  if (!document.getElementById("chargement")) return;   // un écran est déjà affiché
+  /* LE DÉMARRAGE SUIT SON COURS (14/09/2026, écran « Ça coince » vu par
+     Amandine sur un téléphone lent, sans aucune erreur).
+     Le garde-fou d'index.html compte 8 s depuis l'ouverture de la page. Or la
+     relecture de session peut prendre jusqu'à DELAI_SESSION_MAX, puis le
+     chargement de la famille jusqu'à DELAI_SANS_REPONSE : chaque étape a son
+     propre délai et sa propre explication en cas d'échec. Tant qu'aucune
+     erreur n'a été notée et que le démarrage n'a pas rendu la main, on
+     repasse donc 8 s plus tard au lieu de conclure — avec un plafond, pour
+     ne jamais laisser une page qui tourne sans fin. */
+  const erreurs = window.__erreursDemarrage || [];
+  if (window.__demarrageEnCours && !erreurs.length && performance.now() < DELAI_DEMARRAGE_MAX) {
+    setTimeout(window.__signalerPanne, 8000);
+    return;
+  }
   ecranPanne(null);
 };
+/* Plafond absolu du démarrage : au-delà, on affiche l'écran de panne même si
+   rien n'a échoué explicitement (un module qui ne se télécharge jamais…). */
+const DELAI_DEMARRAGE_MAX = 60000;
 
 /* ============================ 12. Demarrage ============================ */
 
 async function demarrer() {
+  window.__demarrageEnCours = true;
   try {
     await demarrerVraiment();
   } catch (err) {
     console.error("Démarrage impossible :", err);
     ecranPanne(err);
+  } finally {
+    window.__demarrageEnCours = false;
   }
 }
 
