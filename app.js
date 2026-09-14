@@ -1999,6 +1999,37 @@ const Store = {
     };
   },
 
+  /* La preuve qu'une tribu detient deja une place : famillesFondatrices/{code}.
+     Partagee entre tous ses appareils et toutes ses adresses, la ou la memoire
+     locale (etat.fondatrice, localStorage) est propre a chaque hote. Sert a
+     ADOPTER la place existante au lieu d'en reserver une seconde quand la tribu
+     change d'adresse (bug du 14/09/2026 : une tribu s'est retrouvee a la fois
+     pionniere ET fondatrice, une place par adresse). */
+  async preuveFondatrice(code) {
+    if (this.mode !== "nuage") return null;
+    try {
+      const s = await this._fs.getDoc(this._fs.doc(this._db, "famillesFondatrices", code));
+      return s.exists() ? s.data() : null;
+    } catch (err) { return null; }
+  },
+
+  /* Cree la preuve famillesFondatrices/{code} si elle manque — cas d'une place
+     prise par une version d'avant l'audit (les regles l'acceptent car
+     fondateurs/{numero} porte deja cette famille). ENTIEREMENT SILENCIEUX :
+     aucune trace a l'ecran. Rend vrai si la preuve est en place (deja la ou
+     creee), faux en cas d'echec — pour ne reessayer que si besoin. */
+  async assurerPreuveFondatrice(code, numero, genre) {
+    if (this.mode !== "nuage") return true;
+    try {
+      const ref = this._fs.doc(this._db, "famillesFondatrices", code);
+      const s = await this._fs.getDoc(ref);
+      if (s.exists()) return true;
+      const g = genre === "pionniere" || genre === "fondatrice" ? genre : "fondatrice";
+      await this._fs.setDoc(ref, { numero: Number(numero), genre: g });
+      return true;
+    } catch (err) { return false; }
+  },
+
   async placeFondatrice(numero) {
     if (this.mode !== "nuage") return null;
     try {
@@ -3518,6 +3549,18 @@ async function suivreProgrammeFondatrices(code) {
   try {
     const p = placeFondatrice();
 
+    /* 0. Reparation silencieuse d'une preuve manquante (place prise avant
+       l'audit). Une fois faite, on ne re-verifie plus sur cet appareil.
+       Rien n'est affiche : c'est une ecriture de base, pas un message. */
+    if (p && p.numero) {
+      const cleP = "tribu:preuveOk:" + code;
+      let dejaOk = false;
+      try { dejaOk = localStorage.getItem(cleP) === "1"; } catch (e) { /* memoire indispo */ }
+      if (!dejaOk && await Store.assurerPreuveFondatrice(code, p.numero, p.genre)) {
+        try { localStorage.setItem(cleP, "1"); } catch (e) { /* sans importance */ }
+      }
+    }
+
     /* 1. Place acquise : il n'y a plus rien a faire, jamais. */
     if (p && p.statut === "validee") return;
 
@@ -3541,8 +3584,22 @@ async function suivreProgrammeFondatrices(code) {
       return;
     }
 
-    /* 3. Aucune place : on en reserve une, au plus une fois par jour et par
-       appareil — inutile de relire les 100 places a chaque ouverture. */
+    /* 3. Rien en local — mais la tribu en detient peut-etre deja une, prise
+       depuis une autre adresse. On demande au SERVEUR avant de reserver :
+       sinon on en creait une seconde a chaque changement d'adresse. */
+    const preuve = await Store.preuveFondatrice(code);
+    if (preuve && preuve.numero) {
+      const place = await Store.placeFondatrice(preuve.numero);
+      if (place && place.famille === code) {
+        await inscrirePlace(preuve.numero, place.genre,
+          place.statut === "validee" ? "validee" : "reservee");
+        rendre();
+        return;
+      }
+    }
+
+    /* 4. Vraiment aucune place : on en reserve une, au plus une fois par jour
+       et par appareil — inutile de relire les 100 places a chaque ouverture. */
     const cle = "tribu:fondatrice:" + code;
     const jour = new Date().toISOString().slice(0, 10);
     try {
