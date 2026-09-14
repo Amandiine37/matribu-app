@@ -437,7 +437,7 @@ input[type=checkbox]{min-width:18px;min-height:18px;accent-color:var(--accent);}
 }
 /* Seconde passe (14/09/2026) : la premiere (-.3rem) ne se voyait pas sur
    telephone. Les boutons se touchent : 32 px chacun, 0 px entre eux. */
-.ligne > .btn + .btn{margin-left:-.7rem;}
+.ligne > .btn + .btn{margin-left:-.55rem;}   /* exactement 0 px entre eux : au-dela ils se chevauchent et un clic au bord part sur le voisin — supprimer au lieu de modifier (14/09/2026) */
 .ligne:first-child{border-top:none;}
 .ligne-corps{flex:1;min-width:0;}
 .ligne-corps b{display:block;font-size:.93rem;font-weight:600;line-height:1.3;}

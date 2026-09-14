@@ -807,7 +807,13 @@ async function verifiePin(pin, m) {
 
 /* Convertit en douceur les anciens codes en clair vers le format chiffre. */
 async function migrerPinSiBesoin(m, pin) {
-  if (!m || m.pinHash || !CRYPTO_DISPO) return;
+  /* Seul un administrateur a le droit d'ecrire la liste des membres. Sur un
+     autre telephone, cette conversion partait pour etre refusee par le
+     serveur et affichait « Enregistrement refuse » a CHAQUE connexion, sans
+     jamais convertir quoi que ce soit (14/09/2026). Le profil sera converti
+     a la prochaine connexion d'un administrateur, comme le fait deja la
+     creation d'une invitation. */
+  if (!m || m.pinHash || !CRYPTO_DISPO || !estAdmin()) return;
   Object.assign(m, await champsPin(pin));
   await Store.ecrire(["membres"]);
 }
@@ -2412,8 +2418,27 @@ const Store = {
   async retirerAppareils(uids) {
     if (!uids.length) return;
     if (this.mode !== "nuage") { this._ecrireLocal(this.code, etat); return; }
-    const morceau = { appareils: {} };
-    uids.forEach((u) => { morceau.appareils[u] = this._fs.deleteField(); });
+    /* REVOCATION COMPLETE (14/09/2026). Cette fonction se contentait de
+       sortir les appareils du registre : ils n'entraient pas dans
+       appareilsRevoques, donc ils n'apparaissaient pas dans « Appareils
+       retires » et surtout RIEN ne les empechait de revenir avec une
+       invitation. Supprimer un membre pour lui couper l'acces ne coupait
+       donc pas l'acces. On fait desormais le meme travail que le retrait
+       d'un appareil, et d'un seul bloc pour ne pas dependre du moment ou
+       sauver() ecrit les listes. */
+    const fs = this._fs;
+    const morceau = { appareils: {}, appareilsInfos: {}, appareilsRevoques: {} };
+    uids.forEach((u) => {
+      morceau.appareils[u] = fs.deleteField();
+      morceau.appareilsInfos[u] = fs.deleteField();
+      morceau.appareilsRevoques[u] = {
+        le: new Date().toISOString(), par: moi ? moi.id : null,
+        membre: (etat.appareils || {})[u] || null,
+        type: ((etat.appareilsInfos || {})[u] || {}).type || null
+      };
+    });
+    morceau.membresUid = fs.arrayRemove(...uids);
+    morceau.adminsUid = fs.arrayRemove(...uids);
     try {
       await this._fs.setDoc(this._fs.doc(this._db, "familles", this.code), morceau, { merge: true });
     } catch (err) {
@@ -3204,6 +3229,7 @@ async function supprimerFamilleEntiere(code, suivi, dejaMarquee) {
     "tribu:recettesMaj:" + code, "tribu:repereVerifie:" + code, "tribu:donnees:" + code,
     "tribu:vu:" + code, "tribu:fondatrice:" + code, "tribu:fondatriceFetee:" + code,
     "tribu:menageInv:" + code, "tribu:recettesAPart:" + code, "tribu:bienvenue:" + code,
+    "tribu:preuveOk:" + code,
     "tribu:menageRet:" + code]
     .forEach((k) => { try { localStorage.removeItem(k); } catch (e) { } });
 
@@ -3507,12 +3533,18 @@ function placePerimee(p) {
 }
 
 /* Inscrit la place dans la tribu : en memoire ET dans son document. */
-async function inscrirePlace(numero, genre, statut) {
+async function inscrirePlace(numero, genre, statut, dates) {
   const avant = placeFondatrice();
+  /* « dates » : les VRAIES dates du serveur, quand on adopte une place deja
+     detenue. Sans elles, l'adoption redemarrait le compte a rebours de sept
+     jours : l'appli croyait la place fraiche pendant que le serveur la
+     savait expiree, et la place se figeait (14/09/2026). */
   const place = {
     numero: numero, genre: genre, statut: statut,
-    reserveeLe: statut === "reservee" || !avant ? new Date().toISOString() : avant.reserveeLe,
-    valideeLe: statut === "validee" ? new Date().toISOString() : null
+    reserveeLe: (dates && dates.reserveeLe)
+      || (statut === "reservee" || !avant ? new Date().toISOString() : avant.reserveeLe),
+    valideeLe: (dates && dates.valideeLe)
+      || (statut === "validee" ? new Date().toISOString() : null)
   };
   const ok = await Store.inscrirePlaceFondatrice(place);
   if (ok) etat.fondatrice = place;
@@ -3592,10 +3624,16 @@ async function suivreProgrammeFondatrices(code) {
       const place = await Store.placeFondatrice(preuve.numero);
       if (place && place.famille === code) {
         await inscrirePlace(preuve.numero, place.genre,
-          place.statut === "validee" ? "validee" : "reservee");
+          place.statut === "validee" ? "validee" : "reservee",
+          { reserveeLe: place.reserveeLe ? new Date(place.reserveeLe).toISOString() : null });
         rendre();
-        return;
       }
+      /* Une preuve existe : cette tribu DETIENT deja une place. Meme si on
+         n'a pas pu la relire (reseau coupe), on ne repart surtout pas en
+         reserver une autre : la preuve etant immuable, le lot serait refuse
+         pour les cent numeros, apres avoir inscrit cent fausses places dans
+         le document de la famille (14/09/2026). */
+      return;
     }
 
     /* 4. Vraiment aucune place : on en reserve une, au plus une fois par jour
@@ -4434,7 +4472,12 @@ const Invitations = {
   },
 
   lien(jeton) {
-    const base = location.origin + location.pathname;
+    /* Sur l'ANCIENNE adresse, le lien doit pointer vers la NOUVELLE : la
+       fiche de demenagement demande justement de creer les codes depuis
+       l'ancienne, et le lien y renvoyait les gens (14/09/2026). */
+    const base = surAncienneAdresse()
+      ? ADRESSE_NOUVELLE + "/"
+      : location.origin + location.pathname;
     return base + "?invitation=" + jeton;
   },
 
@@ -6593,8 +6636,13 @@ window.__signalerPanne = function () {
      erreur n'a été notée et que le démarrage n'a pas rendu la main, on
      repasse donc 8 s plus tard au lieu de conclure — avec un plafond, pour
      ne jamais laisser une page qui tourne sans fin. */
-  const erreurs = window.__erreursDemarrage || [];
-  if (window.__demarrageEnCours && !erreurs.length && performance.now() < DELAI_DEMARRAGE_MAX) {
+  /* Tant que le demarrage suit son cours, on attend — MEME si une erreur a
+     ete notee. Une erreur notee n'est pas forcement fatale (14/09/2026 :
+     un rejet de navigator.storage.persist() sur certains Android suffisait a
+     afficher « Ca coince » par-dessus une application saine, et
+     panneAffichee verrouillait alors l'ecran). Un vrai echec passe de toute
+     facon par le catch de demarrer(), qui affiche l'ecran avec le detail. */
+  if (window.__demarrageEnCours && performance.now() < DELAI_DEMARRAGE_MAX) {
     setTimeout(window.__signalerPanne, 8000);
     return;
   }
@@ -6627,7 +6675,9 @@ async function demarrerVraiment() {
      place. Cette demande met la session à l'abri quand le navigateur la
      comprend, et ne coûte rien quand il l'ignore (c'est le cas de Safari). */
   if (navigator.storage && navigator.storage.persist) {
-    try { navigator.storage.persist(); } catch (e) { /* sans importance */ }
+    /* Le .catch() est indispensable : un rejet non attrape remonte en
+       unhandledrejection, donc en « panne » de demarrage (14/09/2026). */
+    try { navigator.storage.persist().catch(() => { }); } catch (e) { /* sans importance */ }
   }
 
   await Store.preparer();
@@ -6675,7 +6725,10 @@ async function demarrerVraiment() {
        On la garde. L'ecran d'accueil affiche le bandeau de panne et son bouton
        « Reessayer », et la session repart toute seule des que le reseau est la.
        On n'efface que si la famille est vraiment introuvable, serveur joignable. */
-    if (!(Store.mode === "local" && (Store.raison === "erreur" || Store.raison === "stockage"))) {
+    /* « config » ajoute le 14/09/2026 : si firebase-config.js n'a pas ete
+       charge, ce n'est pas un depart non plus — on gardait la session pour
+       une panne reseau, on l'effacait pour un fichier manquant. */
+    if (!(Store.mode === "local" && (Store.raison === "erreur" || Store.raison === "stockage" || Store.raison === "config"))) {
       ecrireSession(null);
     }
   }

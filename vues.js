@@ -997,7 +997,7 @@ function caseRepas(jour, moment, contenu) {
   }
   return '<button class="case-repas" data-action="repas-case" data-jour="' + jour + '" data-moment="' + moment + '">' +
     '<span class="quand">' + (moment === "midi" ? "Midi" : "Soir") + "</span>" +
-    "<span>" + (contenu && contenu.restes ? "♻️" : emoji) + "</span>" +
+    "<span>" + esc(contenu && contenu.restes ? "♻️" : emoji) + "</span>" +
     '<span class="plat' + (libre || estAbsence(contenu) ? " libre" : "") + '">' + esc(texte) +
     (contenu && contenu.restes ? " <small>(restes)</small>" : "") + "</span>" +
     (marque ? '<span class="marque-repas">' + marque + "</span>" : "") + "</button>";
