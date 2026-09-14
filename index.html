@@ -31,7 +31,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=4">
 
 <!-- Demarrage : les modules Firebase viennent de gstatic, et app.js ne les
      demande qu'une fois les 880 Ko de l'application analyses — soit environ
@@ -83,7 +83,7 @@ setTimeout(function () {
 }, 8000);
 </script>
 
-<script src="firebase-config.js"></script>
+<script src="firebase-config.js?v=4"></script>
 </head>
 <body>
 
@@ -143,9 +143,9 @@ setTimeout(function () {
      qui s'y accroche (app.js). Sans lui, chacun attendait le precedent :
      recettes.js et ses 343 Ko retardaient a eux seuls l'arrivee de app.js,
      donc l'ouverture de l'application (mesure du 12/09/2026). -->
-<script src="recettes.js" defer></script>
-<script src="vues.js" defer></script>
-<script src="formulaires.js" defer></script>
-<script src="app.js" defer></script>
+<script src="recettes.js?v=4" defer></script>
+<script src="vues.js?v=4" defer></script>
+<script src="formulaires.js?v=4" defer></script>
+<script src="app.js?v=4" defer></script>
 </body>
 </html>

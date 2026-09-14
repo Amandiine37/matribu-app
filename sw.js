@@ -14,12 +14,12 @@ var CACHE = "tribu-v3";
 var ASSETS = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./recettes.js",
-  "./vues.js",
-  "./formulaires.js",
-  "./app.js",
-  "./firebase-config.js",
+  "./styles.css?v=4",
+  "./recettes.js?v=4",
+  "./vues.js?v=4",
+  "./formulaires.js?v=4",
+  "./app.js?v=4",
+  "./firebase-config.js?v=4",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png"
