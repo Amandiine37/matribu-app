@@ -1903,6 +1903,17 @@ const Connexion = {
 
   /* --- 6. Code a 4 chiffres --- */
   pin(d) {
+    /* Un profil « sans téléphone », ou dont le code n'a jamais été choisi, ne
+       peut PAS entrer : n'importe quels quatre chiffres seraient refusés, à
+       l'infini et sans explication. On le dit, au lieu de laisser quelqu'un
+       devant un clavier qui ne s'ouvrira jamais (14/09/2026). */
+    if (!d.membre.pinHash && !d.membre.pin) {
+      return this.entete("<b>" + esc(d.membre.prenom) + "</b> " + esc(d.membre.emoji || "") +
+        "<br>Ce profil n'a pas de code à 4 chiffres.") +
+        '<p class="aide centre">Un administrateur de la tribu peut lui en créer un, ' +
+        "depuis Administration → Membres → son prénom.</p>" +
+        '<button class="lien" type="button" id="b-retour" style="display:block;margin:1.6rem auto 0">Changer de profil</button>';
+    }
     return this.entete("Bonjour <b>" + esc(d.membre.prenom) + "</b> " + esc(d.membre.emoji || "") +
       "<br>Entrez votre code à 4 chiffres.") +
       '<div class="pin-points" id="pin-points">' +
@@ -2093,7 +2104,23 @@ const Connexion = {
           return;
         }
         await Store.marquerRepere(code);
-        await entrerDansFamille(code, moiId);
+        /* LA SESSION EST NOTEE AVANT D'ENTRER (14/09/2026).
+
+           A cet instant la tribu EXISTE sur le serveur. Si l'ouverture
+           echouait juste apres (reseau coupe, refus), l'application
+           felicitait quand meme : la personne restait devant le formulaire,
+           sans session, et en creait une seconde — la premiere, avec son
+           repere tire au sort, devenait introuvable pour toujours. Notee
+           ici, un simple rechargement y ramene. */
+        ecrireSession({ code: code, membreId: moiId });
+        const entre = await entrerDansFamille(code, moiId);
+        if (!entre) {
+          ecranPanne(Store.derniereErreur, "Votre tribu est bien créée",
+            "Elle n'a pas pu s'ouvrir tout de suite. Rechargez la page : vous y " +
+            "entrerez directement, rien n'est perdu. Surtout, n'en créez pas une " +
+            "seconde — le repère de celle-ci est " + code + ".");
+          return;
+        }
         toast("Bienvenue dans votre tribu 🏡");
       };
     }
@@ -2202,12 +2229,14 @@ const Connexion = {
 
     /* --- saisie du code a 4 chiffres --- */
     if (etape === "pin") {
+      const clavier = el.querySelector("#clavier");
+      if (!clavier) return;        // profil sans code : il n'y a rien a saisir
       let saisie = "";
       let occupe = false;
       const points = el.querySelectorAll("#pin-points .pin-point");
       const maj = () => points.forEach((p, i) => p.classList.toggle("on", i < saisie.length));
 
-      el.querySelector("#clavier").onclick = async (ev) => {
+      clavier.onclick = async (ev) => {
         const b = ev.target.closest("[data-n]");
         if (!b || occupe) return;
         if (b.dataset.n === "eff") { saisie = saisie.slice(0, -1); maj(); return; }

@@ -664,8 +664,8 @@ function adresseNette() { return location.pathname + (EMULATEUR ? "?emulateur=1"
 
 /* Termine un lien magique : rattache l'appareil, puis ouvre la famille sur
    l'ecran des profils — le code a 4 chiffres reste demande. */
-async function terminerLienCompte(adresse) {
-  const r = await Store.rattacherParEmail(adresse);
+async function terminerLienCompte(adresse, jeton) {
+  const r = await Store.rattacherParEmail(adresse, jeton || Store.jetonDemande);
   if (!r.ok && r.etape === "lien") {
     /* La preuve a echoue (mauvaise adresse, lien use ou perime) : on reste
        sur l'ecran de confirmation, avec la raison, et le lien en place. */
@@ -682,7 +682,10 @@ async function terminerLienCompte(adresse) {
     Connexion.aller("rattachementImpossible", { message: r.message });
     return false;
   }
-  const donnees = await Store.charger(r.code);
+  /* Bornee elle aussi : un reseau fige ici laissait la page tourner sans fin,
+     alors que l'appareil EST deja rattache (14/09/2026). Le message le dit. */
+  const donnees = await Store._borner(Store.charger(r.code), "ouverture de la tribu")
+    .catch(() => null);
   if (!donnees) {
     Connexion.aller("rattachementImpossible",
       { message: "L’appareil est rattaché, mais la famille reste illisible pour l’instant. Rechargez la page." });
@@ -1384,6 +1387,8 @@ const Store = {
   lienCompte: false,      // l'adresse ouverte contient un lien magique a terminer
   erreurEmail: "",
   comptesFamille: [],     // cache des comptes adultes de la famille (administrateurs seulement)
+  demandesFamille: [],    // cache des demandes de rattachement en attente (idem)
+  jetonDemande: null,     // la demande portee par le lien qu'on vient d'ouvrir
   raison: "",
   _db: null, _fs: null, _auth: null, _au: null, _unsubs: [], _compteApp: null, _base: "",
 
@@ -1609,6 +1614,35 @@ const Store = {
      CET appareil a son profil. Elle n'ouvre jamais la famille elle-meme.
      Creee a la demande seulement : la plupart des ouvertures n'en ont pas
      besoin. Voir MODELE-COMPTES-APPAREILS.md, section 5. */
+  /* UNE ATTENTE SANS FIN EST UNE PANNE MUETTE (14/09/2026).
+
+     Tout le parcours du lien e-mail attendait Firebase sans aucune limite :
+     trois modules a telecharger, la preuve de l'adresse, deux lectures, deux
+     ecritures. Quand le reseau se FIGE au lieu d'echouer — metro, wifi
+     d'hotel, serveur qui ne repond plus —, aucune de ces promesses ne se
+     termine : le bouton reste sur « Connexion… » et la personne n'apprend
+     jamais rien. Un refus franc vaut mieux qu'un sablier eternel.
+
+     On borne donc chaque etape, dans le meme esprit que la relecture de
+     session (_sessionExistante) et l'ouverture de la tribu
+     (abonnerEtAttendre). La minuterie est annulee des que la promesse
+     aboutit : elle ne laisse rien tourner derriere elle. */
+  DELAI_EMAIL: 20000,
+
+  _borner(promesse, quoi) {
+    return new Promise((ok, ko) => {
+      const minuterie = setTimeout(() => {
+        const e = new Error("Le serveur ne répond pas (" + quoi + ").");
+        e.code = "delai-depasse";
+        ko(e);
+      }, this.DELAI_EMAIL);
+      promesse.then(
+        (v) => { clearTimeout(minuterie); ok(v); },
+        (e) => { clearTimeout(minuterie); ko(e); }
+      );
+    });
+  },
+
   async _compte() {
     if (this._compteApp) return this._compteApp;
     if (this.mode !== "nuage") return null;
@@ -1631,24 +1665,35 @@ const Store = {
     return this._compteApp;
   },
 
-  async envoyerLienConnexion(email) {
+  async envoyerLienConnexion(email, jetonDemande) {
     const adresse = normaliserEmail(email);
     if (!adresse) return { ok: false, message: "Adresse manquante" };
     if (this.mode !== "nuage") {
       return { ok: false, message: "Le partage n'est pas activé : la connexion par e-mail est impossible." };
     }
-    /* Le lien ramene sur la page d'accueil, SANS rien dans l'adresse : ni
-       jeton, ni adresse e-mail. Firebase deconseille d'y mettre l'adresse,
-       cela ouvrirait la porte a une injection de session. */
-    const url = location.origin + adresseNette();
+    /* Le lien ramene sur la page d'accueil. On n'y met JAMAIS l'adresse
+       e-mail : Firebase le deconseille, cela ouvrirait la porte a une
+       injection de session.
+       Le jeton de la DEMANDE, lui, y voyage (14/09/2026) : il ne donne aucun
+       acces par lui-meme — il faudra prouver l'adresse pour s'en servir — et
+       c'est le seul moyen de retrouver la demande quand le lien s'ouvre sur
+       un autre appareil que celui qui l'a envoye, ce qui est le cas normal. */
+    const base = location.origin + adresseNette();
+    const url = jetonDemande
+      ? base + (base.indexOf("?") === -1 ? "?" : "&") + "demande=" + jetonDemande
+      : base;
     try {
-      const c = await this._compte();
-      await c.auth.sendSignInLinkToEmail(c.au, adresse, { url: url, handleCodeInApp: true });
+      const c = await this._borner(this._compte(), "préparation");
+      await this._borner(
+        c.auth.sendSignInLinkToEmail(c.au, adresse, { url: url, handleCodeInApp: true }),
+        "envoi du lien");
       return { ok: true };
     } catch (err) {
       console.warn("Lien de connexion non envoye :", err);
       this.derniereErreur = err;
-      return { ok: false, message: messageAuth(err) };
+      return { ok: false, message: (err && err.code === "delai-depasse")
+        ? "Le serveur n’a pas répondu. Vérifiez votre connexion et réessayez."
+        : messageAuth(err) };
     }
   },
 
@@ -1715,15 +1760,16 @@ const Store = {
      4. sinon elle ajoute cet appareil, sans lire la famille — meme technique
         que l'entree par invitation. Les regles verifient tout ;
      5. dans tous les cas, la session du compte est FERMEE. */
-  async rattacherParEmail(email) {
+  async rattacherParEmail(email, jetonDemande) {
     const adresse = normaliserEmail(email);
     const res = { ok: false, etape: "lien", code: null, membre: null, dejaMembre: false, message: "" };
     if (!adresse) { res.message = "Adresse manquante"; return res; }
     let c = null;
     try {
-      c = await this._compte();
+      c = await this._borner(this._compte(), "préparation");
       if (!c) { res.message = "Le partage n'est pas activé."; return res; }
-      await c.auth.signInWithEmailLink(c.au, adresse, location.href);
+      await this._borner(
+        c.auth.signInWithEmailLink(c.au, adresse, location.href), "vérification de l’adresse");
       this.oublierEmail();
     } catch (err) {
       console.warn("Lien de connexion refuse :", err);
@@ -1732,15 +1778,54 @@ const Store = {
          Firebase qui refuse une adresse DIFFERENTE de celle du lien (constate
          sur l'emulateur le 10/09/2026). Le dire tel quel eviterait de faire
          chercher une faute de frappe qui n'existe pas. */
-      res.message = (err && err.code === "auth/invalid-email")
-        ? "Cette adresse ne correspond pas au lien reçu. Vérifiez-la, ou ouvrez " +
-          "le lien dans le navigateur d’où vous l’avez demandé."
-        : messageAuth(err);
+      res.message = (err && err.code === "delai-depasse")
+        ? "Le serveur n’a pas répondu. Le lien reste valable : vérifiez votre " +
+          "connexion et rouvrez-le."
+        : (err && err.code === "auth/invalid-email")
+          ? "Cette adresse ne correspond pas au lien reçu. Vérifiez-la, ou ouvrez " +
+            "le lien dans le navigateur d’où vous l’avez demandé."
+          : messageAuth(err);
       return res;
     }
     try {
       res.etape = "compte";
-      const fiche = await c.fs.getDoc(c.fs.doc(c.db, "comptes", adresse));
+      let fiche = await this._borner(
+        c.fs.getDoc(c.fs.doc(c.db, "comptes", adresse)), "lecture du compte");
+
+      /* PREMIERE FOIS : le rattachement n'existe pas encore, et c'est NOUS qui
+         le creons — pas l'administrateur (14/09/2026). Il a seulement laisse
+         une demande, dont le jeton voyage dans le lien. Le serveur verifie que
+         la demande vise bien cette adresse, cette tribu, ce profil et ces
+         droits ; sans cela l'ecriture est refusee. C'est ce qui empeche
+         d'accaparer l'adresse de quelqu'un d'autre. */
+      if (!fiche.exists() && jetonDemande) {
+        res.etape = "demande";
+        const dem = await this._borner(
+          c.fs.getDoc(c.fs.doc(c.db, "demandesCompte", jetonDemande)), "lecture de l’invitation");
+        const d = dem.exists() ? dem.data() : null;
+        if (!d) {
+          res.message = "Cette invitation par e-mail n’existe plus. Demandez-en une nouvelle.";
+          return res;
+        }
+        if (normaliserEmail(d.adresse) !== adresse) {
+          res.message = "Ce lien a été préparé pour une autre adresse e-mail.";
+          return res;
+        }
+        if (d.expireLe && d.expireLe < Date.now()) {
+          res.message = "Cette invitation par e-mail a expiré. Demandez-en une nouvelle.";
+          return res;
+        }
+        await this._borner(c.fs.setDoc(c.fs.doc(c.db, "comptes", adresse), {
+          famille: d.famille, membre: d.membre, admin: d.admin === true,
+          ajouteLe: new Date().toISOString(), demande: jetonDemande
+        }), "création du rattachement");
+        /* Si l'ecriture a fini par passer malgre le delai, la reprise la
+           retrouvera ici : on relit, on ne recree pas. */
+        fiche = await this._borner(
+          c.fs.getDoc(c.fs.doc(c.db, "comptes", adresse)), "relecture du compte");
+      }
+
+      res.etape = "compte";
       if (!fiche.exists()) {
         res.message = "Aucune famille n'a enregistré cette adresse. Demandez à un " +
           "administrateur de l’ajouter à votre profil.";
@@ -1750,7 +1835,7 @@ const Store = {
       res.code = f.famille;
       res.membre = f.membre;
       /* Deja rattache ? C'est la session de l'APPAREIL qui essaie de lire. */
-      const deja = await this.charger(f.famille);
+      const deja = await this._borner(this.charger(f.famille), "lecture de la tribu");
       if (deja) { res.dejaMembre = true; res.ok = true; this.derniereErreur = null; return res; }
       res.etape = "ecriture";
       const morceau = {
@@ -1759,16 +1844,21 @@ const Store = {
         membresUid: c.fs.arrayUnion(this.uid)
       };
       if (f.admin === true) morceau.adminsUid = c.fs.arrayUnion(this.uid);
-      await c.fs.setDoc(c.fs.doc(c.db, "familles", f.famille), morceau, { merge: true });
+      await this._borner(
+        c.fs.setDoc(c.fs.doc(c.db, "familles", f.famille), morceau, { merge: true }),
+        "rattachement de l’appareil");
       this.derniereErreur = null;
       res.ok = true;
       return res;
     } catch (err) {
       console.warn("Rattachement refuse :", err);
       this.derniereErreur = err;
-      res.message = (err && err.code === "permission-denied")
-        ? "Le serveur a refusé le rattachement. Les règles Firebase ne sont peut-être pas encore publiées."
-        : "Le rattachement a échoué" + (err && err.code ? " (" + err.code + ")" : "") + ".";
+      res.message = (err && err.code === "delai-depasse")
+        ? "Le serveur n’a pas répondu. Votre adresse est vérifiée : rechargez la " +
+          "page pour reprendre là où on en est."
+        : (err && err.code === "permission-denied")
+          ? "Le serveur a refusé le rattachement. Les règles Firebase ne sont peut-être pas encore publiées."
+          : "Le rattachement a échoué" + (err && err.code ? " (" + err.code + ")" : "") + ".";
       return res;
     } finally {
       /* Fermee dans TOUS les cas : cette session ne doit jamais survivre. */
@@ -1818,26 +1908,91 @@ const Store = {
   compteDe(membreId) {
     return (this.comptesFamille || []).find((c) => c.membre === membreId) || null;
   },
-  async enregistrerCompte(email, membreId, admin) {
+
+  /* --- Demandes de rattachement par e-mail (14/09/2026) ---
+
+     UN ADMINISTRATEUR N'ECRIT PLUS L'ADRESSE DE QUELQU'UN D'AUTRE.
+
+     Avant, enregistrer une adresse creait directement comptes/{adresse}. Il
+     suffisait donc d'etre administrateur de n'importe quelle tribu pour
+     accaparer l'adresse d'un inconnu, et la famille legitime se heurtait a un
+     refus definitif. Une adresse que personne n'a verifiee ne peut pas servir
+     d'identifiant : c'etait le fond du probleme.
+
+     Desormais l'administrateur cree une DEMANDE, dans un document tire au
+     sort — qui ne reserve donc aucune adresse. Le rattachement lui-meme
+     (comptes/{adresse}) est cree par la personne, quand elle ouvre le lien
+     recu a cette adresse : elle seule peut le faire. Voir firestore.rules,
+     match /demandesCompte et match /comptes. */
+  async listerDemandes(code) {
+    if (this.mode !== "nuage") { this.demandesFamille = []; return []; }
+    try {
+      const fs = this._fs;
+      const q = await fs.getDocs(fs.query(fs.collection(this._db, "demandesCompte"),
+        fs.where("famille", "==", code)));
+      const l = [];
+      const maintenant = Date.now();
+      q.forEach((d) => {
+        const v = Object.assign({ jeton: d.id }, d.data());
+        if (!v.expireLe || v.expireLe > maintenant) l.push(v);   // les perimees ne comptent plus
+      });
+      this.demandesFamille = l;
+      return l;
+    } catch (err) {
+      console.warn("Demandes illisibles :", err);
+      this.derniereErreur = err;
+      return this.demandesFamille;
+    }
+  },
+  demandeDe(membreId) {
+    return (this.demandesFamille || []).find((d) => d.membre === membreId) || null;
+  },
+
+  /* Cree la demande et rend son jeton : c'est lui qui voyagera dans le lien. */
+  async creerDemandeCompte(email, membreId, admin, jours) {
     const adresse = normaliserEmail(email);
     if (this.mode !== "nuage") return { ok: false, message: "Le partage n'est pas activé." };
+    if (!adresse) return { ok: false, message: "Adresse manquante" };
+    const jeton = codeInvitation();
+    const demande = {
+      famille: etat.famille.code, membre: membreId, admin: !!admin,
+      adresse: adresse, creeeLe: Date.now(),
+      expireLe: Date.now() + (jours || 30) * 86400000
+    };
     try {
-      await this._fs.setDoc(this._fs.doc(this._db, "comptes", adresse), {
-        famille: etat.famille.code, membre: membreId, admin: !!admin,
-        ajouteLe: new Date().toISOString(), ajoutePar: moi ? moi.id : null
-      });
-      return { ok: true };
+      await this._fs.setDoc(this._fs.doc(this._db, "demandesCompte", jeton), demande);
+      this.demandesFamille = (this.demandesFamille || [])
+        .filter((d) => d.membre !== membreId)
+        .concat([Object.assign({ jeton: jeton }, demande)]);
+      return { ok: true, jeton: jeton, demande: demande };
     } catch (err) {
-      console.warn("Compte refuse :", err);
+      console.warn("Demande de rattachement refusee :", err);
       this.derniereErreur = err;
-      /* L'appareil est forcement administrateur ici (estAdmin) : un refus veut
-         donc dire que l'adresse appartient deja a une autre tribu (1 adresse =
-         1 tribu). Le formulaire n'enregistre alors RIEN. */
-      return { ok: false, message: (err && err.code === "permission-denied")
-        ? "Cette adresse est déjà liée à une autre tribu : rien n’a été enregistré. " +
-          "Choisissez une autre adresse, ou « 🔑 Par code »."
-        : "Enregistrement impossible" + (err && err.code ? " (" + err.code + ")" : "") + "." };
+      return { ok: false, message: "Enregistrement impossible" +
+        (err && err.code ? " (" + err.code + ")" : "") + "." };
     }
+  },
+  async supprimerDemande(jeton) {
+    if (this.mode !== "nuage" || !jeton) return { ok: true };
+    try {
+      await this._fs.deleteDoc(this._fs.doc(this._db, "demandesCompte", jeton));
+      this.demandesFamille = (this.demandesFamille || []).filter((d) => d.jeton !== jeton);
+      return { ok: true };
+    } catch (err) { this.derniereErreur = err; return { ok: false }; }
+  },
+  /* Toutes les demandes en attente pour ce profil : l'adresse a change, la
+     personne repasse « par code », ou son profil est supprime. */
+  async supprimerDemandesDe(membreId) {
+    const aRetirer = (this.demandesFamille || []).filter((d) => d.membre === membreId);
+    for (const d of aRetirer) await this.supprimerDemande(d.jeton);
+    return { ok: true, n: aRetirer.length };
+  },
+  async enregistrerCompte(email, membreId, admin) {
+    /* Conservee pour la lecture du code : elle ne doit plus servir. Le serveur
+       la refuserait de toute facon depuis le 14/09/2026 — seule la personne
+       qui prouve l'adresse peut creer son rattachement. */
+    console.warn("enregistrerCompte n'est plus utilisee : voir creerDemandeCompte.");
+    return { ok: false, message: "Passez par une demande de rattachement." };
   },
   async supprimerCompte(email) {
     if (this.mode !== "nuage") return { ok: true };
@@ -1845,6 +2000,19 @@ const Store = {
       await this._fs.deleteDoc(this._fs.doc(this._db, "comptes", normaliserEmail(email)));
       return { ok: true };
     } catch (err) { this.derniereErreur = err; return { ok: false }; }
+  },
+  /* Les demandes en attente partent avec la famille : elles portent une
+     adresse e-mail, donc une donnee personnelle (14/09/2026). */
+  async supprimerDemandesDeFamille(code) {
+    if (this.mode !== "nuage") return { ok: true, n: 0 };
+    try {
+      const fs = this._fs;
+      const q = await fs.getDocs(fs.query(fs.collection(this._db, "demandesCompte"),
+        fs.where("famille", "==", code)));
+      const refs = [];
+      q.forEach((d) => refs.push(d.ref));
+      return await this._effacerRefs(refs);
+    } catch (err) { this.derniereErreur = err; return { ok: false, n: 0, err: err }; }
   },
   /* Pour l'effacement de la famille (droit a l'effacement). */
   async supprimerComptesDe(code) {
@@ -2348,6 +2516,55 @@ const Store = {
     } catch (e) { console.warn("Cache local non effacé :", e); }
   },
 
+  /* PERSONNE NE DOIT DISPARAITRE PARCE QU'ON ENREGISTRE (14/09/2026).
+
+     `membres` et `appareils` s'ecrivent EN ENTIER, tels qu'ils sont en
+     memoire. Si quelqu'un est entre dans la tribu pendant qu'une fiche etait
+     ouverte, son arrivee n'etait pas encore arrivee jusqu'a cet appareil :
+     l'enregistrement suivant le faisait disparaitre, lui ET son telephone,
+     sans que personne ne voie rien passer.
+
+     On relit donc le document juste avant d'ecrire ces rubriques-la. Un
+     membre ABSENT de la photo de reference n'a jamais ete vu ici : il vient
+     d'entrer, on le reprend. Un membre QUI Y ETAIT et qui n'est plus en
+     memoire a ete supprime a dessein : on ne le fait surtout pas revenir.
+
+     Hors ligne, cette relecture rend la copie locale : la photo et le
+     document concordent, rien n'est ajoute, l'enregistrement part comme
+     avant et attend le reseau. */
+  async _recupererNouveauxVenus() {
+    const vu = this.vuAuDernierInstantane;
+    if (!vu || !this.code || this.mode !== "nuage") return;
+    let d = null;
+    try {
+      const s = await this._fs.getDoc(this._fs.doc(this._db, "familles", this.code));
+      d = s.exists() ? s.data() : null;
+    } catch (e) { return; }          // serveur muet : on enregistre comme avant
+    if (!d) return;
+    let repris = 0;
+    (d.membres || []).forEach((m) => {
+      if (!m || !m.id) return;
+      if (vu.membres.indexOf(m.id) !== -1) return;                  // deja connu ici
+      if ((etat.membres || []).some((x) => x.id === m.id)) return;
+      etat.membres.push(m);
+      repris++;
+    });
+    Object.keys(d.appareils || {}).forEach((u) => {
+      if (vu.appareils.indexOf(u) !== -1) return;
+      if ((etat.appareils || {})[u] !== undefined) return;
+      etat.appareils[u] = d.appareils[u];
+      if ((d.appareilsInfos || {})[u]) {
+        etat.appareilsInfos = etat.appareilsInfos || {};
+        etat.appareilsInfos[u] = d.appareilsInfos[u];
+      }
+      repris++;
+    });
+    if (repris) {
+      recalculerIndexSur(etat);      // les listes d'acces suivent les arrivants
+      console.info("Arrivée(s) récupérée(s) avant enregistrement : " + repris);
+    }
+  },
+
   /* --- ecriture du document principal (une ou plusieurs rubriques) --- */
   async ecrire(cles) {
     if (this.mode !== "nuage") { this._ecrireLocal(this.code, etat); return; }
@@ -2361,6 +2578,11 @@ const Store = {
     if (veutRecettes && this.recettesAPart) {
       await this.ecrireRecettes();
       cles = cles.filter((c) => c !== "recettes");
+    }
+    /* Les rubriques qui decrivent QUI fait partie de la tribu se relisent
+       avant d'etre reecrites — voir _recupererNouveauxVenus juste au-dessus. */
+    if (cles.some((c) => ["membres", "membresUid", "adminsUid", "appareils"].indexOf(c) !== -1)) {
+      await this._recupererNouveauxVenus();
     }
     const morceau = {};
     cles.forEach((c) => { if (CLES_DOC.indexOf(c) !== -1) morceau[c] = propre(etat[c]); });
@@ -2981,11 +3203,17 @@ function reconcilierCoursesDuMenu() {
       const b = besoins.get(cleArticle(c.nom));
       if (!b) { change = true; return false; }
       const m = manquePour(b.nom, b.qte, b.unite);
-      const qte = (m.connu && m.manque !== null && m.enStock !== null)
-        ? texteNombre(m.manque)
-        : (nombre(b.qte) !== null ? texteNombre(nombre(b.qte)) : b.besoinTexte);
-      if (qte !== c.qte || (b.unite || "") !== (c.unite || "")) {
-        c.qte = qte; c.unite = b.unite; change = true;
+      /* Ingredient demande en deux unites differentes : on recopie le besoin
+         ENTIER (« 500 g + 2 boîtes »), sans unite — sinon on n'en garde que
+         le premier nombre et on achete la moitie (14/09/2026). */
+      const qte = b.plusieursUnites
+        ? b.besoinTexte
+        : (m.connu && m.manque !== null && m.enStock !== null)
+          ? texteNombre(m.manque)
+          : (nombre(b.qte) !== null ? texteNombre(nombre(b.qte)) : b.besoinTexte);
+      const unite = b.plusieursUnites ? "" : (b.unite || "");
+      if (qte !== c.qte || unite !== (c.unite || "")) {
+        c.qte = qte; c.unite = unite; change = true;
       }
       return true;
     });
@@ -3026,8 +3254,13 @@ function lireSession() {
   try { return JSON.parse(localStorage.getItem(CLE_SESSION) || "null"); } catch (e) { return null; }
 }
 function ecrireSession(s) {
-  if (s) localStorage.setItem(CLE_SESSION, JSON.stringify(s));
-  else localStorage.removeItem(CLE_SESSION);
+  /* Une memoire de navigateur pleine ou refusee (navigation privee) faisait
+     echouer TOUTE l'entree dans la tribu, alors que la session n'est qu'un
+     confort : on la note quand on peut, et on continue sinon (14/09/2026). */
+  try {
+    if (s) localStorage.setItem(CLE_SESSION, JSON.stringify(s));
+    else localStorage.removeItem(CLE_SESSION);
+  } catch (e) { /* il faudra rechoisir son profil a la prochaine ouverture */ }
 }
 
 function appliquerDonnees(d, portee) {
@@ -3057,6 +3290,18 @@ function appliquerDonnees(d, portee) {
   });
   if (!etat.famille || typeof etat.famille !== "object") etat.famille = { nom: "", code: "" };
   if (moi) moi = membre(moi.id) || moi;
+
+  /* PHOTO DE REFERENCE (14/09/2026) — elle sert a Store.ecrire.
+     On retient QUI etait dans la tribu au dernier instantane recu. C'est ce
+     qui permet, au moment d'enregistrer, de faire la difference entre « ce
+     membre n'est plus la parce que je viens de le supprimer » et « ce membre
+     est arrive pendant que j'avais une fiche ouverte ». */
+  if (portee === "doc" || portee === undefined) {
+    Store.vuAuDernierInstantane = {
+      membres: (etat.membres || []).map((m) => m.id),
+      appareils: Object.keys(etat.appareils || {})
+    };
+  }
 }
 
 /* ================= Vos données : récupérer, effacer =================
@@ -3191,6 +3436,8 @@ async function supprimerFamilleEntiere(code, suivi, dejaMarquee) {
     () => Store.supprimerRecettesDe(code)))) return bilan;
   if (!(await etape("comptes", "Effacement des comptes adultes…",
     () => Store.supprimerComptesDe(code)))) return bilan;
+  if (!(await etape("comptes", "Effacement des demandes par e-mail…",
+    () => Store.supprimerDemandesDeFamille(code)))) return bilan;
   /* Les retours envoyes par cette famille : prenom, nom et repere y figurent,
      ils ne doivent pas lui survivre (revue du 12/09/2026). */
   if (!(await etape("retours", "Effacement des retours envoyés…",
@@ -3796,8 +4043,9 @@ const Actions = {
          « +15 points » sans rien créditer est le meilleur moyen de perdre la
          confiance des enfants. */
       toast(credite && m ? "+" + t.points + " points pour " + m.prenom + " 🌟"
-        : t.points ? "Validé — points déjà donnés pour cette période"
-          : "Validé");
+        : !pointsActifs() ? "Validé ✅"
+          : t.points ? "Validé — points déjà donnés pour cette période"
+            : "Validé");
       return;
     }
     rendre();
@@ -3831,8 +4079,9 @@ const Actions = {
     rendre();
     const m = membre(gagnant);
     toast(credite && m ? "+" + t.points + " points pour " + m.prenom + " 🌟"
-      : t.points ? "Validé — points déjà donnés pour cette période"
-        : "Validé");
+      : !pointsActifs() ? "Validé ✅"
+        : t.points ? "Validé — points déjà donnés pour cette période"
+          : "Validé");
   },
 
   async refuser(tacheId) {
@@ -3878,10 +4127,13 @@ const Actions = {
     if (directe) await crediterRepas(cleSem, jour, moment, beneficiaire);
     rendre();
     const m = membre(beneficiaire);
-    const pts = Number(reglagesFamille().pointsRepas) || 0;
+    const pts = pointsActifs() ? (Number(reglagesFamille().pointsRepas) || 0) : 0;
     toast(directe && m && pts
       ? "+" + pts + " points pour " + m.prenom + " 🍽️"
-      : "Repas fait ! En attente de validation.");
+      /* Valide d'un geste mais sans points (points eteints, ou reglage a
+         zero) : on ne fait plus croire qu'il reste quelqu'un a attendre. */
+      : directe ? "Repas fait et validé ✅"
+        : "Repas fait ! En attente de validation.");
   },
 
   async validerRepas(cleSem, jour, moment) {
@@ -3897,7 +4149,7 @@ const Actions = {
     await crediterRepas(cleSem, jour, moment, e.parQui);
     rendre();
     const m = membre(e.parQui);
-    const pts = Number(reglagesFamille().pointsRepas) || 0;
+    const pts = pointsActifs() ? (Number(reglagesFamille().pointsRepas) || 0) : 0;
     toast(m && pts ? "+" + pts + " points pour " + m.prenom + " 🍽️" : "Validé");
   },
 
@@ -3939,8 +4191,14 @@ const Actions = {
     const noms = nomsSaisis(texte);
     if (!noms.length) return 0;
     /* On ajoute dans l'ordre lu : `ajouterCourse` empile en tête, donc on
-       parcourt à l'envers. */
-    noms.slice().reverse().forEach((n) => Actions.ajouterCourse(n, devinerRayon(n), "", "", opts));
+       parcourt à l'envers.
+       UNE SEULE ECRITURE POUR TOUTE LA LISTE (14/09/2026) : chaque article
+       declenchait son propre enregistrement, donc coller vingt articles
+       envoyait vingt fois la liste entiere a Firebase et redessinait vingt
+       fois l'ecran. On empile tout, puis on enregistre une fois. */
+    noms.slice().reverse().forEach((n) => Actions.ajouterCourse(n, devinerRayon(n), "", "",
+      Object.assign({}, opts || {}, { sansEnregistrer: true })));
+    sauver("courses");
     if (noms.length > 1) toast(noms.length + " articles ajoutés 🛒");
     return noms.length;
   },
@@ -3959,7 +4217,9 @@ const Actions = {
       vrac: opts.vrac !== undefined ? !!opts.vrac : !!(enReserve && enReserve.vrac),
       parQui: moi && moi.id, creeLe: new Date().toISOString()
     });
-    sauver("courses");
+    /* `sansEnregistrer` : l'appelant ajoute plusieurs articles et enregistrera
+       lui-meme, une seule fois, a la fin. */
+    if (!opts.sansEnregistrer) sauver("courses");
   },
 
   /* Renouveler les cadeaux proposés par l'application, sans toucher à ceux
@@ -4379,6 +4639,13 @@ function dejaPayeeDansLaPeriode(t) {
 
 async function crediterTache(t, cle, beneficiaire) {
   if (!beneficiaire || !t.points) return false;
+  /* POINTS ETEINTS = AUCUN POINT (14/09/2026). Le reglage masquait le
+     compteur, le classement et les cadeaux, mais les lignes continuaient
+     d'etre ecrites en silence : en rallumant, la famille decouvrait des
+     centaines de points gagnes pendant qu'elle ne jouait pas. Les taches,
+     « c'est fait » et la validation continuent : c'est la comptabilite qui
+     s'arrete, et l'historique d'avant ne bouge pas. */
+  if (!pointsActifs()) return false;
   if (dejaPayeeDansLaPeriode(t)) return false;
   return await ajouterAuJournal({
     id: "t|" + t.id + "|" + clePeriode(t.frequence, new Date()),
@@ -4417,7 +4684,19 @@ const Invitations = {
   /* L'invitation embarque tout ce qu'il faut pour entrer : le nom de la tribu
      et, si elle vise un profil existant, ce profil (avec l'empreinte de son
      code, pour pouvoir le vérifier). C'est indispensable : tant qu'il n'est
-     pas inscrit, l'appareil invité n'a pas le droit de lire la famille. */
+     pas inscrit, l'appareil invité n'a pas le droit de lire la famille.
+
+     POURQUOI L'EMPREINTE RESTE DANS L'INVITATION (tranché le 14/09/2026).
+     On a envisagé de l'en retirer : quatre chiffres se retrouvent en quelques
+     secondes à partir d'une empreinte. Mais la seule façon de s'en passer
+     serait d'entrer D'ABORD dans la tribu, puis de vérifier le code contre la
+     fiche du membre. Le lien suffirait alors à entrer, et l'appareil lirait
+     toute la famille avant même d'avoir prouvé quoi que ce soit : un lien
+     transféré par erreur ouvrirait la maison. Le code perdrait précisément le
+     rôle qu'il joue ici. On garde donc « lien + code », et on réduit
+     l'exposition autrement : l'invitation ne sert plus qu'UNE fois, et une
+     fois qu'elle a servi le serveur n'en laisse plus lire le contenu à
+     personne d'autre (firestore.rules, match /invitations). */
   async creer(joursValidite, pourMembreId) {
     /* Un membre ordinaire peut créer une invitation POUR LUI-MÊME : c'est
        ainsi qu'il ajoute l'icône de son écran d'accueil sans déranger un
@@ -4503,9 +4782,15 @@ const Invitations = {
     if (!inv) {
       return {
         ok: false,
-        message: Store.derniereErreur
-          ? "Impossible de lire l'invitation (connexion ?)."
-          : "Cette invitation n'existe pas ou a été supprimée."
+        /* Depuis le 14/09/2026, une invitation qui a servi n'est plus lisible
+           par un autre appareil : le serveur refuse la lecture. Ce n'est pas
+           une panne, et le dire « connexion ? » enverrait chercher au mauvais
+           endroit. */
+        message: (Store.derniereErreur && Store.derniereErreur.code === "permission-denied")
+          ? "Cette invitation a déjà servi. Demandez-en une nouvelle."
+          : Store.derniereErreur
+            ? "Impossible de lire l'invitation (connexion ?)."
+            : "Cette invitation n'existe pas ou a été supprimée."
       };
     }
     /* Deja utilisee ? Une seule exception : si c'est CET appareil qui l'a
@@ -5380,6 +5665,12 @@ function genererMenus(cleSem, opt) {
   const cibles = opt.cibles ? new Set(opt.cibles.map((c) => c.jour + "-" + c.moment)) : null;
   JOURS.forEach((j) => {
     ["midi", "soir"].forEach((m) => {
+      /* UN REPAS DEJA VALIDE NE SE REFAIT PAS (14/09/2026). Il a ete
+         cuisine, il a rapporte des points, et une ligne de points ne peut
+         plus etre retiree : changer le plat sous elle laissait la famille
+         avec des points « Repas : gratin » pour un repas devenu autre chose.
+         « Reprendre une semaine » s'en gardait deja ; le generateur, non. */
+      if (etatRepas(cleSem, j, m).statut === "valide") return;
       if (cibles) {
         if (cibles.has(j + "-" + m) && !estAbsence(semaine[j + "-" + m])) cases.push({ jour: j, moment: m });
         return;
@@ -5409,10 +5700,12 @@ function genererMenus(cleSem, opt) {
     fixees.push(c.val);
   });
   const demande = CATEGORIES_REPAS.reduce((s, c) => s + quotas[c.val], 0);
-  /* Ce que contenaient les cases ciblees avant d'etre refaites. */
+  /* Ce que contenaient les cases avant d'etre refaites — en regeneration
+     ciblee COMME en remplacement complet : c'est de la que reviennent le
+     cuisinier et les absents (14/09/2026). */
   const recetteDeCase = (v) => (v && v.recetteId ? etat.recettes.find((x) => x.id === v.recetteId) || null : null);
   const avant = {};
-  if (cibles) cases.forEach((c) => {
+  cases.forEach((c) => {
     const k = c.jour + "-" + c.moment;
     avant[k] = semaine[k] ? Object.assign({}, semaine[k]) : null;
   });
@@ -5502,7 +5795,7 @@ function genererMenus(cleSem, opt) {
     const nouvelle = { recetteId: meilleur.id, texte: "" };
     /* En regeneration ciblee, seul le plat change : on garde qui cuisine et
        qui ne mange pas. (« Ce sont des restes » ne vaut plus pour un autre plat.) */
-    if (cibles && avant[k]) {
+    if (avant[k]) {
       if (avant[k].cuisinier) nouvelle.cuisinier = avant[k].cuisinier;
       if ((avant[k].absents || []).length) nouvelle.absents = avant[k].absents.slice();
     }
@@ -5573,7 +5866,12 @@ function ingredientsDeLaSemaine(cleSem) {
       nom: e.nom, rayon: e.rayon,
       qte: principal.qte === null ? "" : texteNombre(principal.qte),
       unite: principal.unite,
-      besoinTexte: total.texte
+      besoinTexte: total.texte,
+      /* « 500 g » pour un plat et « 2 boîtes » pour un autre ne s'additionnent
+         pas : il reste DEUX paquets. On ne gardait que le premier, et l'autre
+         moitie des courses disparaissait sans un mot. Ce drapeau previent
+         ceux qui remplissent la liste (14/09/2026). */
+      plusieursUnites: total.paquets.length > 1
     };
   /* Même ordre qu'à l'écran : alphabétique, « À catégoriser » en tête. Avant,
      ce tri lisait la POSITION dans la liste des rayons — un rayon créé par la
@@ -5630,8 +5928,16 @@ function bilanSemaine(cleSem) {
   const lundi = lundiDeCle(cleSem);
   const finIso = decalerIso(isoDate(lundi), 7);
   const debutIso = isoDate(lundi);
+  /* La date d'une ligne est enregistree en temps universel (toISOString).
+     En France, un point gagne le dimanche a 23 h porte donc la date du
+     LUNDI : il basculait dans le bilan de la semaine suivante. On repasse
+     chaque ligne en date locale avant de comparer, comme partout ailleurs
+     dans l'application (14/09/2026). */
   const dansLaSemaine = (e) => {
-    const d = String(e.date || "").slice(0, 10);
+    if (!e.date) return false;
+    const q = new Date(e.date);
+    if (isNaN(q.getTime())) return false;
+    const d = isoDate(q);
     return d >= debutIso && d < finIso;
   };
   const lignes = etat.journal.filter(dansLaSemaine);
@@ -5735,6 +6041,7 @@ function repasAValider() {
 async function crediterRepas(cleSem, jour, moment, beneficiaire) {
   const pts = Number(reglagesFamille().pointsRepas) || 0;
   if (!beneficiaire || !pts) return;
+  if (!pointsActifs()) return;       // meme regle que pour les taches (14/09/2026)
   /* La règle Firebase compare le montant à `reglages.pointsRepas`. Sur une
      famille créée avant cette version, le réglage n'existe pas encore : on
      l'inscrit avant, sinon le serveur refuserait la ligne sans qu'on
@@ -6688,6 +6995,9 @@ async function demarrerVraiment() {
      sur un autre appareil que celui qui l'a demande. */
   if (Store.lienCompte) {
     $("#ecran-connexion").hidden = false;
+    /* Le jeton de la demande est LU MAINTENANT : l'adresse de la page est
+       nettoyee juste apres, et il serait perdu (14/09/2026). */
+    Store.jetonDemande = new URLSearchParams(location.search).get("demande") || null;
     const adresse = Store.emailRetenu();
     if (!adresse) { Connexion.aller("confirmerEmail", {}); return; }
     await terminerLienCompte(adresse);

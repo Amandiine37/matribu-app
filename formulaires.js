@@ -526,7 +526,9 @@ Formulaires.repas = function (jour, moment) {
   const liste = etat.recettes.slice().sort((a, b) => a.nom.localeCompare(b.nom));
   const r = actuel && actuel.recetteId ? etat.recettes.find((x) => x.id === actuel.recetteId) : null;
   const e = etatRepas(ui.semaine, jour, moment);
-  const pts = Number(reglagesFamille().pointsRepas) || 0;
+  /* Points éteints : plus aucune mention de points dans la fiche d'un repas
+     (l'étiquette « 10 pts » et « X a gagné 10 points ») — 14/09/2026. */
+  const pts = pointsActifs() ? (Number(reglagesFamille().pointsRepas) || 0) : 0;
   const cuisinier = actuel && actuel.cuisinier ? membre(actuel.cuisinier) : null;
   const absents = absentsDuRepas(ui.semaine, jour, moment);
 
@@ -1124,13 +1126,21 @@ Formulaires.ingredientsVersCourses = function () {
   /* Pour chaque ingrédient : besoin, stock, reste à acheter. */
   const lignes = ing.map((i) => {
     const m = manquePour(i.nom, i.qte, i.unite);
+    /* DEUX UNITÉS POUR LE MÊME INGRÉDIENT (14/09/2026) : « 500 g » demandés
+       par un plat et « 2 boîtes » par un autre ne s'additionnent pas. Le
+       calcul du manque ne portait que sur le premier paquet, et l'autre
+       moitié du besoin disparaissait sans un mot. On traite la ligne comme
+       une quantité inconnue : le besoin complet est repris tel quel, et
+       l'écran affiche déjà « ⚠️ unités différentes, à vérifier ». */
+    const connu = m.connu && !i.plusieursUnites;
     return {
       nom: i.nom, rayon: i.rayon, unite: i.unite,
       besoin: i.besoinTexte,
       enStock: m.enStock,
       manque: m.manque,
-      connu: m.connu,
-      couvert: m.connu && m.manque !== null && m.manque <= 0,
+      connu: connu,
+      melange: !!i.plusieursUnites,
+      couvert: connu && m.manque !== null && m.manque <= 0,
       dejaListe: false          // rempli juste après, selon la liste choisie
     };
   });
@@ -1213,12 +1223,17 @@ Formulaires.ingredientsVersCourses = function () {
       choisis.slice().reverse().forEach((l) => {
         /* On achète ce qui manque vraiment ; si le calcul est impossible,
            on reprend le besoin complet plutôt que d'inventer un chiffre. */
-        const qte = (l.connu && l.manque !== null && l.enStock !== null)
-          ? texteNombre(l.manque)
-          : (nombre(l.besoin) !== null ? texteNombre(nombre(l.besoin)) : l.besoin);
+        /* Besoin en deux unités : on recopie le texte ENTIER (« 500 g +
+           2 boîtes ») dans la quantité, sans unité — sinon on n'en garde que
+           le premier nombre et on achète la moitié (14/09/2026). */
+        const qte = l.melange
+          ? l.besoin
+          : (l.connu && l.manque !== null && l.enStock !== null)
+            ? texteNombre(l.manque)
+            : (nombre(l.besoin) !== null ? texteNombre(nombre(l.besoin)) : l.besoin);
         const enReserve = articleStock(l.nom);
         etat.courses.unshift({
-          id: id(), nom: l.nom, qte: qte, unite: l.unite, rayon: l.rayon,
+          id: id(), nom: l.nom, qte: qte, unite: l.melange ? "" : l.unite, rayon: l.rayon,
           coche: false, listeId: cible, vrac: !!(enReserve && enReserve.vrac),
           parQui: moi && moi.id, creeLe: new Date().toISOString(),
           /* La semaine de menu qui a produit cet article. C'est ce qui permet
@@ -1511,10 +1526,18 @@ Formulaires.membre = async function (mid) {
   if (!estAdmin()) return;
   /* Le compte adulte (adresse e-mail) ne vit pas sur le membre mais a part,
      dans la collection « comptes » : on la relit avant d'ouvrir la fiche. */
-  if (Store.mode === "nuage") await Store.listerComptes(etat.famille.code);
+  if (Store.mode === "nuage") {
+    await Store.listerComptes(etat.famille.code);
+    /* Et les demandes en attente : depuis le 14/09/2026 le rattachement
+       n'existe qu'une fois la personne passée par son lien, donc c'est la
+       demande qui porte l'adresse jusque-là. Sans cela, rouvrir la fiche
+       affichait « Par code » et une adresse vide. */
+    await Store.listerDemandes(etat.famille.code);
+  }
   const m = mid ? membre(mid) : null;
   const compte = m ? Store.compteDe(m.id) : null;
-  const connexionActuelle = compte ? "email" : "code";
+  const demandeEnCours = m ? Store.demandeDe(m.id) : null;
+  const connexionActuelle = (compte || demandeEnCours) ? "email" : "code";
   const cour = m || { emoji: "😀", role: "membre", pin: "" };
   const nbAdmins = etat.membres.filter((x) => x.role === "admin").length;
 
@@ -1541,7 +1564,8 @@ Formulaires.membre = async function (mid) {
     '<p class="aide" style="margin:-.6rem 0 .8rem" id="aide-connexion"></p>' +
     '<label class="champ" id="champ-email"><span>Adresse e-mail</span>' +
     '<input type="email" name="email" autocomplete="email" inputmode="email" ' +
-    'value="' + esc(compte ? compte.adresse : "") + '" placeholder="prenom@exemple.fr"></label>' +
+    'value="' + esc(compte ? compte.adresse : (demandeEnCours ? demandeEnCours.adresse : "")) +
+    '" placeholder="prenom@exemple.fr"></label>' +
 
     '<label class="champ"><span>Rôle</span></label>' +
     puceMultiple("role", [
@@ -1607,12 +1631,18 @@ Formulaires.membre = async function (mid) {
           " plus personne : " + orphelines.map((t) => t.nom).join(", ") +
           ". Pensez à " + (orphelines.length > 1 ? "les" : "la") + " réattribuer."
         : "";
-      const ok = await confirmer("Supprimer " + m.prenom + " de la famille ? Ses points et son historique seront perdus." + alerte,
+      const ok = await confirmer("Supprimer " + m.prenom + " de la famille ? Son profil disparaît et ses appareils perdent l'accès. Ses points ne seront plus comptés." + alerte,
         { titre: "Supprimer le membre", ok: "Supprimer", danger: true });
       if (!ok) return;
       etat.membres = etat.membres.filter((x) => x.id !== m.id);
       etat.taches.forEach((t) => { t.participants = (t.participants || []).filter((p) => p !== m.id); });
-      etat.journal = etat.journal.filter((e) => e.membreId !== m.id);
+      /* ON NE TOUCHE PAS AU JOURNAL DES POINTS (14/09/2026). Les règles de la
+         tribu l'interdisent — une ligne de points ne s'efface qu'avec la
+         famille entière — et `sauver("journal")` ne l'écrivait de toute façon
+         jamais : les lignes revenaient au premier rafraîchissement, après
+         avoir clignoté. Le message promettait donc un effacement qui n'avait
+         jamais lieu ; il dit maintenant ce qui se passe vraiment. Sans
+         profil, ces lignes ne sont plus comptées nulle part. */
       /* Ses appareils perdent l'accès en même temps que son profil. Il faut
          les retirer des DEUX endroits : le registre et la liste des appareils
          autorisés — sinon le filet anti-verrouillage, qui conserve les
@@ -1624,10 +1654,13 @@ Formulaires.membre = async function (mid) {
       etat.membresUid = (etat.membresUid || []).filter((u) => sesAppareils.indexOf(u) === -1);
       etat.adminsUid = (etat.adminsUid || []).filter((u) => sesAppareils.indexOf(u) === -1);
       fermerFeuille();
-      sauver("membres", "taches", "journal");
+      sauver("membres", "taches");
       await Store.retirerAppareils(sesAppareils);
       const sonCompte = Store.compteDe(m.id);
       if (sonCompte) await Store.supprimerCompte(sonCompte.adresse);
+      /* Et ses demandes en attente : un lien par e-mail préparé pour un profil
+         supprimé ne doit plus rien ouvrir (14/09/2026). */
+      await Store.supprimerDemandesDe(m.id);
       toast(orphelines.length
         ? "Membre supprimé — " + orphelines.length + " tâche" +
           (orphelines.length > 1 ? "s sont" : " est") + " à réattribuer"
@@ -1655,7 +1688,8 @@ Formulaires.membre = async function (mid) {
       /* Deux profils ne partagent jamais une adresse : un compte adulte
          designe UN profil (MODELE-COMPTES-APPAREILS.md, I2). */
       if (connexion === "email" &&
-        (Store.comptesFamille || []).some((c) => c.adresse === email && (!m || c.membre !== m.id))) {
+        (Store.comptesFamille || []).concat(Store.demandesFamille || [])
+          .some((c) => c.adresse === email && (!m || c.membre !== m.id))) {
         toast("Cette adresse est déjà utilisée par un autre membre"); return;
       }
       const role = sansAppareil ? "membre" : (valeursMulti(f, "role")[0] || "membre");
@@ -1666,6 +1700,15 @@ Formulaires.membre = async function (mid) {
         toast("Retirez d'abord ses appareils : ce profil est déjà connecté quelque part");
         return;
       }
+      /* UN PROFIL QUI REDEVIENT CONNECTABLE DOIT AVOIR UN CODE (14/09/2026).
+         « Sans téléphone » efface le code. En décochant la case sans en
+         saisir un nouveau, le profil revenait dans la liste de connexion
+         avec AUCUN code valable : les quatre chiffres étaient refusés à
+         l'infini, sans que rien ne l'explique. */
+      if (m && !sansAppareil && !pin && !m.pinHash && !m.pin) {
+        toast("Choisissez un code à 4 chiffres : ce profil n'en a pas encore");
+        return;
+      }
 
       /* Le compte adulte (adresse e-mail) s'enregistre AVANT le membre. S'il est
          refuse — adresse deja liee a une autre tribu —, on ne cree ni ne modifie
@@ -1674,8 +1717,13 @@ Formulaires.membre = async function (mid) {
          Le drapeau « admin » est une COPIE du role, recalculee a chaque fois. */
       const idCible = m ? m.id : id();
       const ancien = (m && Store.mode === "nuage") ? Store.compteDe(m.id) : null;
+      const ancienneDemande = (m && Store.mode === "nuage") ? Store.demandeDe(m.id) : null;
       if (Store.mode === "nuage" && connexion === "email" && !sansAppareil) {
-        const rc = await Store.enregistrerCompte(email, idCible, role === "admin");
+        /* On n'écrit plus l'adresse de quelqu'un d'autre : on crée une
+           DEMANDE, et c'est la personne elle-même qui, en ouvrant le lien reçu
+           à cette adresse, créera son rattachement (14/09/2026). Deux tribus
+           peuvent donc demander la même adresse sans se bloquer. */
+        const rc = await Store.creerDemandeCompte(email, idCible, role === "admin");
         if (!rc.ok) { toast(rc.message); return; }
       }
 
@@ -1712,7 +1760,14 @@ Formulaires.membre = async function (mid) {
         if (ancien && (connexion !== "email" || sansAppareil || ancien.adresse !== email)) {
           await Store.supprimerCompte(ancien.adresse);
         }
+        /* Une demande restée en attente pour l'ancienne adresse n'a plus lieu
+           d'être : sinon le vieux lien marcherait encore (14/09/2026). */
+        if (ancienneDemande &&
+          (connexion !== "email" || sansAppareil || ancienneDemande.adresse !== email)) {
+          await Store.supprimerDemande(ancienneDemande.jeton);
+        }
         Store.listerComptes(etat.famille.code);
+        Store.listerDemandes(etat.famille.code);
       }
 
       fermerFeuille();
@@ -1774,8 +1829,17 @@ Formulaires.invitation = function () {
       const inv = await Invitations.creer(jours, cible ? cible.id : null);
       bouton.disabled = false;
       if (!inv) { toast("Création impossible"); return; }
-      if (Store.mode === "nuage") await Store.listerComptes(etat.famille.code);
-      const compteCible = cible ? Store.compteDe(cible.id) : null;
+      if (Store.mode === "nuage") {
+        await Store.listerComptes(etat.famille.code);
+        await Store.listerDemandes(etat.famille.code);
+      }
+      /* Le rattachement déjà fait, ou la demande encore en attente : dans les
+         deux cas on sait à quelle adresse envoyer le lien. Avant le
+         14/09/2026 seul le premier existait — et il n'existait justement pas
+         tant que la personne n'avait pas cliqué. */
+      const compteCible = cible
+        ? (Store.compteDe(cible.id) || Store.demandeDe(cible.id))
+        : null;
       const lien = Invitations.lien(inv.jeton);
       const fin = new Date(inv.expireLe).toLocaleDateString("fr-FR",
         { day: "numeric", month: "long", year: "numeric" });
@@ -1814,7 +1878,7 @@ Formulaires.invitation = function () {
       if (be) be.onclick = async () => {
         be.disabled = true;
         be.textContent = "Envoi…";
-        const r = await Store.envoyerLienConnexion(compteCible.adresse);
+        const r = await Store.envoyerLienConnexion(compteCible.adresse, compteCible.jeton || null);
         be.disabled = false;
         if (r.ok) {
           /* Vous vous l'envoyez à vous-même : on retient VOTRE adresse, comme
@@ -2274,12 +2338,20 @@ Formulaires.ajustementPoints = function (mid) {
 Formulaires.historique = function (mid) {
   const cible = mid && (mid === moi.id || estAdmin()) ? membre(mid) : moi;
   if (!cible) return;
-  const sien = etat.journal.filter((e) => e.membreId === cible.id).slice(0, 60);
+  /* TRIER AVANT DE COUPER (14/09/2026). Le journal arrive de Firebase rangé
+     par identifiant de ligne (« t|tâche|2026-S37 »), jamais par date : on
+     gardait donc 60 lignes au hasard, et l'écran mélangeait les mois. */
+  const tous = etat.journal.filter((e) => e.membreId === cible.id)
+    .slice()
+    .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const sien = tous.slice(0, 60);
   const solde = pointsDe(cible.id);
 
   const entete = '<div class="ligne" style="padding-top:0">' + avatarDe(cible) +
     '<div class="ligne-corps"><b>' + esc(cible.prenom) + "</b><small>" +
-    sien.length + " mouvement" + (sien.length > 1 ? "s" : "") + "</small></div>" +
+    tous.length + " mouvement" + (tous.length > 1 ? "s" : "") +
+    (tous.length > sien.length ? " • les " + sien.length + " derniers" : "") +
+    "</small></div>" +
     '<span class="etiquette or">' + solde + " pts</span></div>";
 
   const html = entete + (sien.length
@@ -2419,6 +2491,14 @@ Formulaires.menuProfil = function () {
       : "") +
     '<p class="aide centre" style="margin-bottom:.8rem">Version ' + esc(VERSION) +
     " — merci de vos retours !<br>" +
+    /* Les comptes de Ma Tribu sur les réseaux (15/09/2026). De SIMPLES liens,
+       jamais de bouton ni de widget : un widget chargerait les traceurs de Meta
+       dès l'ouverture de la fiche, ce qui demanderait un consentement et
+       rendrait la page de confidentialité fausse. Un lien, lui, ne transmet
+       rien tant qu'on ne clique pas. */
+    "Suivez Ma Tribu sur " +
+    '<a href="https://www.instagram.com/matribu.app/" target="_blank" rel="noopener">Instagram</a> et ' +
+    '<a href="https://www.facebook.com/people/MaTribu/61593968081741/" target="_blank" rel="noopener">Facebook</a><br>' +
     /* Obligation légale dès lors que d autres familles que la sienne
        utilisent l application : dire ce qui est collecté et comment le
        faire effacer. La page vit à part, elle se lit sans être connecté. */
