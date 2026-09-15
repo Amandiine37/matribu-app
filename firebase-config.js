@@ -25,7 +25,7 @@ window.CONFIG_FIREBASE = {
   messagingSenderId: "713320479232",
   appId: "1:713320479232:web:2f9fecae989b57f9bef6e5",
 
-  /* Cle de site reCAPTCHA v3, pour App Check. Elle atteste que la requete
+  /* Cle de site reCAPTCHA Enterprise, pour App Check. Elle atteste que la requete
      vient bien de CE site, et non d'une copie de l'application branchee sur
      la meme base.
 

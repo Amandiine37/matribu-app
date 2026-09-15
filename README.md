@@ -1,6 +1,6 @@
 # 🏡 Ma Tribu — l'organisation de la maison, en famille
 
-> ### 🧪 Version 0.50 — BÊTA
+> ### 🧪 Version 0.51 — BÊTA
 > L'application est utilisable au quotidien, mais elle est encore jeune : des
 > bugs sont possibles et la forme des données peut encore changer.
 > Un bouton **« Signaler un problème / proposer une idée »** est disponible
@@ -20,6 +20,46 @@ Application pour téléphone (à installer sur l'écran d'accueil) qui rassemble
 | 🌟 **Points & cadeaux** | Le score de chacun et les petits plaisirs à partager — désactivable si votre famille préfère s'en passer. |
 
 ---
+
+## Nouveautés de la 0.51
+
+**Plus sûre**
+
+- Une **invitation ne sert vraiment qu'une fois**, et une invitation déjà utilisée
+  ne peut plus être relue par un autre appareil.
+- Une **adresse e-mail ne peut plus être accaparée** par une autre tribu.
+- Une **politique de sécurité du contenu** (CSP) : la page ne peut plus charger que
+  ce dont elle a besoin, ce qui limiterait les dégâts d'une éventuelle faille.
+- La **vérification App Check** est branchée dès l'ouverture, et l'application reste
+  utilisable même quand un bloqueur de publicité empêche cette vérification.
+- Le **code à 4 chiffres** n'est jamais enregistré en clair.
+- Une place de **Famille Fondatrice** ne peut plus être confirmée dans les 24 heures
+  qui suivent sa réservation, sauf pour une vraie Pionnière : un téléphone trafiqué
+  ne peut plus se l'attribuer d'un coup.
+
+**Plus fiable**
+
+- Si la création d'une famille est interrompue, un simple rechargement y ramène :
+  plus de seconde famille créée par erreur.
+- Un membre qui rejoint la tribu au moment où un administrateur enregistre ne
+  disparaît plus.
+- L'historique des points est trié par date, et quand les points sont désactivés,
+  plus rien n'est crédité.
+- Le générateur de menus ne remplace plus un repas déjà validé, et garde le
+  cuisinier et les absents.
+- Un ingrédient demandé dans deux unités différentes arrive entier dans la liste de
+  courses.
+- Une place de Famille Fondatrice qui n'a pas pu être confirmée dans les 7 jours
+  repart bien aux autres familles, au lieu de rester bloquée.
+
+**Plus agréable**
+
+- Sur téléphone, l'ouverture est plus légère : un module de connexion par compte
+  Google ou Facebook, dont Ma Tribu ne se sert pas, n'est plus chargé.
+- Les liens vers l'**Instagram** et le **Facebook** de Ma Tribu, en bas de
+  *Mon profil*.
+- Une tribu qui n'a plus rien à faire pour sa place de Famille Fondatrice ou de
+  Pionnière le voit tout de suite, en attendant la confirmation.
 
 ## Nouveautés de la 0.50
 

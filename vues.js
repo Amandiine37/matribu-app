@@ -156,10 +156,12 @@ function carteObjectif() {
 
 /* La place dans le programme « Familles Fondatrices ».
 
-   Deux états, deux allures :
+   Trois états, trois allures :
    - place acquise : un badge d'une ligne, discret, qui ouvre la fiche ;
    - place réservée : la progression, avec ce qu'il reste à faire et le temps
-     qui court — celle-là a une date de péremption, elle mérite sa carte.
+     qui court — celle-là a une date de péremption, elle mérite sa carte ;
+   - plus rien à faire (pionnière, ou critères remplis) : on le dit, le temps
+     que le serveur confirme.
 
    Le badge d'une tribu qui en a déjà un s'affiche partout : c'est une donnée
    vraie. La réservation, elle, ne se propose que là où le programme tourne —
@@ -181,6 +183,20 @@ function carteFondatrice() {
 
   if (!programmeActif()) return "";
 
+  const entete = '<div class="carte-titre">' + emoji + " Place de " + nom +
+    '<button class="lien" data-action="fondatrice">En savoir plus</button></div>';
+
+  /* Plus rien à faire (15/09/2026) : une pionnière n'a aucun critère, et une
+     fondatrice qui a tout rempli attend le serveur, qui ne confirme jamais
+     dans les 24 h suivant la réservation. On le dit, sinon l'appli semble
+     bloquée. Pas d'heure précise : la confirmation se fait à une vraie
+     ouverture de l'appli, pas au retour depuis l'arrière-plan. */
+  if (pionniere) {
+    return '<div class="carte">' + entete +
+      '<p class="aide" style="margin:0">Votre tribu était là avant le programme : ' +
+      "rien à faire. Votre place sera confirmée d'ici un jour ou deux.</p></div>";
+  }
+
   const av = avancementFondatrice();
   const faits = [av.membres >= PROGRAMME.membres,
     av.validees >= PROGRAMME.validees,
@@ -191,14 +207,14 @@ function carteFondatrice() {
     '<div class="ligne-corps"><b>' + titre + "</b>" +
     (fait ? "" : "<small>" + detail + "</small>") + "</div></div>";
 
-  return '<div class="carte">' +
-    '<div class="carte-titre">' + emoji + " Place de " + nom +
-    '<button class="lien" data-action="fondatrice">En savoir plus</button></div>' +
-    '<p class="aide" style="margin:0 0 .7rem">Votre place ' + numeroFondatrice(p.numero) +
-    " est réservée. " +
-    (av.resteJours > 1 ? "Il reste " + av.resteJours + " jours pour la confirmer."
-      : av.resteJours === 1 ? "Dernier jour pour la confirmer."
-        : "Plus que quelques heures.") + "</p>" +
+  return '<div class="carte">' + entete +
+    '<p class="aide" style="margin:0 0 .7rem">' +
+    (av.ok
+      ? "🎉 Tout est fait ! Votre place sera confirmée d'ici un jour ou deux, sans rien faire de plus."
+      : "Votre place " + numeroFondatrice(p.numero) + " est réservée. " +
+        (av.resteJours > 1 ? "Il reste " + av.resteJours + " jours pour la confirmer."
+          : av.resteJours === 1 ? "Dernier jour pour la confirmer."
+            : "Plus que quelques heures.")) + "</p>" +
     '<div class="barre-progression"><i style="width:' + Math.round(faits / 3 * 100) + '%"></i></div>' +
     '<div style="margin-top:.5rem">' +
     ligne(av.membres >= PROGRAMME.membres,
@@ -1661,7 +1677,10 @@ const Connexion = {
       '<div class="ligne"><span class="etape">4</span><div class="ligne-corps">' +
       "<b>Une icône sur l'écran d'accueil compte comme un appareil de plus</b>" +
       "<small>Elle a sa propre mémoire : il lui faut sa propre invitation. " +
-      "Une invitation peut se coller <b>ou se taper</b>, c'est un code court.</small>" +
+      /* <strong> et non <b> (15/09/2026) : la feuille de style fait de TOUT <b>
+         d'une ligne un titre, seul sur sa ligne et plus gros. « ou se taper »
+         s'affichait ainsi coupe de sa phrase, sur le premier ecran d'une famille. */
+      "Une invitation peut se coller <strong>ou se taper</strong>, c'est un code court.</small>" +
       "</div></div>" +
       "</div>" +
       /* Le lien doit être atteignable AVANT de créer quoi que ce soit :

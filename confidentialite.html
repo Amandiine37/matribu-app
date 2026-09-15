@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- CSP (en service depuis la 0.51) : une page de texte, sans aucun script. Elle n'a le droit
+     de charger que sa feuille de style et son icone ; tout le reste est refuse. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
 <title>Confidentialité — Ma Tribu</title>
 <meta name="description" content="Ce que Ma Tribu collecte, où c'est stocké, et comment obtenir la suppression de vos données.">
 <meta name="theme-color" content="#4E7A6A">

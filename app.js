@@ -153,7 +153,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.50 bêta";
+const VERSION = "0.51 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -796,7 +796,13 @@ async function hachePin(pin, selHex) {
 async function champsPin(pin) {
   if (!CRYPTO_DISPO) return null;
   const r = await hachePin(pin);
-  return r.hash ? { pinHash: r.hash, pinSel: r.sel, pin: null } : { pin: pin, pinHash: null, pinSel: null };
+  /* JAMAIS DE CODE EN CLAIR (15/09/2026, audit). Cette ligne renvoyait encore
+     { pin: pin } quand l'empreinte manquait. La branche etait inatteignable —
+     hachePin rend toujours une empreinte, ou leve une erreur —, mais elle
+     contredisait la page de confidentialite (« le code a 4 chiffres n'est
+     jamais enregistre »). Sans empreinte, on renvoie null, comme sans
+     WebCrypto : chaque endroit qui cree un code le dit alors a la personne. */
+  return r.hash ? { pinHash: r.hash, pinSel: r.sel, pin: null } : null;
 }
 
 async function verifiePin(pin, m) {
@@ -1420,23 +1426,115 @@ const Store = {
        exactement comme avant ;
      - un échec n'interrompt jamais le démarrage. Tant que la « contrainte »
        n'est pas activée dans la console Firebase, un jeton manquant est
-       simplement ignoré par le serveur. */
-  async _activerAppCheck(a, base) {
-    if (EMULATEUR) return;        // l'emulateur ne verifie pas App Check
+       simplement ignoré par le serveur.
+
+     BRANCHE AVANT LA PREMIERE REQUETE, ET BORNE (15/09/2026, audit).
+     La connexion et la base de donnees demandent le jeton App Check A CHAQUE
+     requete, et l'attendent (lu dans le code livre de Firebase 10.12.2).
+     Branche trop tard, les premieres requetes partaient sans jeton : sans
+     consequence en surveillance, refusees le jour ou la contrainte serait
+     appliquee. Il est donc branche avant la connexion (voir preparer).
+     MAIS le module reCAPTCHA de Firebase ne prevoit AUCUNE sortie si son
+     script ne se charge pas (bloqueur de publicite, Brave, Firefox strict) :
+     il ne surveille que « charge », jamais « echec », et n'a aucun delai
+     maximum. La demande de jeton attendait alors sans fin — et chaque requete
+     avec elle. D'ou _fournisseurBorne : passe DELAI_APPCHECK, un refus net ;
+     Firebase continue avec son jeton de remplacement (prevu dans son code),
+     et un disjoncteur evite de reattendre a chaque requete. */
+  DELAI_APPCHECK: 6000,
+  PAUSE_APPCHECK: 5 * 60000,
+  _appCheckEnPauseJusqua: 0,
+  diagAppCheck: null,
+
+  _fournisseurBorne(fournisseur) {
+    const original = fournisseur.getToken.bind(fournisseur);
+    fournisseur.getToken = () => {
+      if (Date.now() < this._appCheckEnPauseJusqua) {
+        const e = new Error("Vérification App Check en pause après un délai dépassé.");
+        e.code = "appcheck-en-pause";
+        return Promise.reject(e);
+      }
+      const attente = original();
+      return this._borner(attente, "vérification App Check", this.DELAI_APPCHECK).catch((err) => {
+        if (err && err.code === "delai-depasse") {
+          this._appCheckEnPauseJusqua = Date.now() + this.PAUSE_APPCHECK;
+          /* reCAPTCHA etait peut-etre seulement LENT, et non bloque : des qu'il
+             finit par repondre, on leve la pause, et la requete suivante
+             redemande un jeton — cette fois sans attendre. Sans cela, le jour
+             ou la contrainte sera appliquee, une connexion lente serait
+             refusee cinq minutes pour rien. */
+          attente.then(() => { this._appCheckEnPauseJusqua = 0; }, () => { });
+        }
+        throw err;
+      });
+    };
+    return fournisseur;
+  },
+
+  /* Branche App Check sur une application Firebase, SANS rien attendre :
+     l'enregistrement est immediat, reCAPTCHA se charge en arriere-plan, et
+     chaque requete attendra elle-meme son jeton (borne ci-dessus). */
+  _brancherAppCheck(a, ac) {
+    if (EMULATEUR || !ac) return null;        // l'emulateur ne verifie pas App Check
     const cle = (window.CONFIG_FIREBASE || {}).cleAppCheck;
-    if (!cle || cle === "A_REMPLIR") return;
+    if (!cle || cle === "A_REMPLIR") return null;
     try {
-      const ac = await import(base + "firebase-app-check.js");
+      const t0 = performance.now();
       /* reCAPTCHA ENTERPRISE, et non la version 3 : Firebase a rendu cette
          derniere obsolete et la console ne permet plus de s'y enregistrer.
          Le quota gratuit du plan Spark couvre tres largement une poignee de
          familles : aucun frais a prevoir. */
-      ac.initializeAppCheck(a, {
-        provider: new ac.ReCaptchaEnterpriseProvider(cle),
+      const instance = ac.initializeAppCheck(a, {
+        provider: this._fournisseurBorne(new ac.ReCaptchaEnterpriseProvider(cle)),
         isTokenAutoRefreshEnabled: true
       });
+      /* Essai (?csp=1 seulement) : on mesure l'arrivee du premier jeton. */
+      if (window.__montrerBlocagesCSP && a.name === "[DEFAULT]") {
+        this.diagAppCheck = { etat: "en attente du premier jeton…" };
+        this._montrerDiagAppCheck();
+        ac.getToken(instance).then(
+          () => { this.diagAppCheck = { etat: "jeton obtenu", ms: Math.round(performance.now() - t0) }; this._montrerDiagAppCheck(); },
+          (err) => { this.diagAppCheck = { etat: "échec — " + ((err && (err.code || err.message)) || "inconnu") }; this._montrerDiagAppCheck(); }
+        );
+      }
+      return instance;
     } catch (err) {
       console.warn("App Check indisponible, on continue sans :", err);
+      return null;
+    }
+  },
+
+  /* Une ligne en haut de l'ecran, UNIQUEMENT avec ?csp=1 : c'est ainsi qu'on
+     verifie App Check sur un telephone, sans outils de developpement. */
+  _montrerDiagAppCheck() {
+    if (!window.__montrerBlocagesCSP) return;
+    if (!document.body) { document.addEventListener("DOMContentLoaded", () => this._montrerDiagAppCheck()); return; }
+    let b = document.getElementById("bandeau-appcheck");
+    if (!b) {
+      b = document.createElement("div");
+      b.id = "bandeau-appcheck";
+      b.setAttribute("role", "status");
+      b.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;color:#fff;" +
+        "font:12px/1.45 system-ui,sans-serif;padding:6px 10px";
+      document.body.appendChild(b);
+    }
+    const d = this.diagAppCheck || { etat: "non branché" };
+    b.style.background = d.ms != null ? "#1f6b43" : (d.etat.indexOf("échec") === 0 ? "#8a1c1c" : "#6b5a1f");
+    b.textContent = "🔐 App Check : " + d.etat + (d.ms != null ? " en " + d.ms + " ms" : "");
+  },
+
+  /* Pour la session du lien e-mail (_compte), qui telecharge le module a part
+     et attend son branchement avant de se connecter. */
+  async _activerAppCheck(a, base) {
+    if (EMULATEUR) return null;
+    const cle = (window.CONFIG_FIREBASE || {}).cleAppCheck;
+    if (!cle || cle === "A_REMPLIR") return null;
+    try {
+      const ac = await import(base + "firebase-app-check.js");
+      return this._brancherAppCheck(a, ac);
+    } catch (err) {
+      console.warn("App Check indisponible, on continue sans :", err);
+      return null;
     }
   },
 
@@ -1456,20 +1554,60 @@ const Store = {
          connexion au lieu de la retarder. Rien d'autre ne change — le reste
          du code trouve `_fs` et `_db` en place, comme avant. */
       const promesseFirestore = import(base + "firebase-firestore.js");
-      const [app, auth] = await Promise.all([
+      /* APP CHECK BRANCHE AVANT LA PREMIERE REQUETE (15/09/2026, audit).
+         Avant, il n'etait PAS attendu (mesure du 12/09/2026) : il importait un
+         quatrieme module puis le script reCAPTCHA avant meme d'ouvrir la
+         session. Resultat : les premieres requetes partaient sans jeton — sans
+         consequence en surveillance, refusees le jour ou la contrainte serait
+         appliquee.
+         Desormais son MODULE (25 Ko) se telecharge EN MEME TEMPS que les deux
+         autres, et il est branche juste apres l'application, AVANT la
+         connexion : aucune attente de plus en serie. Le JETON n'est pas attendu
+         ici : chaque requete l'attend elle-meme, et un appareil qui revient en
+         a souvent un encore valide dans sa memoire — donc sans aucun delai.
+         Voir _brancherAppCheck et _fournisseurBorne. */
+      const cleAppCheck = (window.CONFIG_FIREBASE || {}).cleAppCheck;
+      const promesseAppCheck = (EMULATEUR || !cleAppCheck || cleAppCheck === "A_REMPLIR")
+        ? Promise.resolve(null)
+        : import(base + "firebase-app-check.js").catch((err) => {
+          console.warn("Module App Check indisponible, on continue sans :", err);
+          return null;
+        });
+      const [app, auth, ac] = await Promise.all([
         import(base + "firebase-app.js"),
-        import(base + "firebase-auth.js")
+        import(base + "firebase-auth.js"),
+        promesseAppCheck
       ]);
       const a = app.initializeApp(configFirebase());
-      /* App Check n'est PAS attendu (mesure du 12/09/2026) : il importait un
-         quatrième module puis le script reCAPTCHA avant même d'ouvrir la
-         session, et tout ce temps s'ajoutait au démarrage. Il s'installe
-         maintenant en parallèle ; les requêtes suivantes porteront son jeton.
-         Sans le mode « Appliquer », une requête partie trop tôt n'est de
-         toute façon jamais refusée. La session du lien e-mail, elle, garde
-         son attente : elle n'est pas sur le chemin du démarrage. */
-      this._activerAppCheck(a, base);
-      const au = auth.getAuth(a);
+      this._brancherAppCheck(a, ac);
+      /* LA CONNEXION SANS LE MODULE « GOOGLE / FACEBOOK » (15/09/2026).
+
+         getAuth() embarque de quoi se connecter avec un compte Google ou
+         Facebook, par fenetre ou redirection — ce que Ma Tribu ne fait pas :
+         session anonyme de l'appareil et lien e-mail, rien d'autre. Sur TOUT
+         telephone et sur Safari, ce module se charge pourtant d'office a
+         chaque ouverture : deux scripts de apis.google.com et une fenetre
+         cachee de <authDomain>/__/auth/iframe (constate le 15/09 sur un
+         Android simule). Un telechargement inutile sur les telephones lents,
+         et surtout une porte que la politique de securite du contenu (CSP)
+         aurait du laisser grande ouverte : tout le domaine de scripts
+         apis.google.com.
+
+         Le RANGEMENT DE LA SESSION est strictement celui de getAuth() dans
+         Firebase 10.12.2, lu dans le code livre : memoire du navigateur, puis
+         stockage local, puis stockage de session, dans cet ordre. C'est cette
+         session qui garde un appareil dans sa tribu.
+
+         VERIFIE le 15/09/2026 sur l'emulateur, meme origine : un appareil
+         connecte avec l'ancien code (getAuth) garde EXACTEMENT la meme
+         identite avec celui-ci, et la conserve apres un second rechargement.
+         Sur un Android simule : plus aucun script de apis.google.com, plus
+         aucune fenetre cachee.
+
+         A NE PAS « simplifier » en revenant a getAuth() sans relire ceci. */
+      const au = auth.initializeAuth(a, {
+        persistence: [auth.indexedDBLocalPersistence, auth.browserLocalPersistence, auth.browserSessionPersistence]
+      });
       if (EMULATEUR) auth.connectAuthEmulator(au, "http://127.0.0.1:9099");
       this._auth = auth;
       this._au = au;
@@ -1629,13 +1767,13 @@ const Store = {
      aboutit : elle ne laisse rien tourner derriere elle. */
   DELAI_EMAIL: 20000,
 
-  _borner(promesse, quoi) {
+  _borner(promesse, quoi, delai) {
     return new Promise((ok, ko) => {
       const minuterie = setTimeout(() => {
         const e = new Error("Le serveur ne répond pas (" + quoi + ").");
         e.code = "delai-depasse";
         ko(e);
-      }, this.DELAI_EMAIL);
+      }, delai || this.DELAI_EMAIL);
       promesse.then(
         (v) => { clearTimeout(minuterie); ok(v); },
         (e) => { clearTimeout(minuterie); ko(e); }
@@ -3851,14 +3989,18 @@ async function suivreProgrammeFondatrices(code) {
       if (!place || place.famille !== code) { await oublierPlace(); return; }
       if (place.statut === "validee") { await inscrirePlace(p.numero, place.genre, "validee"); return; }
       const av = avancementFondatrice();
-      if (place.genre === "pionniere" || av.ok) {
-        if (await Store.validerPlaceFondatrice(p.numero)) {
-          await inscrirePlace(p.numero, place.genre, "validee");
-          rendre();
-          feterFondatrice(code);
-        }
+      if ((place.genre === "pionniere" || av.ok)
+          && await Store.validerPlaceFondatrice(p.numero)) {
+        await inscrirePlace(p.numero, place.genre, "validee");
+        rendre();
+        feterFondatrice(code);
         return;
       }
+      /* Pas encore validee. Le serveur refuse toute validation dans les 24 h
+         qui suivent la reservation, sauf pour une vraie pionniere (15/09/2026) :
+         on reessaiera a la prochaine ouverture. Passe 7 jours, en revanche, la
+         place repart au pot, criteres atteints ou non — sinon une tribu absente
+         pile a ce moment-la gardait pour toujours une place figee. */
       if (av.expiree) { await Store.libererPlaceFondatrice(p.numero); await oublierPlace(); }
       return;
     }
@@ -4715,8 +4857,12 @@ const Invitations = {
     let verrou = cible ? { pinHash: cible.pinHash || null, pinSel: cible.pinSel || null } : null;
     if (cible && !cible.pinHash && cible.pin && CRYPTO_DISPO) {
       const h = await champsPin(cible.pin);
-      verrou = { pinHash: h.pinHash, pinSel: h.pinSel };
-      if (estAdmin()) { Object.assign(cible, h); await Store.ecrire(["membres"]); }
+      /* champsPin peut rendre null (15/09/2026) : sans cette garde, lire
+         h.pinHash plantait la creation de l'invitation au lieu de s'arreter. */
+      if (h) {
+        verrou = { pinHash: h.pinHash, pinSel: h.pinSel };
+        if (estAdmin()) { Object.assign(cible, h); await Store.ecrire(["membres"]); }
+      }
     }
 
     const inv = {

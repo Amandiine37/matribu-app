@@ -2049,10 +2049,21 @@ Formulaires.fondatrice = function (feter) {
       ? (pionniere
         ? "Votre tribu était là avant le programme. Ce statut vous est offert, sans condition."
         : "Acquis, et définitif.")
-      : "Place réservée pendant " + PROGRAMME.jours + " jours") +
+      : pionniere ? "Place réservée"
+        : "Place réservée pendant " + PROGRAMME.jours + " jours") +
     "</div></div>" +
 
-    (validee ? "" :
+    /* Plus rien à faire (15/09/2026) : une pionnière n'a aucun critère, et une
+       fondatrice qui a tout rempli attend le serveur, qui ne confirme jamais
+       dans les 24 h suivant la réservation. On le dit, sinon la fiche semble
+       bloquée. Pas d'heure précise : la confirmation se fait à une vraie
+       ouverture de l'application, pas au retour depuis l'arrière-plan. */
+    (validee ? "" : pionniere
+      ? '<div class="carte">' +
+        '<div class="carte-titre">Ce qu\'il reste à faire</div>' +
+        '<p class="aide" style="margin:0">Votre tribu était là avant le programme : ' +
+        "rien à faire. Votre place sera confirmée d'ici un jour ou deux.</p>" +
+        "</div>" :
       '<div class="carte">' +
       '<div class="carte-titre">Ce qu\'il reste à faire</div>' +
       critere(av.membres >= PROGRAMME.membres,
@@ -2065,9 +2076,11 @@ Formulaires.fondatrice = function (feter) {
         "Utiliser l'application " + PROGRAMME.joursUtiles + " jours différents",
         av.jours + " jour" + (av.jours > 1 ? "s" : "") + " pour l'instant") +
       '<p class="aide" style="margin-top:.7rem">' +
-      (av.resteJours > 1 ? "Il vous reste " + av.resteJours + " jours."
-        : av.resteJours === 1 ? "C'est le dernier jour." : "Plus que quelques heures.") +
-      " Passé ce délai, la place retourne aux autres familles.</p>" +
+      (av.ok
+        ? "🎉 Tout est fait ! Votre place sera confirmée d'ici un jour ou deux, sans rien faire de plus."
+        : (av.resteJours > 1 ? "Il vous reste " + av.resteJours + " jours."
+          : av.resteJours === 1 ? "C'est le dernier jour." : "Plus que quelques heures.") +
+          " Passé ce délai, la place retourne aux autres familles.") + "</p>" +
       "</div>") +
 
     '<div class="carte">' +

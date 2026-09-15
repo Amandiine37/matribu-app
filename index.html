@@ -3,6 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- POLITIQUE DE SECURITE DU CONTENU (CSP) — en service depuis la 0.51 (essayee sur matribu-test le 15/09/2026).
+     La liste des adresses d'ou cette page a le droit de charger quelque chose. Tout
+     le reste est refuse par le navigateur : si un jour un defaut laissait glisser du
+     code dans la page, ce code ne pourrait ni s'executer, ni envoyer des donnees ailleurs.
+     Chaque adresse a une raison, relevee dans le code reel des modules le 15/09 :
+       - www.gstatic.com/firebasejs/ : les modules Firebase ;
+       - firestore, identitytoolkit, securetoken (googleapis.com) : base et connexion ;
+       - content-firebaseappcheck.googleapis.com, www.google.com/recaptcha/,
+         www.gstatic.com/recaptcha/, recaptcha.google.com/recaptcha/ : App Check
+         (reCAPTCHA Enterprise ; liste officielle de Google) ;
+       - 127.0.0.1:9099 et 127.0.0.1:8085 : l'emulateur local (?emulateur=1), rien en ligne.
+     Styles « unsafe-inline » : l'appli ecrit ses mises en page dans le HTML ; les styles
+     sont un risque bien moindre que les scripts.
+     L'EMPREINTE sha256 autorise le SEUL script ecrit dans cette page : le filet de
+     securite, plus bas. Le modifier d'un seul caractere oblige a la recalculer.
+     Pas de « upgrade-insecure-requests » : il casserait l'emulateur local.
+     Verification : ouvrir la page avec ?csp=1 — un bandeau liste ce qui a ete bloque. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NB2+EMYdJJvnSWtyP9BOHFQdSebD/UyY124OGqwzYl8=' https://www.gstatic.com/firebasejs/ https://www.gstatic.com/recaptcha/ https://www.google.com/recaptcha/; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://content-firebaseappcheck.googleapis.com https://www.google.com/recaptcha/ http://127.0.0.1:9099 http://127.0.0.1:8085; frame-src https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Ma Tribu</title>
 <meta name="description" content="Organisation familiale : taches menageres, courses, menus de la semaine, pense-betes et points a echanger contre des cadeaux.">
 <meta name="theme-color" content="#4E7A6A">
@@ -65,21 +83,67 @@ window.addEventListener("unhandledrejection", function (e) {
   var r = e.reason || {};
   __noterErreur([r.code, r.message || String(e.reason)].filter(Boolean).join(" — "));
 });
-/* Si au bout de 8 secondes rien ne s'affiche, on explique au lieu de rester blanc. */
+
+/* CE SCRIPT EST AUTORISE PAR SON EMPREINTE dans la CSP, en haut de la page
+   (15/09/2026). Changer un seul caractere ici oblige a recalculer l'empreinte :
+   sinon le navigateur refuse ce script, et le filet de securite disparait. */
+
+/* JOURNAL DES BLOCAGES DE LA CSP. Chaque refus du navigateur est note ici.
+   Ouverte avec ?csp=1, la page les affiche dans un bandeau en bas de l'ecran :
+   c'est ainsi qu'on essaie la CSP sur un telephone, sans outils de
+   developpement. Sans ?csp=1, rien ne s'affiche jamais. */
+window.__blocagesCSP = [];
+var __montrerBlocagesCSP = /[?&]csp=1(&|$)/.test(location.search);
+function __bandeauCSP() {
+  if (!document.body) { document.addEventListener("DOMContentLoaded", __bandeauCSP); return; }
+  var b = document.getElementById("bandeau-csp");
+  if (!b) {
+    b = document.createElement("div");
+    b.id = "bandeau-csp";
+    b.setAttribute("role", "status");
+    b.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99999;max-height:40vh;overflow:auto;" +
+      "color:#fff;font:12px/1.45 system-ui,sans-serif;padding:8px 10px;white-space:pre-wrap";
+    document.body.appendChild(b);
+  }
+  var n = window.__blocagesCSP.length;
+  b.style.background = n ? "#8a1c1c" : "#1f6b43";
+  b.textContent = n
+    ? "🛡️ CSP : " + n + " blocage(s)\n" + window.__blocagesCSP.join("\n")
+    : "🛡️ CSP active : aucun blocage pour l'instant";
+}
+document.addEventListener("securitypolicyviolation", function (e) {
+  var ligne = (e.effectiveDirective || e.violatedDirective) + " → " + (e.blockedURI || "(dans la page)");
+  if (window.__blocagesCSP.indexOf(ligne) === -1) window.__blocagesCSP.push(ligne);
+  if (__montrerBlocagesCSP) __bandeauCSP();
+});
+if (__montrerBlocagesCSP) window.addEventListener("load", function () { setTimeout(__bandeauCSP, 5000); });
+
+/* Si au bout de 8 secondes rien ne s'affiche, on explique au lieu de rester blanc.
+   Plus aucun attribut onclick dans le HTML (15/09/2026) : la CSP bloque ce genre de
+   bouton EN SILENCE, et « Recharger la page » n'aurait plus rien fait le jour
+   d'une panne. Le bouton est branche ici, en JavaScript. Le detail passe par
+   textContent : un message d'erreur ne peut pas glisser de HTML dans la page. */
+window.__recharger = function () { location.reload(); };
+window.__afficherCaCoince = function () {
+  var chargement = document.getElementById("chargement");
+  if (!chargement) return;
+  chargement.innerHTML =
+    '<div class="logo-tribu">🏡</div><h1>Ça coince</h1>' +
+    '<p class="intro">L\'application n\'a pas réussi à démarrer.</p>' +
+    '<div class="carte"><div class="carte-titre">Détail technique</div>' +
+    '<p id="detail-demarrage" style="font-size:.78rem;line-height:1.5;word-break:break-word;margin:0"></p></div>' +
+    '<button class="btn principal plein" id="recharger-demarrage">Recharger la page</button>' +
+    '<p class="aide centre" style="margin-top:1rem">Faites une capture d\'écran de ce message.</p>';
+  document.getElementById("detail-demarrage").textContent =
+    window.__erreursDemarrage.join(" | ") || "Aucun message. Fichier app.js absent ou bloqué ?";
+  document.getElementById("recharger-demarrage").addEventListener("click", function () { window.__recharger(); });
+};
 setTimeout(function () {
   var app = document.getElementById("ecran-app");
   var chargement = document.getElementById("chargement");
   if (!chargement || !app || !app.hidden) return;
   if (window.__signalerPanne) { window.__signalerPanne(); return; }
-  chargement.innerHTML =
-    '<div class="logo-tribu">🏡</div><h1>Ça coince</h1>' +
-    '<p class="intro">L\'application n\'a pas réussi à démarrer.</p>' +
-    '<div class="carte"><div class="carte-titre">Détail technique</div>' +
-    '<p style="font-size:.78rem;line-height:1.5;word-break:break-word;margin:0">' +
-    (window.__erreursDemarrage.join(" | ") || "Aucun message. Fichier app.js absent ou bloqué ?") +
-    '</p></div>' +
-    '<button class="btn principal plein" onclick="location.reload()">Recharger la page</button>' +
-    '<p class="aide centre" style="margin-top:1rem">Faites une capture d\'écran de ce message.</p>';
+  window.__afficherCaCoince();
 }, 8000);
 </script>
 
@@ -144,8 +208,8 @@ setTimeout(function () {
      recettes.js et ses 343 Ko retardaient a eux seuls l'arrivee de app.js,
      donc l'ouverture de l'application (mesure du 12/09/2026). -->
 <script src="recettes.js?v=4" defer></script>
-<script src="vues.js?v=8" defer></script>
-<script src="formulaires.js?v=8" defer></script>
-<script src="app.js?v=8" defer></script>
+<script src="vues.js?v=9" defer></script>
+<script src="formulaires.js?v=9" defer></script>
+<script src="app.js?v=10" defer></script>
 </body>
 </html>
