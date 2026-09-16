@@ -285,8 +285,13 @@ h2.titre-section{
 .actu ul{margin:0;padding-left:1.1rem}
 .actu li{margin:.45rem 0;line-height:1.55}
 
-details.repli{margin-top:.5rem}
-details.repli > summary{
+/* Les blocs repliables. .legende-sante est la légende des icônes santé du
+   cahier de recettes : sans cette ligne elle s'affichait en texte ordinaire,
+   sans couleur ni main au survol (relevé le 16/09/2026). */
+details.repli,
+details.legende-sante{margin-top:.5rem}
+details.repli > summary,
+details.legende-sante > summary{
   cursor:pointer;color:var(--accent-strong);font-weight:600;font-size:.85rem;
   padding:.4rem 0;
 }
@@ -447,6 +452,20 @@ input[type=checkbox]{min-width:18px;min-height:18px;accent-color:var(--accent);}
   background:var(--surface);color:var(--accent-strong);
   box-shadow:var(--shadow);
 }
+/* Sur les écrans les plus étroits (320 px, iPhone SE), « 📝 Pense-bêtes »
+   se faisait couper de huit pixels : text-overflow:ellipsis ne s'applique
+   pas au texte d'un conteneur inline-flex, le mot était donc tranché net,
+   sans même les points de suspension. On resserre plutôt le texte pour
+   qu'il tienne en entier (16/09/2026). */
+@media (max-width:360px){
+  .segments button{font-size:.76rem;padding:.44rem .22rem;gap:.2rem;}
+}
+
+/* Le petit rang d'étiquettes. Jusqu'au 16/09/2026 il n'était mis en forme
+   que dans une ligne de liste (.ligne-corps .etiquettes, plus bas). Ailleurs
+   — la fiche d'une recette — les étiquettes se touchaient, et « centrer »
+   n'avait aucun effet faute de rangée souple. */
+.etiquettes{display:flex;flex-wrap:wrap;gap:.3rem;}
 
 .etiquette{
   display:inline-flex;align-items:center;gap:.25rem;

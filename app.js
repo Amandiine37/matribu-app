@@ -649,6 +649,7 @@ function ouvrirFeuille(titre, html, apres) {
   const f = $("#feuille");
   f.innerHTML = '<div class="feuille-poignee"></div>' +
     (titre ? "<h3>" + esc(titre) + "</h3>" : "") + html;
+  nommerIcones(f);
   f.scrollTop = 0;
   figerPage();
   $("#voile").classList.add("on");
@@ -2675,7 +2676,13 @@ const Store = {
      verifient que la tribu annonce bien ce numero, et son document n'en porte
      qu'un seul — c'est ce qui l'empeche d'en viser deux a la fois. */
   async inscrirePlaceFondatrice(place) {
-    if (this.mode !== "nuage") { this._ecrireLocal(this.code, etat); return true; }
+    /* Hors nuage, il n'y a pas de programme des fondatrices : on répond
+       simplement « c'est noté », et l'appelant pose la place dans l'état,
+       qui part avec la prochaine sauvegarde. La ligne d'avant recopiait ici
+       TOUTE la famille sous "tribu:donnees:" + this.code — un copié-collé des
+       méthodes de sauvegarde ; quand this.code était encore nul, la copie
+       atterrissait sous "tribu:donnees:null" (relevé le 16/09/2026). */
+    if (this.mode !== "nuage") return true;
     try {
       await this._fs.setDoc(this._fs.doc(this._db, "familles", this.code),
         { fondatrice: place }, { merge: true });
@@ -7037,6 +7044,7 @@ function rendre() {
   const cible = $("#vue-" + v);
   cible.classList.add("active");
   cible.innerHTML = Vues[v]();
+  nommerIcones(cible);
 
   majBarre();
   majPastilles();
@@ -7047,6 +7055,53 @@ function rendre() {
     if (el) { el.focus(); if (el.setSelectionRange) { const n = el.value.length; el.setSelectionRange(n, n); } }
     ui.focus = null;
   }
+}
+
+/* Les boutons qui ne portent qu'une icône (✏️ ✕ ＋ ‹ ›). Un lecteur d'écran
+   annonce « crayon » ou « multiplication » : personne ne sait ce qu'il va
+   déclencher. Plutôt que d'écrire le nom vingt fois à la main dans les
+   gabarits, on le pose ici, d'après l'action du bouton, après chaque
+   affichage. Un bouton qui porte déjà un mot lisible n'est pas touché.
+   (Relevé le 16/09/2026 : 28 boutons sur 34 n'avaient aucun nom.) */
+const NOMS_ICONES = {
+  "tache-editer": "Modifier la tâche",
+  "tache-refuser": "Refuser la tâche",
+  "course-editer": "Modifier l'article",
+  "course-suppr": "Supprimer l'article",
+  "course-deplacer": "Déplacer vers une autre liste",
+  "course-toggle": "Cocher l'article",
+  "note-editer": "Modifier le rappel",
+  "note-toggle": "Cocher le rappel",
+  "stock-editer": "Modifier le produit",
+  "stock-plus": "Ajouter une unité",
+  "stock-moins": "Retirer une unité",
+  "liste-editer": "Modifier la liste",
+  "liste-nouvelle": "Nouvelle liste",
+  "membre-editer": "Modifier la fiche",
+  "cadeau-editer": "Modifier le cadeau",
+  "cadeau-pour": "Offrir un cadeau",
+  "echange-refuser": "Refuser la demande",
+  "points-ajuster": "Ajuster les points",
+  "semaine-prec": "Semaine précédente",
+  "semaine-suiv": "Semaine suivante",
+  /* les rôles du bouton flottant ＋ (voir majFab) */
+  "tache-nouvelle": "Nouvelle tâche",
+  "course-nouvelle": "Nouvel article de courses",
+  "stock-nouveau": "Nouveau produit en réserve",
+  "note-nouvelle": "Nouveau rappel",
+  "recette-nouvelle": "Nouvelle recette",
+  "cadeau-nouveau": "Nouveau cadeau"
+};
+function nommerIcones(racine) {
+  (racine || document).querySelectorAll("[data-action]").forEach((b) => {
+    if (b.title || b.getAttribute("aria-label")) return;
+    const nom = NOMS_ICONES[b.dataset.action];
+    if (!nom) return;
+    /* un bouton qui affiche déjà un mot se lit tout seul */
+    if (/[a-zA-ZÀ-ÿ]{2}/.test(b.textContent || "")) return;
+    b.title = nom;
+    b.setAttribute("aria-label", nom);
+  });
 }
 
 /* La barre du bas se redessine à chaque affichage : les onglets masqués par
@@ -7213,6 +7268,9 @@ function majFab() {
   if (!conf || (conf.admin && !estAdmin())) { f.hidden = true; return; }
   f.hidden = false;
   f.dataset.action = conf.action;
+  const nom = NOMS_ICONES[conf.action] || "Ajouter";
+  f.title = nom;
+  f.setAttribute("aria-label", nom);
 }
 
 function aller(vue) {
