@@ -1,6 +1,6 @@
 # 🏡 Ma Tribu — l'organisation de la maison, en famille
 
-> ### 🧪 Version 0.51 — BÊTA
+> ### 🧪 Version 0.52 — BÊTA
 > L'application est utilisable au quotidien, mais elle est encore jeune : des
 > bugs sont possibles et la forme des données peut encore changer.
 > Un bouton **« Signaler un problème / proposer une idée »** est disponible
@@ -15,11 +15,214 @@ Application pour téléphone (à installer sur l'écran d'accueil) qui rassemble
 | 🛒 **Courses** | Une ou plusieurs listes partagées (semaine, mois, magasin), rangées par rayon. Les ingrédients d'un menu s'y envoient en un geste, et suivent le menu s'il change. |
 | 🥫 **Réserve** | Ce qu'on garde à la maison, en deux côtés — alimentaire et maison — avec les quantités minimum et les dates de péremption. |
 | 🍽️ **Menus** | Les repas midi et soir de la semaine, avec un générateur automatique. |
-| 📖 **Recettes** | Le cahier : 336 plats et 62 desserts fournis, les vôtres, vos favoris, et le catalogue partagé entre familles. |
+| 📖 **Recettes** | Le cahier : 675 plats et 62 desserts fournis, les vôtres, vos favoris, et le catalogue partagé entre familles. |
 | 🔔 **Rappels** | L'agenda partagé de la famille et les pense-bêtes. |
 | 🌟 **Points & cadeaux** | Le score de chacun et les petits plaisirs à partager — désactivable si votre famille préfère s'en passer. |
 
 ---
+
+## Nouveautés de la 0.52
+
+**Rejoindre la tribu, sans impasse**
+
+- **« Me connecter par e-mail » marche du premier coup.** Si l'administrateur a
+  enregistré votre adresse sur votre profil, il suffit de demander le lien de
+  connexion et de l'ouvrir : plus besoin d'attendre qu'il vous envoie le sien.
+- **Chacun choisit son code à 4 chiffres.** L'administrateur n'a plus à inventer
+  celui des autres : un profil peut être créé sans code, et la personne choisit le
+  sien en arrivant — avec son invitation ou son lien e-mail —, en le tapant deux
+  fois.
+- **Tout le monde peut modifier son profil** (prénom, avatar, code) depuis
+  *Mon profil*. Le serveur le refusait jusque-là à qui n'était pas administrateur.
+- Quand l'administrateur enregistre l'adresse e-mail d'un membre, l'application
+  **propose d'envoyer le lien tout de suite**. La fenêtre *Inviter* le propose aussi.
+- Après l'ajout d'un membre, *Inviter* **présélectionne ce membre**, et non plus
+  « Une nouvelle personne » (qui faisait créer un doublon).
+
+**Des recettes complètes**
+
+- **243 ingrédients oubliés** ont été ajoutés dans **156 plats fournis** : l'huile,
+  le beurre, l'ail, l'oignon, les herbes ou les épices que les étapes utilisaient
+  sans les lister. Ils arrivent donc dans la liste de courses.
+  Pour une tribu existante, ils s'ajoutent avec *Mettre à jour les recettes
+  fournies* : rien n'est retiré ni modifié.
+- Les **étiquettes santé** en tiennent compte (voir le tableau plus bas). La noix
+  de muscade et la noix de Saint-Jacques ne comptent plus comme des fruits à coque,
+  ni le vinaigre de riz comme un féculent.
+- Dans une recette à vous, **le rayon d'un ingrédient se devine** d'après son nom ;
+  à défaut il va dans « À catégoriser », au lieu de « Épicerie » d'office.
+- Le **générateur de menus** évite de servir deux fois le même ingrédient
+  principal dans la semaine (deux plats au saumon, deux au poulet…), **et les
+  bases végétales en font partie** : lentilles, pois chiches, haricots rouges
+  ou blancs, pois cassés, flageolets, fèves, tofu, quinoa. Les œufs sont
+  reconnus même quand le nom du plat ne les annonce pas.
+
+**Un cahier plus fourni**
+
+- **Les quatre saisons sont désormais à égalité** — 318 plats chacune, dont
+  plus de 150 végétariens. Il a fallu **104 plats de plus** : une trentaine
+  qui valent au printemps comme en été (courgettes, haricots verts, concombre,
+  herbes, grillades, salades composées), une vingtaine propres au printemps
+  (fèves, fraises salées, rhubarbe, asperges blanches, merlan, agneau), une
+  trentaine propres à l'été (tomates anciennes, aubergines au miso, poivrons
+  farcis, abricots, poulpe, daurade en croûte de sel) et vingt-cinq pour
+  l'hiver, qui était le dernier en retrait : **fondue savoyarde**, **mont d'or
+  au four**, **aligot**, **truffade**, **raclette**, **cassoulet**,
+  **carbonade flamande**, **daube provençale**, **garbure**, **confit de
+  canard**, salsifis, endives, salade d'orange à la sicilienne, **coquilles
+  Saint-Jacques** et **raie au beurre noisette**.
+- **45 nouveaux plats d'automne.** L'automne était déjà la saison la mieux
+  servie : ce ne sont pas des plats de plus pour faire du nombre, mais des
+  **produits** qui manquaient. **Châtaignes et marrons** (velouté, choux de
+  Bruxelles aux marrons, dinde aux marrons, porc aux châtaignes), **cèpes et
+  girolles** (risotto, poêlée à la crème, œufs brouillés), **figues** (filet
+  mignon, magret), **coings** (tajine d'agneau), **raisin** (poulet aux noix),
+  **poires** (tarte au roquefort), **noix** (pâtes à la ricotta), la
+  **choucroute garnie**, le **céleri rémoulade**, la **pintade aux choux**, le
+  **canard aux navets**, et les produits de la mer de saison
+  (saint-jacques au potimarron, harengs pommes à l'huile, maquereaux au vin
+  blanc, risotto aux moules et safran). L'automne passe à **318 plats**,
+  l'hiver en profite aussi (**293**).
+- **109 nouveaux plats de printemps**, la saison qui était de loin la plus
+  pauvre — 25 plats à elle, contre 142 en automne. Au-delà des asperges et des
+  petits pois : **artichauts** (barigoule, poivrade, farcis), **blettes**,
+  **oseille**, **cresson**, **ail des ours**, **fèves**, **pois gourmands**,
+  **betteraves, navets et carottes nouvelles**, **pommes de terre primeur**,
+  l'**agneau de printemps** (épaule confite, blanquette, brochettes à la
+  menthe), le **lapin à la moutarde**, et les poissons de saison (sole
+  meunière, lieu à l'oseille, sardines marinées, truite fumée). Le printemps
+  propose maintenant **266 plats** au lieu de 156, dont **133 végétariens** au
+  lieu de 57.
+- **45 nouveaux plats d'été.** L'été était fourni, mais très concentré sur la
+  courgette, l'aubergine et la tomate. Sont arrivés : les **grillades**
+  (brochettes de légumes ou de bœuf, épis de maïs au beurre d'herbes, poivrons
+  grillés marinés, dorade, gambas à l'ail, bar à la plancha, travers laqués,
+  merguez), les **salades composées** (melon-féta, pastèque-concombre,
+  maïs-tomates, haricots blancs, lentilles-concombre, panzanella, poulet-pêches,
+  pommes de terre au jambon), les **plats froids** (gaspacho de melon, soupe de
+  concombre au yaourt, tartare de thon, riz froid au sésame, poke bowl au tofu,
+  melon-jambon cru) et les poissons d'été (sardines à l'escabèche, encornets à
+  la persillade, moules à la provençale, thon mi-cuit au sésame).
+  Une semaine d'été a maintenant le choix entre **260 plats** au lieu de 215
+  (**116 végétariens** au lieu de 91).
+- **36 nouveaux plats végétariens**, tous disponibles **en hiver**, et aucune
+  soupe de plus : gratins (butternut, poireaux-comté, panais), tartes et
+  quiches (champignons-comté, blettes-féta, potimarron-noisettes), pâtes
+  (lasagnes butternut-épinards, gnocchis poêlés), céréales (risotto poireaux-
+  citron, boulgour aux légumes rôtis, riz pilaf aux lentilles), mijotés (tajine
+  pois chiches-courge, dahl de lentilles vertes, potée au chou, tofu braisé),
+  poêlées (kale et pois chiches, chou chinois au gingembre, topinambours),
+  salades d'hiver (chou rouge-pommes-noix, endives-noix-bleu, quinoa-orange) et
+  œufs (cocotte aux champignons, frittata poireaux-chèvre).
+  En végétarien et de saison, le choix d'une semaine d'hiver passe de **89 à
+  125 plats**. Comme toujours : seulement le nom, les ingrédients et un déroulé
+  écrit maison, rien recopié d'un site.
+  Pour une tribu existante, ils arrivent avec *Mettre à jour les recettes
+  fournies* — rien n'est ajouté d'office.
+
+**Des menus mieux répartis**
+
+- **Plus trois plats de lentilles dans la même semaine.** La règle « pas deux
+  fois le même ingrédient principal » ne connaissait que la viande, le poisson
+  et les œufs — et seulement quand le **nom** du plat les annonçait. Les
+  lentilles, pois chiches, haricots rouges, pois cassés, fèves, flageolets, le
+  tofu et le quinoa comptent désormais, et les œufs sont repérés jusque dans la
+  liste des ingrédients. Mesuré sur 20 semaines **végétariennes** : trois plats
+  de la même base **0,55 fois par semaine** avant, **zéro** après ; deux plats
+  de la même base, 1,35 fois avant, 1,1 après.
+- **« Encore de la soupe ? »** Le délai *« ne pas resservir un plat vu depuis
+  3 semaines »* était bien respecté… mais la quatrième semaine, les mêmes
+  revenaient : ceux dont on a les ingrédients en réserve, de saison, légers,
+  rapides. Sur 20 semaines générées, le générateur ne piochait que dans
+  **77 plats** de tout le cahier, servait le même velouté **cinq fois**, et ne
+  connaissait que **six soupes**. Il regarde maintenant **douze semaines en arrière** : un
+  plat déjà servi plusieurs fois laisse sa place aux autres, sans jamais être
+  interdit. Résultat mesuré : **152 plats différents** et **14 soupes
+  différentes**, sans rien perdre de la réserve ni de l'anti-gaspillage.
+- **Le même plat deux fois dans la même semaine, c'est fini.** « Générer » ne
+  remplace pas les repas déjà prévus : compléter une semaine à moitié remplie
+  repartait donc de zéro, sans voir ce qui était déjà là — ni les plats, ni les
+  genres. Mesuré sur 20 semaines remplies en deux fois : **1,75 plat servi deux
+  fois** dans la semaine, et 2,1 soupes au lieu de 1,3. C'est maintenant
+  **zéro doublon**.
+- **Deux repas qui se suivent ne sont plus de la même catégorie** : ni viande
+  midi et soir le même jour, ni poisson le soir puis le lendemain midi. Sur
+  30 semaines générées, cela arrivait **2,8 jours par semaine** (et 1,9 fois
+  d'un jour à l'autre) ; c'est maintenant **zéro**, sans rien changer d'autre :
+  toujours 14 plats différents, toujours aucun plat de la semaine d'avant.
+- Quand vous demandez des nombres (« 5 viandes »), ils sont désormais **étalés
+  dans la semaine** au lieu d'être tirés au sort : les répétitions tombent de
+  1,4 jour par semaine à 0,4.
+- Nouvelle option **« Privilégier les plats favoris ⭐ »**, cochée d'office :
+  les plats étoilés par la famille passent devant. Mesuré avec 20 plats
+  étoilés : **1,6 par semaine** au lieu de 0,8 — presque le double.
+- Nouvelle option **« Désigner qui cuisine, à tour de rôle »**, décochée
+  d'office : chacun son tour parmi les personnes qui ont un téléphone. Un
+  cuisinier déjà choisi n'est jamais remplacé.
+- La fenêtre annonce ce qu'elle va faire : *« 10 repas comptés sur 14 — les 4
+  autres sont libres »*. Un plat est toujours viande, poisson ou végétarien :
+  les repas non comptés retombent forcément dans une catégorie.
+
+**Plus juste au quotidien**
+
+- **Réserve** : un article acheté sans préciser la quantité s'affiche « en
+  réserve », au lieu de « 0 » et « à racheter ».
+- **Le placard ne remplit plus la liste de courses.** L'huile, la farine, les
+  épices… arrivent à part et **décochés**, dans « 🧂 Placard » : vous cochez
+  seulement ce qu'il faut racheter. Ce que vous laissez décoché rejoint votre
+  réserve (« en réserve », sans quantité) et ne vous est plus redemandé.
+- **On n'achète plus « 15 cuillères à soupe »** d'huile ni « 4 gousses » d'ail :
+  la liste porte le produit, et la fenêtre rappelle ce qu'il faut pour les plats.
+- Les quantités en **cuillères s'additionnent** enfin, quelle que soit la façon
+  dont la recette les écrit.
+- Trois situations ne se confondent plus : *en réserve sans quantité*,
+  *quantité de la recette non précisée* et *unités différentes*. « Terminer les
+  courses » et « Ce que ce repas a consommé » ne posent plus de question inutile.
+- **Les pluriels sont écrits** : « 1 article », « 3 articles » — fini les
+  « article(s) ».
+- Plusieurs textes disent enfin exactement ce qui se passe : un profil dont les
+  appareils ont été retirés n'est plus dit « jamais connecté », par exemple.
+
+**Plus agréable**
+
+- Une page **« ✨ Quoi de neuf »**, en bas de l'accueil : ce qui change pour vous
+  d'une version à l'autre, et un mot de bienvenue à chaque changement de saison
+  avec les fruits et légumes qui arrivent sur les étals.
+- Sur l'accueil d'un administrateur, **« ✅ À valider » passe en premier** et
+  réunit tout ce qui attend sa réponse : tâches faites, repas cuisinés, cadeaux
+  demandés. Au-delà de cinq, le reste se déplie sur place. Et une demande de
+  cadeau ne disparaît plus quand l'onglet Tâches est masqué.
+- Quand une fenêtre est ouverte, les messages s'affichent **en haut de l'écran** :
+  ils ne cachent plus le champ qu'on remplit.
+- Une **légende des petites icônes santé** dans le cahier de recettes.
+- Dans *Mon profil*, ce qui efface cet appareil ou lui fait quitter la tribu est
+  **rangé à part**, en bas, loin des gestes de tous les jours.
+- En mode sombre, **la pastille des onglets** se lit enfin.
+
+**Plus léger**
+
+- **Les recettes sont rangées à part** du reste de la tribu. Avant, la moindre
+  modification — cocher un article de courses — renvoyait aussi les 737 recettes
+  à chaque téléphone de la famille. Sur une tribu d'essai, le document de la
+  tribu passe de 357 Ko à 1,5 Ko.
+  Le rangement se fait tout seul, une fois par tribu, à la première ouverture par
+  un administrateur ; une tribu créée en 0.52 naît déjà rangée. Un téléphone
+  encore en 0.51 suit sans rien faire.
+- **Les déroulés des plats fournis ne sont plus envoyés en ligne.** Ils sont
+  déjà dans l'application, sur chaque téléphone : les stocker en plus revenait
+  à payer deux fois la même chose. Le document des recettes d'une famille passe
+  de **566 Ko à 351 Ko**, sur les 1 024 Ko qu'un document peut contenir — de
+  quoi ajouter encore quelque **700 recettes à vous**. Vous ne voyez aucune
+  différence : les déroulés sont remis à la lecture. Et si vous réécrivez les
+  étapes d'un plat fourni, votre version, elle, est bien enregistrée.
+
+**Côté coulisses**
+
+- La base **peut être sauvegardée** sur l'ordinateur qui s'occupe de
+  l'application — Firebase ne sait le faire tout seul que sur son offre payante.
+  Les deux programmes sont prêts et éprouvés ; marche à suivre :
+  `GUIDE-FIREBASE.md`, étape 12. Tant que des sauvegardes ne sont pas
+  réellement faites, la page de confidentialité n'en parle pas.
 
 ## Nouveautés de la 0.51
 
@@ -284,6 +487,10 @@ Courgettes   4 → 2   (−2)
 Rien n'est fait sans confirmation, et vous décochez ce que vous n'avez pas
 utilisé — on ne met jamais exactement ce que dit la recette.
 
+Les produits notés « en réserve » **sans quantité** (le placard) ne sont pas
+décomptés : l'application ne sait pas combien il en reste, et elle ne va pas
+vous le demander à chaque repas.
+
 **Quand les unités ne se convertissent pas** — la recette demande 4 tomates,
 votre réserve est en boîtes — l'application ne devine pas : elle **vous
 demande**. Une section *« À vous de dire »* affiche l'article avec un champ,
@@ -386,6 +593,29 @@ quantité réellement manquante.
 > et 1 kg de farine → l'application propose **4 pommes**, et laisse la farine de
 > côté. Les kilos et les grammes sont convertis tout seuls (idem ml / cl / l).
 
+**🧂 Le placard, à part.** L'huile, le vinaigre, la farine, le sucre, le miel,
+la moutarde, le bouillon, les épices et les herbes sèches ne sont pas des
+courses de la semaine : on les a, ou on ne les a pas. Ils sont donc réunis en
+fin de fenêtre, **décochés**, avec ce qu'il faut pour les plats :
+
+> 🧂 **Placard** — 2 à vérifier
+> ☐ **Cumin** — pour les plats : 2 c. à café
+> ☐ **Huile d'olive** — pour les plats : 18 c. à soupe
+> ☑ **Retenir que je les ai** — ce qui reste décoché rejoint la réserve
+
+Vous cochez seulement ce qu'il faut racheter. Le reste rejoint la réserve en
+« en réserve », sans quantité : la semaine suivante, ces produits ne vous sont
+plus demandés et apparaissent repliés — *« ✅ 7 produits du placard déjà en
+réserve »*. Un produit déjà sur votre liste n'est jamais noté « à la maison ».
+
+Les produits plus rares (pâte de curry, vinaigre de riz, sucre glace…) restent
+proposés comme des ingrédients ordinaires : les décocher d'office ferait rentrer
+sans.
+
+**Les petites mesures ne partent pas sur la liste.** On n'achète pas « 15
+cuillères à soupe » d'huile ni « 4 gousses » d'ail : la liste porte le produit,
+sans quantité. La fenêtre, elle, affiche toujours ce que demandent les plats.
+
 ### Les dates de péremption
 
 Chaque article de la réserve peut porter un **« à consommer avant le… »**.
@@ -419,7 +649,10 @@ En une pression, les articles quittent la liste **et rejoignent votre réserve**
   faire dans une réserve — décochez-le, il disparaîtra simplement de la liste ;
 - si les unités ne correspondent pas (2 paquets achetés, une réserve en kilos),
   l'application **ne bricole pas un chiffre faux** : elle vous le signale pour
-  que vous ajustiez à la main.
+  que vous ajustiez à la main ;
+- un article acheté **sans quantité** (l'huile, les épices) rentre en réserve
+  sans rien vous demander : il y reste « en réserve ». Il ne repasse pas pour
+  autant en « à racheter ».
 
 Quand il n'y a que des articles déjà connus, **rien ne vous est demandé** : une
 pression suffit, et un message résume ce qui est rentré. C'est réglable —
@@ -433,12 +666,13 @@ deviner.*
 ### Les menus
 
 - Appuyez sur **🎲 Générer** : l'application remplit la semaine en piochant dans
-  la bibliothèque de recettes (398 recettes fournies). Voir les réglages juste en
+  la bibliothèque de recettes (737 recettes fournies). Voir les réglages juste en
   dessous.
 - Sous les boutons, une ligne récapitule ce que donne la semaine :
   **🐟 2 · 🍗 3 · 🥦 2**.
-- Appuyez sur **🛒 Aux courses** : tous les ingrédients de la semaine sont
-  proposés, vous décochez ce que vous avez déjà, et hop, dans la liste.
+- Appuyez sur **🛒 Aux courses** : les ingrédients de la semaine sont proposés,
+  moins ce que vous avez en réserve ; les produits de placard arrivent à part,
+  décochés. Vous ajustez, et hop, dans la liste.
 - **📖 Recettes** : ajoutez vos propres plats. Chaque recette a un champ **lien** :
   collez-y l'adresse de la recette (Cookomix, un blog…) et un bouton l'ouvrira.
   L'application ne stocke que le nom du plat et ses ingrédients — pas le texte
@@ -458,9 +692,15 @@ repas déjà prévus (sinon seules les cases vides sont complétées).
   *Végétarien*. Ce n'est pas une préférence : les plats écartés le sont pour de
   bon, ils ne peuvent pas ressortir faute de mieux.
 - **🐟 Poisson**, **🍗 Viande**, **🥦 Repas végétariens** : combien de fois dans
-  la semaine. Un nombre indiqué est respecté à la lettre — « 2 fois » donne
-  exactement deux poissons, et la catégorie ne réapparaît pas ailleurs.
-  *Peu importe* laisse la catégorie entièrement libre. *Aucun* la supprime.
+  la semaine, et **à quels repas** — les nombres demandés sont étalés, jamais
+  deux fois de suite. *Peu importe* laisse la catégorie entièrement libre.
+  *Aucun* la supprime.
+- Une ligne annonce le compte : *« 10 repas comptés sur 14 — les 4 autres sont
+  libres, et seront eux aussi viande, poisson ou végétarien »*. C'est la limite
+  de l'exercice : un plat appartient toujours à l'une des trois catégories, donc
+  un repas que vous n'avez pas compté peut ajouter un poisson à vos deux
+  poissons. Pour un compte exact, comptez toute la semaine (le total doit
+  atteindre le nombre de cases).
 
 *Comment un plat est classé ?* D'abord par le rayon de ses ingrédients
 (Boucherie, Poissonnerie), puis par leur nom — un thon en boîte se range en
@@ -474,8 +714,57 @@ bœuf ne fait pas un repas de viande.
   les ingrédients passent devant. Moins de courses, moins de perte. Ça pèse
   lourd sans écraser la saison ni les nombres demandés.
 - **Plats plus légers le soir**, **plats rapides du lundi au vendredi**.
-- **Privilégier les recettes Thermomix** (99 plats fournis s'y prêtent).
-- **Ne pas resservir un plat vu depuis…** 2, 3, 4 ou 6 semaines.
+- **Privilégier les recettes Thermomix** (161 recettes fournies s'y prêtent).
+- **Privilégier les plats favoris ⭐**, coché d'office : les plats étoilés par
+  les membres de la tribu passent devant. Sans aucune étoile, l'option ne change
+  rien, et la fenêtre le dit.
+- **Désigner qui cuisine, à tour de rôle**, décoché d'office : le générateur
+  remplit aussi le cuisinier, chacun son tour, comme le bouton 🔁 de la fiche
+  d'un repas. Un cuisinier déjà choisi n'est pas remplacé, et l'option
+  n'apparaît qu'à partir de deux personnes ayant un téléphone.
+- **Ne pas resservir un plat vu depuis…** 2, 3, 4 ou 6 semaines. C'est un
+  délai ferme ; au-delà, voir *La mémoire longue* ci-dessous.
+
+**Jamais deux repas de suite dans la même catégorie.** Viande à midi et viande
+le soir, c'était le défaut le plus visible : **2,8 jours par semaine** sur
+30 semaines générées, plus 1,9 fois « le soir, puis le lendemain midi ».
+Le générateur remplit maintenant les repas dans l'ordre du temps et regarde le
+repas d'avant et celui d'après. Résultat mesuré : **zéro**.
+
+La règle est **souple**, comme les autres : elle coûte des points, elle
+n'interdit rien. Une semaine végétarienne reste végétarienne, et si votre
+cahier ne propose qu'une catégorie, la semaine se remplit quand même.
+
+**La mémoire longue.** Passé le délai ci-dessus, un plat redevient possible —
+et les mêmes revenaient aussitôt, parce que ce sont eux que la réserve, la
+saison et « rapide » mettent en tête. Le générateur compte donc combien de fois
+chaque plat a été servi **ces douze dernières semaines**, et fait reculer un peu
+ceux qui reviennent souvent. Le coût est plafonné : il ne passe jamais devant un
+nombre demandé, ni devant l'anti-gaspillage. Sur 20 semaines, le cahier est
+utilisé deux fois plus largement (152 plats différents au lieu de 77).
+
+**L'ingrédient qui fait le plat.** Éviter deux fois la même recette ne suffit
+pas : un dahl de lentilles, une salade de lentilles et un petit salé aux
+lentilles font trois plats différents et la même impression. Le générateur
+repère donc la base de chaque plat — sa viande, son poisson, ses œufs, ou sa
+légumineuse — et chaque répétition dans la semaine coûte des points. Il la
+cherche dans le nom du plat, dans les ingrédients de boucherie et de
+poissonnerie, et, pour les légumineuses, le tofu, le quinoa et les œufs, dans
+toute la liste des ingrédients.
+
+> 💡 En **végétarien**, le choix reste plus étroit : 153 plats disponibles en
+> hiver, dont 19 soupes — soit environ deux soupes dans une semaine de
+> quatorze repas, et jamais plus de deux. Mesuré : ni décocher « Respecter les
+> saisons », ni décocher « Plats plus légers le soir » n'y change quoi que ce
+> soit, car c'est la proportion de soupes du cahier qui décide. Le seul vrai
+> levier est d'ajouter vos propres plats d'hiver.
+>
+> Le **printemps**, lui, est passé de 85 à 133 plats végétariens : les œufs n'y
+> pèsent plus qu'un cinquième du choix, et les soupes 5 %.
+
+**Ce qui est déjà prévu dans la semaine compte.** Même quand vous complétez
+seulement les cases vides, le générateur regarde les repas déjà posés : pas deux
+fois le même plat, et la variété des genres en tient compte.
 
 **La variété du genre de plat.** Le générateur ne se contente pas d'éviter la
 même recette deux fois : il évite aussi **quatre soupes dans la même semaine**.
@@ -487,14 +776,56 @@ soupes, la semaine sera remplie de soupes plutôt que de rester vide.
 Si vous demandez plus de repas qu'il n'y a de cases à remplir, l'application
 place ce qu'elle peut et vous le dit.
 
+### Quoi de neuf
+
+Une **icône ✨ en haut de l'écran**, à côté des points, visible depuis
+n'importe quel onglet, et une carte **« ✨ Quoi de neuf »** tout en bas de
+l'accueil. Les deux portent une pastille *nouveau* tant qu'on n'a pas ouvert —
+sur cet appareil seulement : ce n'est pas parce qu'une personne a lu que c'est
+lu pour toute la famille.
+
+Elle contient deux choses.
+
+**Le mot de la saison.** Quatre fois par an, l'application souhaite la
+bienvenue à la nouvelle saison et montre ce qui **arrive sur les étals** et ce
+qui **s'en va** — automne : le potiron, les champignons, le raisin et la
+châtaigne arrivent, la courgette et l'abricot s'en vont. Elle dit aussi combien
+de plats de votre cahier sont de saison, et un bouton emmène directement au
+cahier, filtre *De saison* posé.
+
+**Les nouveautés.** Ce qui change d'une version à l'autre, la plus récente en
+haut. **Rien d'autre** : ni correction de bug, ni sécurité, ni « sous le capot ».
+Un défaut réparé n'intéresse que celui qui l'a subi, et le reste n'a pas sa
+place dans une page que la famille ouvre pour le plaisir.
+
+> Pour ajouter une version : une entrée de plus en haut de la liste `ACTUS`,
+> dans `app.js`. La pastille *nouveau* et la date suivent toutes seules.
+
 ### Les saisons
 
 Chaque recette peut porter une ou plusieurs **saisons** — 🌸 printemps, ☀️ été,
 🍂 automne, ❄️ hiver. Une recette sans saison cochée convient toute l'année.
 
-Les 398 recettes fournies sont déjà renseignées : la ratatouille et le gratin de
+L'application change de saison aux **vraies dates**, pas au premier du mois :
+**20 mars**, **21 juin**, **22 septembre** et **21 décembre**. Un 16 septembre,
+on est donc encore en été — et la tomate aussi.
+
+Les 737 recettes fournies sont déjà renseignées : la ratatouille et le gratin de
 courgettes en été, la tartiflette et la soupe à l'oignon en hiver, les lasagnes
 toute l'année…
+
+Le cahier ne propose pas le même choix à toutes les saisons — c'est la cuisine
+qui veut ça, pas un oubli :
+
+| Saison | Plats proposés | dont végétariens |
+|---|---|---|
+| 🌸 Printemps | 318 | 163 |
+| ☀️ Été | 318 | 153 |
+| 🍂 Automne | 322 | 153 |
+| ❄️ Hiver | 318 | 153 |
+
+**Les quatre saisons sont à égalité** : où que vous soyez dans l'année, le
+générateur pioche dans plus de 315 plats, dont plus de 150 végétariens.
 
 **Le générateur en tient compte.** L'option **« Respecter les saisons »**, cochée
 par défaut, écarte les plats hors saison. Concrètement, en janvier il ne vous
@@ -519,7 +850,7 @@ Appuyez sur une recette dans la liste : sa fiche s'ouvre avec les **ingrédients
 et le **déroulé numéroté**. Depuis l'onglet Menus, un bouton
 **📖 Consulter la recette** ouvre la même fiche pour le plat prévu ce jour-là.
 
-Les 398 recettes fournies ont toutes leur déroulé (4 à 5 étapes). Il est **écrit pour
+Les 737 recettes fournies ont toutes leur déroulé (4 à 5 étapes). Il est **écrit pour
 l'application** : aucune recette n'est recopiée d'un site. C'est indicatif —
 pour les temps exacts ou les vitesses d'un robot, collez le lien de la recette
 d'origine dans la fiche, un bouton l'ouvrira.
@@ -529,7 +860,7 @@ par ligne**, les lignes vides sont ignorées.
 
 #### Les plats fournis
 
-L'application arrive avec **336 plats et 62 desserts**, dont **117 marqués 🍲 robot** : veloutés,
+L'application arrive avec **675 plats et 62 desserts**, dont **161 marqués 🍲 robot** : veloutés,
 risottos, sauces, plats mijotés et one-pot — tout ce que le Thermomix (ou un
 autre robot cuiseur) fait bien. Ils sont écrits maison : **aucune recette n'est
 recopiée d'un site**, on n'y trouve que le nom du plat et ses ingrédients. À
@@ -539,7 +870,7 @@ La case **🍲 Robot** existe aussi sur vos propres recettes.
 
 #### Si votre famille existait déjà
 
-Les 398 recettes sont **recopiées dans votre famille le jour de sa création** :
+Les 737 recettes sont **recopiées dans votre famille le jour de sa création** :
 les améliorations apportées ensuite au fichier de recettes ne les atteignent
 pas toutes seules. Une famille créée avant l'arrivée des saisons se retrouve
 donc avec des recettes sans saison — et le filtre affiche alors tout.
@@ -579,7 +910,7 @@ En dessous, six filtres se combinent librement :
 | Filtre | Ce qu'il garde |
 |---|---|
 | ☀️ **De saison** | Ce qui se cuisine en ce moment (la saison affichée suit la date) |
-| 🍲 **Thermomix** | Les plats qui se prêtent bien au robot cuiseur (117 des 398 fournies) |
+| 🍲 **Thermomix** | Les plats qui se prêtent bien au robot cuiseur (161 des 737 fournies) |
 | ✍️ **Mes recettes** | Uniquement celles que vous avez créées (pas les 300 fournies) |
 | 🌿 **Végé** | Les plats végétariens |
 | ⚡ **Rapide** | Moins de 30 minutes |
@@ -617,16 +948,17 @@ Chaque plat est rangé **tout seul**, d'après ses ingrédients. Rien à saisir 
 vos propres recettes et celles que vous importez sont classées de la même
 façon, et si vous changez les ingrédients, le classement suit.
 
-| Profil | Ce qu'il retient | Sur les 398 |
+| Profil | Ce qu'il retient | Sur les 737 |
 |---|---|---|
-| ❤️ **Cœur & cholestérol** | Moins de graisses saturées (beurre, crème, fromage, charcuterie), plus de poisson, de légumineuses, d'huile d'olive et de fibres | 79 |
-| 🩸 **Glycémie** | Des fibres et des protéines plutôt que du sucre et des féculents raffinés servis seuls | 65 |
-| 🌿 **Anti-inflammatoire** | La cuisine méditerranéenne conseillée en cas d'arthrose : poisson gras, huile d'olive, légumes, curcuma et gingembre | 88 |
-| 🦋 **Iode & sélénium** | Les plats riches en iode et en sélénium, les deux minéraux dont la thyroïde a besoin | 63 |
-| 🧂 **Peu de sel** | Aucun ingrédient naturellement très salé : ni charcuterie, ni fromage, ni bouillon cube, ni sauce soja, ni olives | 216 |
-| 🌾 **Sans gluten** | Aucun ingrédient à base de blé, d'orge ou de seigle | 175 |
-| 🍬 **Peu de sucre** | Aucun sucre ajouté : ni sucre, ni miel, ni sirop, ni chocolat | 290 |
-| 🥛 **Sans lactose** | Aucun produit laitier : ni lait, ni beurre, ni crème, ni fromage | 162 |
+| ❤️ **Cœur & cholestérol** | Moins de graisses saturées (beurre, crème, fromage, charcuterie), plus de poisson, de légumineuses, d'huile d'olive et de fibres | 241 |
+| 🩸 **Glycémie** | Des fibres et des protéines plutôt que du sucre et des féculents raffinés servis seuls | 202 |
+| 🌿 **Anti-inflammatoire** | La cuisine méditerranéenne conseillée en cas d'arthrose : poisson gras, huile d'olive, légumes, curcuma et gingembre | 273 |
+| 🦋 **Iode & sélénium** | Les plats riches en iode et en sélénium, les deux minéraux dont la thyroïde a besoin | 143 |
+| 💪 **Sportif** | Une vraie source de protéines (viande, volaille, poisson, œufs, légumineuses), des féculents pour l'énergie, et les minéraux dépensés à l'effort | 204 |
+| 🧂 **Peu de sel** | Aucun ingrédient naturellement très salé : ni charcuterie, ni fromage, ni bouillon cube, ni sauce soja, ni olives | 348 |
+| 🌾 **Sans gluten** | Aucun ingrédient à base de blé, d'orge ou de seigle | 333 |
+| 🍬 **Peu de sucre** | Aucun sucre ajouté : ni sucre, ni miel, ni sirop, ni chocolat | 647 |
+| 🥛 **Sans lactose** | Aucun produit laitier : ni lait, ni beurre, ni crème, ni fromage | 325 |
 
 > 💡 **Le vrai usage de « peu de sucre »** : combinez-le avec **🍰 Desserts**.
 > Vous obtenez les 12 desserts sans sucre ajouté — compote, salade d'agrumes,
@@ -666,7 +998,7 @@ peuvent interférer.)
 
 ### Les desserts
 
-62 des 398 recettes sont des **desserts**. Ils vivent dans le même cahier, avec
+62 des 737 recettes sont des **desserts**. Ils vivent dans le même cahier, avec
 deux différences :
 
 - le **générateur de menus ne les propose jamais** : il remplit des midis et
@@ -677,7 +1009,7 @@ deux différences :
 Pour marquer un de vos plats comme dessert, cochez **🍰 Dessert** dans le
 formulaire de la recette.
 
-### Retrouver un plat parmi 398
+### Retrouver un plat parmi 737
 
 Le cahier est long : sans repères, c'est cinquante écrans à faire défiler.
 Trois outils, du plus rapide au plus complet :
@@ -696,7 +1028,7 @@ Juste au-dessus de la liste, trois façons de la trier :
 
 | Tri | Ce qu'il donne |
 |---|---|
-| 🔤 **A → Z** | L'ordre alphabétique, **avec un repère par lettre** : A, B, C… Avec 398 recettes, c'est ce qui permet de retrouver un nom en faisant défiler. |
+| 🔤 **A → Z** | L'ordre alphabétique, **avec un repère par lettre** : A, B, C… Avec 737 recettes, c'est ce qui permet de retrouver un nom en faisant défiler. |
 | 🕐 **Récentes** | Les dernières arrivées d'abord : ce que vous venez d'ajouter, puis ce qu'une mise à jour a apporté. |
 | ☀️ **De saison** | Les plats de la saison en cours d'abord, puis ceux de toute l'année, puis le reste. Contrairement au filtre, **rien n'est caché** : c'est juste l'ordre qui change. |
 
@@ -720,7 +1052,7 @@ autres familles**. Un écran vous rappelle précisément ce qui devient visible 
 
 Quelques règles :
 
-- seules **vos propres créations** peuvent être partagées — pas les 398 recettes
+- seules **vos propres créations** peuvent être partagées — pas les 737 recettes
   fournies (tout le monde les a déjà), ni celles importées d'une autre famille ;
 - vous pouvez **retirer** une publication à tout moment, depuis la même fenêtre ;
 - une fiche publiée n'est pas modifiable : pour corriger, retirez-la et
@@ -836,7 +1168,7 @@ bandeau orange le rappelle sur l'accueil.
 | `app.js` | Le cœur : dates, points, rotation des tâches, stockage, connexion. |
 | `vues.js` | Le dessin de chaque écran. |
 | `formulaires.js` | Les fenêtres qui remontent du bas (ajouter, modifier…). |
-| `recettes.js` | Les 398 recettes fournies au démarrage. Modifiables dans l'app. |
+| `recettes.js` | Les 737 recettes fournies au démarrage. Modifiables dans l'app. |
 | `firebase-config.js` | **Le seul fichier à remplir** pour activer le partage. |
 | `firestore.rules` | Les règles de sécurité, **à copier dans Firebase**. Sans elles, rien n'est protégé. |
 | `manifest.webmanifest` | Permet d'installer l'app sur l'écran d'accueil. |
@@ -854,7 +1186,8 @@ python serve.py
 
 puis ouvrir `http://localhost:4174`.
 
-> 🛡️ Sur `localhost`, l'application reste **volontairement en mode local** : vos
+> 🛡️ Sur `localhost` — comme en ouvrant `index.html` directement depuis le
+> dossier —, l'application reste **volontairement en mode local** : vos
 > essais n'écrivent jamais dans la vraie base de la famille. Pour tester la
 > synchronisation pour de bon, ouvrez `http://localhost:4174/?nuage=1`.
 
@@ -892,7 +1225,7 @@ Tout cela repose sur le fichier **`firestore.rules`**, à publier dans Firebase
 
 Oui, c'est prévu et ça fonctionne : il suffit de leur donner l'adresse de
 l'application. Ils appuient sur **« Créer ma famille »** et repartent de zéro
-avec leur propre tribu — leurs membres, leurs tâches, leurs points, les 398
+avec leur propre tribu — leurs membres, leurs tâches, leurs points, les 737
 recettes de départ.
 
 **Leurs données sont totalement séparées des vôtres.** Une famille n'est lisible

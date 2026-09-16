@@ -354,6 +354,14 @@ Formulaires.terminerCourses = function () {
   achetes.forEach((c) => {
     const s = articleStock(c.nom);
     if (!s) { nouveaux.push(c); return; }
+    /* Acheté sans quantité, ou réserve sans quantité (16/09/2026) : il y en a,
+       on ne sait pas combien. Rien à demander : l'article est « en réserve ».
+       Il tombait dans « À vous de dire », sous « les unités ne correspondent
+       pas » — c'était faux —, et la fenêtre s'ouvrait pour rien. */
+    if (quantiteInconnue(c.qte) || quantiteInconnue(s.qte)) {
+      connus.push({ c: c, s: s, sansQuantite: true });
+      return;
+    }
     const ajout = convertirUnite(c.qte, c.unite || "", s.unite || "");
     if (ajout === null) { douteux.push({ c: c, s: s }); return; }
     connus.push({ c: c, s: s, avant: nombre(s.qte) || 0, apres: (nombre(s.qte) || 0) + ajout });
@@ -368,8 +376,13 @@ Formulaires.terminerCourses = function () {
   const ligneConnu = (x) =>
     '<div class="ligne"><span style="font-size:1.1rem">🥫</span>' +
     '<div class="ligne-corps"><b>' + esc(x.c.nom) + "</b><small>" +
-    esc(formaterQte(x.avant, x.s.unite)) + " → <b>" +
-    esc(formaterQte(x.apres, x.s.unite)) + "</b></small></div></div>";
+    (x.sansQuantite
+      ? (nombre(x.s.qte)
+        ? esc(formaterQte(x.s.qte, x.s.unite)) + " • quantité achetée non précisée"
+        : "en réserve")
+      : esc(formaterQte(x.avant, x.s.unite)) + " → <b>" +
+        esc(formaterQte(x.apres, x.s.unite)) + "</b>") +
+    "</small></div></div>";
 
   /* Cochés par défaut. Ils ne l'étaient pas, et c'était une erreur : la
      PREMIÈRE fois, la réserve est vide, donc tout est « nouveau », donc rien
@@ -396,8 +409,9 @@ Formulaires.terminerCourses = function () {
     '<span class="etiquette">' + esc(x.s.unite || "unité") + "</span></div>";
 
   ouvrirFeuille("Terminer les courses",
-    '<p class="aide" style="margin-bottom:.8rem">' + achetes.length +
-    " article(s) coché(s). Ils vont quitter la liste.</p>" +
+    '<p class="aide" style="margin-bottom:.8rem">' +
+    pluriel(achetes.length, "article coché", "articles cochés") + ". " +
+    (achetes.length > 1 ? "Ils vont" : "Il va") + " quitter la liste.</p>" +
 
     (connus.length
       ? '<div class="sous-titre" style="margin-top:0"><h3>Rentrent en réserve</h3>' +
@@ -808,7 +822,8 @@ Formulaires.repas = function (jour, moment) {
 Formulaires.consommerRepas = function (jour, moment) {
   const lignes = ingredientsARetirer(ui.semaine, jour, moment);
   if (!lignes.length) {
-    toast("Aucun ingrédient de ce plat n'est dans votre réserve");
+    /* Vrai aussi quand ses ingrédients sont « en réserve » sans quantité. */
+    toast("Rien à décompter : la réserve ne suit la quantité d'aucun ingrédient de ce plat");
     return;
   }
   const nets = lignes.filter((l) => l.retire !== null);
@@ -861,7 +876,7 @@ Formulaires.consommerRepas = function (jour, moment) {
       });
       fermerFeuille();
       const n = Actions.retirerDeLaReserve(nets, garder, saisies);
-      toast(n ? n + " article(s) mis à jour dans la réserve 🥫" : "Rien n'a été retiré");
+      toast(n ? pluriel(n, "article mis", "articles mis") + " à jour dans la réserve 🥫" : "Rien n'a été retiré");
     };
   });
 };
@@ -930,6 +945,9 @@ const REGLAGES_GEN_DEFAUT = {
   midi: true, soir: true, remplacer: false,
   regime: "libre", poisson: "", viande: "", vege: "", profil: "",
   saisons: true, reserve: true, soirLeger: true, rapide: true, thermomix: false,
+  /* Les favoris comptent d'office (16/09/2026) : sans étoile nulle part, cela
+     ne change rien ; avec des étoiles, c'est ce que la famille aime. */
+  favoris: true, cuisinier: false,
   semaines: 3
 };
 function reglagesGenerateur() {
@@ -968,8 +986,59 @@ function resumeReglagesGenerateur() {
   if (g.rapide) l.push("rapide en semaine");
   if (g.soirLeger) l.push("léger le soir");
   if (g.reserve) l.push("ma réserve d’abord");
+  if (g.favoris) l.push("favoris ⭐ d’abord");
+  if (g.cuisinier) l.push("chacun son tour en cuisine");
   return l.length ? l.join(", ") : "aucun filtre";
 }
+
+/* ======================== QUOI DE NEUF ========================
+   Deux choses dans la même page : le mot de la saison, qui change quatre fois
+   par an tout seul, et la liste des nouveautés, écrite à la main. */
+Formulaires.actu = function () {
+  const s = infoSaison(saisonActuelle());
+  const nouvelle = saisonVientDeChanger();
+  const arrivent = arrivagesDeSaison(s.val);
+  const partent = departsDeSaison(s.val);
+  const nb = platsDeSaison();
+  const grandeLettre = (p) => p.charAt(0).toUpperCase() + p.slice(1);
+  const puces = (l) => l.map((p) => '<span class="puce-saison">' + esc(grandeLettre(p)) + "</span>").join("");
+  const jour = (iso) => {
+    const d = new Date(iso + "T12:00:00");
+    return isNaN(d) ? iso : d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  };
+
+  let html = '<div class="carte-saison">' +
+    '<div class="saison-emoji">' + s.emoji + "</div>" +
+    "<h3>" + (nouvelle ? "Bienvenue " : "Nous sommes ") + enLaSaison(s) + "</h3>";
+  if (arrivent.length) {
+    html += '<p class="aide"><b>Ce qui arrive sur les étals</b></p><div class="puces">' + puces(arrivent) + "</div>";
+  }
+  if (partent.length) {
+    html += '<p class="aide" style="margin-top:.9rem"><b>Ce qui s\'en va</b></p><div class="puces fane">' +
+      puces(partent) + "</div>";
+  }
+  html += '<p class="aide" style="margin-top:1rem">' +
+    (nb ? "<b>" + nb + " plats</b> de votre cahier sont de saison en ce moment." : "") + "</p>" +
+    '<button class="btn principal" data-action="actu-saison">Voir les plats de saison</button>' +
+    "</div>";
+
+  html += '<div class="sous-titre" style="margin-top:1.6rem"><h3>Les nouveautés</h3></div>';
+
+  html += ACTUS.map((a, i) => '<div class="actu' + (i === 0 ? " actu-neuve" : "") + '">' +
+    '<div class="actu-tete"><span class="etiquette' + (i === 0 ? " chaud" : "") + '">Version ' +
+    esc(a.version) + "</span><small>" + esc(jour(a.date)) + "</small></div>" +
+    "<h4>" + esc(a.titre) + "</h4><ul>" +
+    a.points.map((p) => "<li>" + p + "</li>").join("") + "</ul></div>").join("");
+
+  ouvrirFeuille("✨ Quoi de neuf", html);
+  /* Lue : la pastille s'éteint, et la saison ne redira plus « bienvenue ».
+     Le rendu qui suit est indispensable : sans lui, la pastille de l'en-tête
+     et celle de la carte restaient allumées jusqu'au prochain changement
+     d'onglet — on avait l'impression de n'avoir rien lu (16/09/2026). */
+  marquerActuLue();
+  marquerSaisonVue();
+  rendre();
+};
 
 Formulaires.generateur = function () {
   const g = reglagesGenerateur();
@@ -992,6 +1061,8 @@ Formulaires.generateur = function () {
   const sais = infoSaison(saisonActuelle());
   const nbStock = etat.stock.length;
   const nbThermo = etat.recettes.filter((r) => r.thermomix).length;
+  const nbFavoris = etat.recettes.filter((r) => (r.favoris || []).length).length;
+  const nbCuisiniers = cuisiniersPossibles().length;
 
   let html = '<form id="f-gen">' +
 
@@ -1013,6 +1084,7 @@ Formulaires.generateur = function () {
     '<div class="duo"><label class="champ"><span>🐟 Poisson</span>' + combien("poisson", g.poisson) + "</label>" +
     '<label class="champ" id="champ-viande"><span>🍗 Viande</span>' + combien("viande", g.viande) + "</label></div>" +
     '<label class="champ"><span>🥦 Repas végétariens</span>' + combien("vege", g.vege) + "</label>" +
+    '<p class="aide" id="note-nombres" style="margin:-.3rem 0 .7rem" hidden></p>' +
     "</div>" +
     '<p class="aide" id="note-regime" hidden></p>' +
 
@@ -1032,12 +1104,23 @@ Formulaires.generateur = function () {
       " : les plats des autres saisons seront écartés.") +
     ligneCase("reserve", "Utiliser d'abord ce que j'ai en réserve",
       nbStock
-        ? "Les plats dont vous avez déjà les ingrédients passent devant (" + nbStock + " article(s) en réserve)."
+        ? "Les plats dont vous avez déjà les ingrédients passent devant (" + pluriel(nbStock, "article", "articles") + " en réserve)."
         : "Votre réserve est vide pour l'instant : cette option ne changera rien.") +
     ligneCase("soirLeger", "Plats plus légers le soir") +
     ligneCase("rapide", "Plats rapides du lundi au vendredi") +
     ligneCase("thermomix", "Privilégier les recettes Thermomix",
-      nbThermo + " recette(s) de votre cahier s'y prêtent.") +
+      pluriel(nbThermo, "recette", "recettes") + " de votre cahier " +
+      (nbThermo > 1 ? "s'y prêtent." : "s'y prête.")) +
+    ligneCase("favoris", "Privilégier les plats favoris ⭐",
+      nbFavoris
+        ? pluriel(nbFavoris, "plat a une étoile", "plats ont une étoile") +
+          " : ils reviendront plus souvent."
+        : "Personne n'a encore mis d'étoile : cette option ne changera rien.") +
+    (nbCuisiniers > 1
+      ? ligneCase("cuisinier", "Désigner qui cuisine, à tour de rôle",
+        "Chacun son tour parmi les " + nbCuisiniers + " personnes qui ont un téléphone. " +
+        "Un cuisinier déjà choisi n'est pas remplacé.")
+      : "") +
     '<label class="champ"><span>Ne pas resservir un plat vu depuis…</span><select name="semaines">' +
     [2, 3, 4, 6].map((k) =>
       '<option value="' + k + '"' + (Number(g.semaines) === k ? " selected" : "") + ">" +
@@ -1065,8 +1148,58 @@ Formulaires.generateur = function () {
         ? "Toute la semaine sera végétarienne : seuls les plats marqués végétariens seront proposés."
         : "Aucune viande cette semaine : il restera le poisson, les œufs et les plats végétariens.";
     };
-    regime.onchange = majRegime;
+    /* Combien de repas vont vraiment être remplis : la même règle que le
+       générateur (les midis, les soirs, les absences respectées, les cases
+       déjà prévues gardées sauf « remplacer »). */
+    const noteNombres = f.querySelector("#note-nombres");
+    const coche = (n) => f.querySelector('[name="' + n + '"]').checked;
+    const compterCases = () => {
+      const sem = etat.repas[ui.semaine] || {};
+      let n = 0;
+      JOURS.forEach((j) => ["midi", "soir"].forEach((m) => {
+        if (m === "midi" && !coche("midi")) return;
+        if (m === "soir" && !coche("soir")) return;
+        const v = sem[j + "-" + m];
+        if (estAbsence(v)) return;
+        if (v && !coche("remplacer")) return;
+        n++;
+      }));
+      return n;
+    };
+    /* Un plat est toujours viande, poisson ou végétarien : les repas qu'on
+       n'a pas comptés retombent donc dans l'une de ces catégories. Autant le
+       dire, plutôt que de laisser croire à un compte exact (16/09/2026). */
+    const majNombres = () => {
+      const cases = compterCases();
+      let precises = 0, aucun = true;
+      ["poisson", "viande", "vege"].forEach((n) => {
+        const el = f.querySelector('[name="' + n + '"]');
+        const champ = el.closest(".champ");
+        if ((champ && champ.hidden) || bloc.hidden) return;
+        if (el.value === "") return;
+        aucun = false;
+        precises += Number(el.value) || 0;
+      });
+      if (aucun || !cases) { noteNombres.hidden = true; return; }
+      noteNombres.hidden = false;
+      if (precises > cases) {
+        noteNombres.textContent = "Vous demandez " + precises + " repas pour " +
+          pluriel(cases, "case à remplir", "cases à remplir") +
+          " : l'application placera ce qu'elle peut.";
+      } else if (precises === cases) {
+        noteNombres.textContent = "Toute la semaine est comptée : " + cases + " repas.";
+      } else {
+        noteNombres.textContent = precises + " repas comptés sur " + cases + " — les " +
+          (cases - precises) + " autres sont libres, et seront eux aussi viande, " +
+          "poisson ou végétarien.";
+      }
+    };
+    f.querySelectorAll('[name="poisson"], [name="viande"], [name="vege"], ' +
+      '[name="midi"], [name="soir"], [name="remplacer"]')
+      .forEach((el) => el.addEventListener("change", majNombres));
+    regime.onchange = () => { majRegime(); majNombres(); };
     majRegime();
+    majNombres();
 
     f.onsubmit = (ev) => {
       ev.preventDefault();
@@ -1080,6 +1213,7 @@ Formulaires.generateur = function () {
         vege: d.get("vege") === null ? "" : d.get("vege"),
         saisons: !!d.get("saisons"), reserve: !!d.get("reserve"),
         soirLeger: !!d.get("soirLeger"), rapide: !!d.get("rapide"),
+        favoris: !!d.get("favoris"), cuisinier: !!d.get("cuisinier"),
         thermomix: !!d.get("thermomix"),
         semaines: Number(d.get("semaines")) || 3
       };
@@ -1095,12 +1229,12 @@ Formulaires.generateur = function () {
         (res.absences ? " (" + res.absences + " absence" + (res.absences > 1 ? "s" : "") +
           " respectée" + (res.absences > 1 ? "s" : "") + ")" : ""));
       if (res.choixCourt) {
-        setTimeout(() => toast("Seulement " + res.choixCourt.dispo + " plat(s) « " +
+        setTimeout(() => toast("Seulement " + pluriel(res.choixCourt.dispo, "plat", "plats") + " « " +
           res.choixCourt.nom + " » : certains reviennent plusieurs fois"), 2800);
       }
       if (res.tropDemande) {
-        setTimeout(() => toast("Il y avait " + res.tropDemande +
-          " repas demandé(s) de plus que de cases à remplir"), 2800);
+        setTimeout(() => toast("Il y avait " + pluriel(res.tropDemande, "repas demandé", "repas demandés") +
+          " de plus que de cases à remplir"), 2800);
       }
     };
   });
@@ -1133,6 +1267,10 @@ Formulaires.ingredientsVersCourses = function () {
        une quantité inconnue : le besoin complet est repris tel quel, et
        l'écran affiche déjà « ⚠️ unités différentes, à vérifier ». */
     const connu = m.connu && !i.plusieursUnites;
+    /* LE PLACARD (16/09/2026, voir estDePlacard) : un produit de placard dont
+       la réserve ne sait rien est DEMANDÉ — à part, décoché. « En réserve »
+       sans quantité, il est considéré comme là. */
+    const placard = estDePlacard(i.nom, i.rayon);
     return {
       nom: i.nom, rayon: i.rayon, unite: i.unite,
       besoin: i.besoinTexte,
@@ -1140,7 +1278,12 @@ Formulaires.ingredientsVersCourses = function () {
       manque: m.manque,
       connu: connu,
       melange: !!i.plusieursUnites,
-      couvert: connu && m.manque !== null && m.manque <= 0,
+      sansQuantite: !!m.sansQuantite,
+      besoinInconnu: nombre(i.qte) === null,
+      placard: placard,
+      aVerifier: placard && m.enStock === null,
+      couvert: (connu && m.manque !== null && m.manque <= 0) || (placard && !!m.sansQuantite),
+      ing: i, m: m,             // pour quantiteACourses, au moment d'ajouter
       dejaListe: false          // rempli juste après, selon la liste choisie
     };
   });
@@ -1150,19 +1293,31 @@ Formulaires.ingredientsVersCourses = function () {
   };
   marquerPour(listeCourante().id);
 
-  const couverts = lignes.filter((l) => l.couvert).length;
-  const aCocher = (l) => !l.couvert && !l.dejaListe;
+  /* Le bandeau ne compte que les ingrédients ordinaires : ceux du placard ont
+     leur propre ligne, repliée, plus bas. */
+  const couverts = lignes.filter((l) => l.couvert && !l.placard).length;
+  /* Décochés d'office : déjà couvert, déjà dans la liste, produit de placard
+     à vérifier, ou « en réserve » sans quantité (il y en a : à vérifier). */
+  const aCocher = (l) => !l.couvert && !l.dejaListe && !l.aVerifier && !l.sansQuantite;
 
   const detailsDe = (l) => {
     const d = [];
-    d.push("besoin " + esc(l.besoin || "?"));
-    if (l.enStock !== null) d.push("en réserve " + esc(l.enStock));
-    if (l.couvert) d.push("✅ rien à acheter");
-    else if (l.connu && l.manque !== null && l.enStock !== null) {
-      d.push("<b>à acheter " + esc(formaterQte(l.manque, l.unite)) + "</b>");
+    d.push((l.aVerifier ? "pour les plats : " : "besoin ") + esc(l.besoin || "?"));
+    /* Trois façons de ne pas savoir, trois phrases (16/09/2026). Tout
+       finissait en « unités différentes », même une réserve sans quantité. */
+    if (l.sansQuantite) {
+      d.push(l.placard ? "✅ en réserve" : "en réserve, quantité non précisée : à vérifier");
+    } else {
+      if (l.enStock !== null) d.push("en réserve " + esc(l.enStock));
+      if (l.couvert) d.push("✅ rien à acheter");
+      else if (l.connu && l.manque !== null && l.enStock !== null) {
+        d.push("<b>à acheter " + esc(formaterQte(l.manque, l.unite)) + "</b>");
+      }
+      if (l.melange) d.push("⚠️ unités différentes, à vérifier");
+      else if (!l.connu && l.besoinInconnu) d.push("quantité de la recette non précisée");
+      else if (!l.connu) d.push("⚠️ unités différentes, à vérifier");
     }
     if (l.dejaListe) d.push("déjà dans cette liste");
-    if (!l.connu) d.push("⚠️ unités différentes, à vérifier");
     return d.join(" • ");
   };
 
@@ -1179,21 +1334,58 @@ Formulaires.ingredientsVersCourses = function () {
       : "");
 
   if (couverts) {
-    html += '<div class="bandeau info">🥫<div><b>' + couverts + " ingrédient(s)</b> sont déjà " +
-      "couverts par votre réserve : ils sont décochés.</div></div>";
+    html += '<div class="bandeau info">🥫<div><b>' + pluriel(couverts, "ingrédient", "ingrédients") + "</b> " +
+      (couverts > 1
+        ? "sont déjà couverts par votre réserve : ils sont décochés."
+        : "est déjà couvert par votre réserve : il est décoché.") + "</div></div>";
   }
+
+  const caseDe = (l, k) => '<label class="ligne" style="cursor:pointer">' +
+    '<input type="checkbox" data-k="' + k + '" style="width:auto"' + (aCocher(l) ? " checked" : "") + ">" +
+    '<span class="ligne-corps"><b>' + esc(l.nom) + "</b><small data-d=\"" + k + "\">" +
+    detailsDe(l) + "</small></span></label>";
+  const auPlacard = (l) => l.aVerifier || (l.placard && l.couvert);
 
   let rayonCourant = "";
   lignes.forEach((l, k) => {
+    if (auPlacard(l)) return;                       // plus bas, avec le placard
     if (l.rayon !== rayonCourant) {
       rayonCourant = l.rayon;
       html += '<div class="sous-titre" style="margin:.9rem 0 .3rem"><h3>' + esc(rayonCourant) + "</h3></div>";
     }
-    html += '<label class="ligne" style="cursor:pointer">' +
-      '<input type="checkbox" data-k="' + k + '" style="width:auto"' + (aCocher(l) ? " checked" : "") + ">" +
-      '<span class="ligne-corps"><b>' + esc(l.nom) + "</b><small data-d=\"" + k + "\">" +
-      detailsDe(l) + "</small></span></label>";
+    html += caseDe(l, k);
   });
+
+  /* Le placard, en dernier : on le parcourt une fois la liste faite. */
+  const kVerifier = [], kEnReserve = [];
+  lignes.forEach((l, k) => {
+    if (l.aVerifier) kVerifier.push(k);
+    else if (l.placard && l.couvert) kEnReserve.push(k);
+  });
+  if (kVerifier.length || kEnReserve.length) {
+    html += '<div class="sous-titre" style="margin:1.3rem 0 .3rem"><h3>🧂 Placard</h3>' +
+      (kVerifier.length ? '<span class="etiquette">' + kVerifier.length + " à vérifier</span>" : "") +
+      "</div>";
+    if (kVerifier.length) {
+      html += '<p class="aide" style="margin:-.2rem 0 .4rem">Huile, farine, épices… vous en avez ' +
+        "sans doute déjà : <b>rien n'est coché</b>. Cochez seulement ce qu'il faut racheter.</p>" +
+        kVerifier.map((k) => caseDe(lignes[k], k)).join("") +
+        /* Pas de « Retenir » quand tout ce qui reste à vérifier est déjà sur
+           la liste : on s'apprête à l'acheter, ce n'est pas « à la maison ». */
+        (kVerifier.some((k) => !lignes[k].dejaListe)
+          ? '<label class="ligne" style="cursor:pointer;margin-top:.4rem">' +
+            '<input type="checkbox" id="retenir-placard" checked style="width:auto">' +
+            '<span class="ligne-corps"><b>Retenir que je les ai</b><small>Ce qui reste décoché rejoint ' +
+            "la réserve, « en réserve » sans quantité : il ne vous sera plus demandé.</small></span></label>"
+          : "");
+    }
+    if (kEnReserve.length) {
+      html += '<details class="repli"><summary>✅ ' +
+        pluriel(kEnReserve.length, "produit du placard déjà en réserve",
+          "produits du placard déjà en réserve") +
+        "</summary>" + kEnReserve.map((k) => caseDe(lignes[k], k)).join("") + "</details>";
+    }
+  }
 
   html += '<div class="rangee-btn" style="margin-top:1.2rem">' +
     '<button class="btn" data-action="fermer">Annuler</button>' +
@@ -1214,26 +1406,29 @@ Formulaires.ingredientsVersCourses = function () {
     };
 
     f.querySelector('[data-role="ok"]').onclick = () => {
-      const choisis = Array.from(f.querySelectorAll('input[type="checkbox"]:checked'))
-        .map((c) => lignes[Number(c.dataset.k)]);
+      /* data-k seulement : la case « Retenir » n'est pas un ingrédient. */
+      const coches = new Set(Array.from(f.querySelectorAll("input[data-k]:checked"))
+        .map((c) => Number(c.dataset.k)));
+      const choisis = lignes.filter((l, k) => coches.has(k));
+      /* Retenir le placard : ce qu'on a laissé décoché est à la maison — sauf
+         ce qui est déjà sur la liste visée : c'est qu'on va l'acheter. */
+      const retenir = f.querySelector("#retenir-placard");
+      const aRetenir = retenir && retenir.checked
+        ? lignes.filter((l, k) => l.aVerifier && !coches.has(k) && !l.dejaListe && !articleStock(l.nom))
+        : [];
       fermerFeuille();
-      if (!choisis.length) return;
+      if (!choisis.length && !aRetenir.length) return;
       const champListe = f.querySelector("#choix-liste");
       const cible = champListe ? champListe.value : listeCourante().id;
       choisis.slice().reverse().forEach((l) => {
-        /* On achète ce qui manque vraiment ; si le calcul est impossible,
-           on reprend le besoin complet plutôt que d'inventer un chiffre. */
-        /* Besoin en deux unités : on recopie le texte ENTIER (« 500 g +
-           2 boîtes ») dans la quantité, sans unité — sinon on n'en garde que
-           le premier nombre et on achète la moitié (14/09/2026). */
-        const qte = l.melange
-          ? l.besoin
-          : (l.connu && l.manque !== null && l.enStock !== null)
-            ? texteNombre(l.manque)
-            : (nombre(l.besoin) !== null ? texteNombre(nombre(l.besoin)) : l.besoin);
+        /* Ce qui part sur la liste : quantiteACourses, le MÊME calcul que le
+           suivi du menu — ce qui manque vraiment, le besoin entier quand il
+           est en deux unités, et rien pour les petites mesures et le placard
+           (on achète le produit, pas « 15 c. à soupe »). */
+        const q = quantiteACourses(l.ing, l.m);
         const enReserve = articleStock(l.nom);
         etat.courses.unshift({
-          id: id(), nom: l.nom, qte: qte, unite: l.melange ? "" : l.unite, rayon: l.rayon,
+          id: id(), nom: l.nom, qte: q.qte, unite: q.unite, rayon: l.rayon,
           coche: false, listeId: cible, vrac: !!(enReserve && enReserve.vrac),
           parQui: moi && moi.id, creeLe: new Date().toISOString(),
           /* La semaine de menu qui a produit cet article. C'est ce qui permet
@@ -1243,8 +1438,19 @@ Formulaires.ingredientsVersCourses = function () {
           menu: ui.semaine
         });
       });
-      sauver("courses");
-      toast(choisis.length + " article(s) ajouté(s) 🛒");
+      const maintenant = new Date().toISOString();
+      aRetenir.forEach((l) => {
+        etat.stock.push({
+          id: id(), nom: l.nom, qte: "", unite: "", mini: "", rayon: l.rayon,
+          vrac: false, majLe: maintenant
+        });
+      });
+      if (aRetenir.length) sauver("courses", "stock");
+      else sauver("courses");
+      toast([
+        choisis.length ? pluriel(choisis.length, "article ajouté", "articles ajoutés") + " 🛒" : "",
+        aRetenir.length ? pluriel(aRetenir.length, "produit noté", "produits notés") + " dans la réserve 🥫" : ""
+      ].filter(Boolean).join(" • "));
     };
   });
 };
@@ -1257,7 +1463,8 @@ Formulaires.recette = function (rid) {
   const ings = (cour.ingredients || []).slice();
 
   const ligneIng = (i, k) =>
-    '<div data-ing="' + k + '" style="margin-bottom:.7rem;padding-bottom:.7rem;border-bottom:1px solid var(--border)">' +
+    '<div data-ing="' + k + '"' + (i.rayon ? "" : ' data-rayon-auto="1"') +
+    ' style="margin-bottom:.7rem;padding-bottom:.7rem;border-bottom:1px solid var(--border)">' +
     '<div style="display:flex;gap:.5rem;margin-bottom:.4rem">' +
     '<input type="text" data-c="nom" value="' + esc(i.nom || "") + '" placeholder="Ingrédient" style="flex:1">' +
     '<button type="button" class="btn mini icone" data-role="suppr-ing" style="flex:0 0 auto">🗑️</button></div>' +
@@ -1265,7 +1472,7 @@ Formulaires.recette = function (rid) {
     '<input type="text" data-c="qte" value="' + esc(i.qte || "") + '" placeholder="Quantité" ' +
     'inputmode="decimal" maxlength="10" style="flex:.8">' +
     '<span style="flex:1.1">' + selectUnite(i.unite, "unite-ing") + "</span>" +
-    '<span style="flex:1.4">' + selectRayon(i.rayon || "Épicerie") + "</span>" +
+    '<span style="flex:1.4">' + selectRayon(i.rayon || "À catégoriser") + "</span>" +
     "</div></div>";
 
   const html = '<form id="f-recette">' +
@@ -1346,7 +1553,7 @@ Formulaires.recette = function (rid) {
 
     f.querySelector('[data-role="ajout-ing"]').onclick = () => {
       const div = document.createElement("div");
-      div.innerHTML = ligneIng({ nom: "", qte: "", rayon: "Épicerie" }, zone.children.length);
+      div.innerHTML = ligneIng({ nom: "", qte: "", rayon: "" }, zone.children.length);
       zone.appendChild(div.firstChild);
       zone.lastChild.querySelector("input").focus();
     };
@@ -1354,6 +1561,36 @@ Formulaires.recette = function (rid) {
       const b = ev.target.closest('[data-role="suppr-ing"]');
       if (b) b.closest("[data-ing]").remove();
     };
+    /* LE RAYON SE DEVINE D'APRÈS LE NOM (15/09/2026). Chaque ingrédient ajouté
+       partait en « Épicerie », courgettes et crème fraîche comprises : mal
+       rangés dans la liste de courses, et chez les autres familles si la
+       recette était partagée. Tant qu'on n'a pas choisi le rayon à la main,
+       il suit ce qu'on tape — d'abord d'après les plats fournis, dont les
+       rayons sont vérifiés, puis d'après les mots connus. */
+    const rayonDevine = (nom) => {
+      const n = nom.toLowerCase();
+      const fournis = typeof RECETTES_DEPART !== "undefined" ? RECETTES_DEPART : [];
+      for (const rec of fournis) {
+        for (const i of (rec.ingredients || [])) {
+          if (i.nom && i.rayon && i.nom.toLowerCase() === n) return i.rayon;
+        }
+      }
+      return devinerRayon(nom);
+    };
+    zone.addEventListener("input", (ev) => {
+      if (ev.target.dataset.c !== "nom") return;
+      const ligne = ev.target.closest("[data-ing]");
+      if (!ligne || ligne.dataset.rayonAuto !== "1") return;
+      const choix = ligne.querySelector('[name="rayon"]');
+      const nom = ev.target.value.trim();
+      const v = nom ? rayonDevine(nom) : "À catégoriser";
+      if (Array.from(choix.options).some((o) => o.value === v)) choix.value = v;
+    });
+    zone.addEventListener("change", (ev) => {
+      if (ev.target.name !== "rayon") return;
+      const ligne = ev.target.closest("[data-ing]");
+      if (ligne) ligne.dataset.rayonAuto = "0";
+    });
 
     const bs = f.querySelector('[data-role="suppr"]');
     if (bs) bs.onclick = async () => {
@@ -1573,9 +1810,18 @@ Formulaires.membre = async function (mid) {
       { val: "admin", html: "Administrateur" }], [cour.role]) +
     '<p class="aide" style="margin:-.6rem 0 1rem">Un administrateur valide les tâches, accorde les cadeaux ' +
     "et gère les réglages de la famille.</p>" +
-    '<label class="champ"><span>Code à 4 chiffres' + (m ? " (laisser vide pour ne pas changer)" : "") + "</span>" +
+    '<label class="champ"><span>Code à 4 chiffres' +
+    (m && (m.pinHash || m.pin) ? " (laisser vide pour ne pas changer)" : " (facultatif)") + "</span>" +
     champPin('placeholder="' + (m ? "••••" : "1234") + '"') +
-    "</label></div>" +
+    "</label>" +
+    /* CHACUN CHOISIT SON CODE (15/09/2026) : l'administratrice n'a plus à
+       inventer celui des autres. Laissé vide, il se choisit à l'arrivée, avec
+       l'invitation ou le lien e-mail (règle modifieSaFiche). */
+    (m && (m.pinHash || m.pin) ? "" :
+      '<p class="aide" style="margin:-.6rem 0 1rem">Laissez vide : ' +
+      (m ? esc(m.prenom) : "la personne") +
+      " choisira son code en arrivant, avec son invitation ou son lien e-mail.</p>") +
+    "</div>" +
 
     /* Ses appareils connectés, et le moyen d'en retirer un (étape 2). */
     (m && Store.mode === "nuage" && !m.sansAppareil
@@ -1700,15 +1946,10 @@ Formulaires.membre = async function (mid) {
         toast("Retirez d'abord ses appareils : ce profil est déjà connecté quelque part");
         return;
       }
-      /* UN PROFIL QUI REDEVIENT CONNECTABLE DOIT AVOIR UN CODE (14/09/2026).
-         « Sans téléphone » efface le code. En décochant la case sans en
-         saisir un nouveau, le profil revenait dans la liste de connexion
-         avec AUCUN code valable : les quatre chiffres étaient refusés à
-         l'infini, sans que rien ne l'explique. */
-      if (m && !sansAppareil && !pin && !m.pinHash && !m.pin) {
-        toast("Choisissez un code à 4 chiffres : ce profil n'en a pas encore");
-        return;
-      }
+      /* UN PROFIL SANS CODE (14/09, revu le 15/09/2026). Il ne tourne plus à
+         vide : la personne choisit son code en arrivant (invitation, lien
+         e-mail), et l'écran du code l'explique aux autres appareils. On
+         n'exige donc plus que l'administratrice en invente un. */
 
       /* Le compte adulte (adresse e-mail) s'enregistre AVANT le membre. S'il est
          refuse — adresse deja liee a une autre tribu —, on ne cree ni ne modifie
@@ -1718,13 +1959,22 @@ Formulaires.membre = async function (mid) {
       const idCible = m ? m.id : id();
       const ancien = (m && Store.mode === "nuage") ? Store.compteDe(m.id) : null;
       const ancienneDemande = (m && Store.mode === "nuage") ? Store.demandeDe(m.id) : null;
+      let nouvelleDemande = false;
       if (Store.mode === "nuage" && connexion === "email" && !sansAppareil) {
         /* On n'écrit plus l'adresse de quelqu'un d'autre : on crée une
            DEMANDE, et c'est la personne elle-même qui, en ouvrant le lien reçu
            à cette adresse, créera son rattachement (14/09/2026). Deux tribus
-           peuvent donc demander la même adresse sans se bloquer. */
-        const rc = await Store.creerDemandeCompte(email, idCible, role === "admin");
-        if (!rc.ok) { toast(rc.message); return; }
+           peuvent donc demander la même adresse sans se bloquer.
+           Une seule demande par profil (15/09/2026) : réenregistrer la fiche
+           sans changer l'adresse ni le rôle en créait une de plus à chaque fois. */
+        const memeDemande = !!ancienneDemande && ancienneDemande.adresse === email &&
+          ancienneDemande.admin === (role === "admin");
+        const memeCompte = !!ancien && ancien.adresse === email;
+        if (!memeDemande && !memeCompte) {
+          const rc = await Store.creerDemandeCompte(email, idCible, role === "admin");
+          if (!rc.ok) { toast(rc.message); return; }
+          nouvelleDemande = true;
+        }
       }
 
       if (m) {
@@ -1740,13 +1990,13 @@ Formulaires.membre = async function (mid) {
         }
         if (sansAppareil) { m.pin = null; m.pinHash = null; m.pinSel = null; }
       } else {
-        if (!sansAppareil && !pin) { toast("Choisissez un code à 4 chiffres"); return; }
         const nouveau = {
           id: idCible, prenom: String(d.get("prenom")).trim(), emoji: emojiChoisi(f, "😀"),
           role: role, sansAppareil: sansAppareil,
           creeLe: new Date().toISOString()
         };
-        if (!sansAppareil) {
+        /* Sans code saisi, la fiche naît sans code : la personne le choisira. */
+        if (!sansAppareil && pin) {
           const verrou = await champsPin(pin);
           if (!verrou) { toast("Connexion non sécurisée : le code ne peut pas être enregistré"); return; }
           Object.assign(nouveau, verrou);
@@ -1762,8 +2012,8 @@ Formulaires.membre = async function (mid) {
         }
         /* Une demande restée en attente pour l'ancienne adresse n'a plus lieu
            d'être : sinon le vieux lien marcherait encore (14/09/2026). */
-        if (ancienneDemande &&
-          (connexion !== "email" || sansAppareil || ancienneDemande.adresse !== email)) {
+        if (ancienneDemande && (nouvelleDemande ||
+          connexion !== "email" || sansAppareil || ancienneDemande.adresse !== email)) {
           await Store.supprimerDemande(ancienneDemande.jeton);
         }
         Store.listerComptes(etat.famille.code);
@@ -1772,7 +2022,12 @@ Formulaires.membre = async function (mid) {
 
       fermerFeuille();
       sauver("membres");
-      if (!m && !sansAppareil) Formulaires.invitation();     // il lui faut un accès
+      /* Une adresse enregistrée ne sert à rien tant que le lien n'est pas parti :
+         on propose de l'envoyer tout de suite (15/09/2026). Avant, rien ne le
+         disait, et le bouton d'envoi n'apparaissait qu'après avoir créé une
+         invitation par code. */
+      if (nouvelleDemande) Formulaires.envoyerLienEmail(idCible);
+      else if (!m && !sansAppareil) Formulaires.invitation(idCible);   // il lui faut un accès
       else if (!m) toast("Profil créé — à vous de cocher ses tâches 🧒");
       else toast("Profil enregistré");
     };
@@ -1781,12 +2036,80 @@ Formulaires.membre = async function (mid) {
 
 /* ================================ INVITATION ================================ */
 
-Formulaires.invitation = function () {
+/* LE LIEN PAR E-MAIL, À PORTÉE DE MAIN (15/09/2026).
+   Une adresse enregistrée sur un profil (rattachement fait, ou demande en
+   attente) ne servait à rien tant que le lien n'était pas parti — et le seul
+   bouton d'envoi n'apparaissait qu'APRÈS avoir créé une invitation par code.
+   Il est désormais proposé dès l'enregistrement de l'adresse, et dans la
+   fiche « Inviter » dès qu'on choisit la personne. */
+function blocEnvoiEmail(cible, c) {
+  const aUnCode = !!(cible.pinHash || cible.pin);
+  return '<div class="bandeau info" style="margin:0 0 1rem">📧<div><b>' + esc(cible.prenom) +
+    " a une adresse e-mail enregistrée.</b><br>Le plus simple : lui envoyer le lien de connexion. " +
+    "En l'ouvrant, " + esc(cible.prenom) + " confirme son adresse, puis " +
+    (aUnCode ? "saisit son code à 4 chiffres" : "choisit son code à 4 chiffres") +
+    " — sans rien recopier." +
+    '<button class="btn plein principal" type="button" data-role="envoyer-email" style="margin-top:.6rem">' +
+    "📧 Envoyer le lien à " + esc(c.adresse) + "</button></div></div>";
+}
+async function envoyerLienA(c, bouton) {
+  bouton.disabled = true;
+  bouton.textContent = "Envoi…";
+  const r = await Store.envoyerLienConnexion(c.adresse, c.jeton || null);
+  bouton.disabled = false;
+  if (!r.ok) {
+    bouton.textContent = "📧 Réessayer l'envoi";
+    toast(r.message || "Envoi impossible");
+    return false;
+  }
+  /* Vous vous l'envoyez à vous-même : on retient VOTRE adresse, comme « Me
+     connecter par e-mail », et le lien s'ouvrira sans rien redemander dans ce
+     navigateur. Pour quelqu'un d'autre, on ne garde que « un lien est parti
+     d'ici », jamais son adresse. */
+  if (moi && c.membre === moi.id) Store.retenirEmail(c.adresse);
+  else Store.marquerLienEnvoyeIci();
+  bouton.textContent = "✅ Envoyé à " + c.adresse;
+  bouton.classList.remove("principal");
+  toast("Lien envoyé 💌");
+  return true;
+}
+
+/* Proposé juste après l'enregistrement d'une adresse sur un profil. */
+Formulaires.envoyerLienEmail = function (membreId) {
+  const cible = membre(membreId);
+  const c = cible ? (Store.compteDe(cible.id) || Store.demandeDe(cible.id)) : null;
+  if (!cible || !c) { toast("Profil enregistré"); return; }
+  const html = blocEnvoiEmail(cible, c) +
+    '<p class="aide">Vous pourrez aussi l\'envoyer plus tard : <b>Administration ▸ Inviter</b>, ' +
+    "en choisissant " + esc(cible.prenom) + ".</p>" +
+    '<button class="btn plein" data-action="fermer" style="margin-top:.6rem">Plus tard</button>';
+  ouvrirFeuille("Envoyer le lien à " + cible.prenom, html, (f) => {
+    const b = f.querySelector('[data-role="envoyer-email"]');
+    b.onclick = async () => {
+      if (await envoyerLienA(c, b)) {
+        const fin = f.querySelector('[data-action="fermer"]');
+        if (fin) fin.textContent = "Fermer";
+      }
+    };
+  });
+};
+
+Formulaires.invitation = async function (pourId) {
   if (!estAdmin()) { toast("Seul un administrateur peut inviter"); return; }
+  /* Les adresses enregistrées, pour proposer le lien par e-mail dès qu'on
+     choisit la personne. */
+  if (Store.mode === "nuage") {
+    await Store.listerComptes(etat.famille.code);
+    await Store.listerDemandes(etat.famille.code);
+  }
 
   /* Les profils qui peuvent recevoir une invitation : ceux qui se connectent
      (les enfants « sans téléphone » n'en ont pas besoin). */
   const cibles = etat.membres.filter((m) => !m.sansAppareil);
+  /* Ouverte juste après l'ajout d'un membre : c'est LUI qu'on invite
+     (15/09/2026). Présélectionner « une nouvelle personne » faisait créer, au
+     premier clic, une invitation qui fabriquait un second profil. */
+  const preselection = cibles.some((m) => m.id === pourId) ? pourId : "nouveau";
 
   const html = '<div id="f-invit">' +
     '<p class="aide" style="margin-bottom:1rem">L\'invitation est un lien <b>à usage unique</b>. ' +
@@ -1796,12 +2119,15 @@ Formulaires.invitation = function () {
     puceMultiple("pour", [{ val: "nouveau", html: "➕ Une nouvelle personne" }].concat(
       cibles.map((m) => ({
         val: m.id,
+        /* « jamais connecté » était faux pour quelqu'un dont les appareils ont
+           été retirés, ou qui a quitté la tribu (15/09/2026). */
         html: esc((m.emoji || "🙂") + " " + m.prenom) +
-          (aUnAppareil(m) ? "" : " (jamais connecté)")
-      }))), ["nouveau"]) +
+          (aUnAppareil(m) ? "" : appareilsRetiresDe(m.id).length ? " (plus d'appareil)" : " (jamais connecté)")
+      }))), [preselection]) +
     '<p class="aide" style="margin:-.5rem 0 1rem">Choisissez un prénom existant pour ' +
     "ajouter un <b>deuxième téléphone</b> à quelqu'un, ou pour connecter un profil " +
     "que vous avez créé dans Administration.</p>" +
+    '<div id="zone-email"></div>' +
     '<label class="champ"><span>Valable pendant</span></label>' +
     puceMultiple("duree", [
       { val: "1", html: "24 heures" },
@@ -1814,32 +2140,33 @@ Formulaires.invitation = function () {
   ouvrirFeuille("Inviter dans la famille", html, (f) => {
     brancherMulti(f, "duree", true);
     brancherMulti(f, "pour", true);
+    /* Le lien par e-mail, dès que la personne choisie a une adresse. Écouté
+       sur le GROUPE, après brancherMulti : la puce doit être cochée avant
+       qu'on relise le choix. */
+    const zoneEmail = f.querySelector("#zone-email");
+    const majZoneEmail = () => {
+      const pour = valeursMulti(f, "pour")[0] || "nouveau";
+      const cible = pour === "nouveau" ? null : membre(pour);
+      const c = cible ? (Store.compteDe(cible.id) || Store.demandeDe(cible.id)) : null;
+      zoneEmail.innerHTML = c ? blocEnvoiEmail(cible, c) : "";
+      const b = zoneEmail.querySelector('[data-role="envoyer-email"]');
+      if (b) b.onclick = () => envoyerLienA(c, b);
+    };
+    f.querySelector('[data-role="pour"]').addEventListener("click", majZoneEmail);
+    majZoneEmail();
     const zone = f.querySelector("#resultat-invit");
     const bouton = f.querySelector('[data-role="creer"]');
 
     bouton.onclick = async () => {
       const pour = valeursMulti(f, "pour")[0] || "nouveau";
       const cible = pour === "nouveau" ? null : membre(pour);
-      if (cible && !cible.pinHash && !cible.pin) {
-        toast("Donnez d'abord un code à 4 chiffres à " + cible.prenom);
-        return;
-      }
+      /* Un profil sans code s'invite aussi (15/09/2026) : la personne choisira
+         son code en arrivant. */
       bouton.disabled = true;
       const jours = Number(valeursMulti(f, "duree")[0] || 7);
       const inv = await Invitations.creer(jours, cible ? cible.id : null);
       bouton.disabled = false;
       if (!inv) { toast("Création impossible"); return; }
-      if (Store.mode === "nuage") {
-        await Store.listerComptes(etat.famille.code);
-        await Store.listerDemandes(etat.famille.code);
-      }
-      /* Le rattachement déjà fait, ou la demande encore en attente : dans les
-         deux cas on sait à quelle adresse envoyer le lien. Avant le
-         14/09/2026 seul le premier existait — et il n'existait justement pas
-         tant que la personne n'avait pas cliqué. */
-      const compteCible = cible
-        ? (Store.compteDe(cible.id) || Store.demandeDe(cible.id))
-        : null;
       const lien = Invitations.lien(inv.jeton);
       const fin = new Date(inv.expireLe).toLocaleDateString("fr-FR",
         { day: "numeric", month: "long", year: "numeric" });
@@ -1847,7 +2174,11 @@ Formulaires.invitation = function () {
       zone.innerHTML = '<div class="bandeau info">✅<div>Invitation créée pour <b>' +
         esc(inv.profil ? inv.profil.prenom : "une nouvelle personne") +
         "</b>, valable jusqu'au " + esc(fin) +
-        (inv.profil ? ".<br>Cette personne devra saisir son code à 4 chiffres." : ".") +
+        (inv.profil
+          ? (inv.profil.pinHash
+            ? ".<br>Cette personne devra saisir son code à 4 chiffres."
+            : ".<br>Cette personne choisira son code à 4 chiffres en arrivant.")
+          : ".") +
         "</div></div>" +
         /* Le code d'abord : c'est le seul format qui passe partout, y compris
            dans une application sans barre d'adresse, ou dicté au téléphone. */
@@ -1860,41 +2191,10 @@ Formulaires.invitation = function () {
         esc(lien) + "</div>" +
         '<button class="btn plein mini" data-action="copier" style="margin-top:.4rem" ' +
         'data-texte="' + esc(lien) + '">Copier le lien</button>' +
-        /* Si le profil vise a ete cree en mode e-mail, on propose de lui
-           envoyer le lien directement : c'est tout l'interet du mode. Le
-           bouton n'apparait que la, quand l'invitation existe deja. */
-        (compteCible
-          ? '<hr class="sep"><button class="btn plein principal" data-role="envoyer-email" ' +
-            'style="margin-bottom:.4rem">📧 Envoyer le lien à ' + esc(compteCible.adresse) + "</button>" +
-            '<p class="aide">' + esc(cible.prenom) + " recevra un e-mail de Firebase. " +
-            "En cliquant dessus, " + esc(cible.prenom) + " entrera dans la tribu — et devra " +
-            "confirmer son adresse, puis saisir son code à 4 chiffres.</p>"
-          : "") +
+        /* Le lien par e-mail se propose plus haut, dès le choix de la personne. */
         '<p class="aide" style="margin-top:.6rem">Une fois utilisée, elle ne fonctionnera plus. ' +
         "Créez-en une nouvelle pour chaque personne et chaque appareil — " +
         "une icône sur l'écran d'accueil compte comme un appareil.</p>";
-
-      const be = zone.querySelector('[data-role="envoyer-email"]');
-      if (be) be.onclick = async () => {
-        be.disabled = true;
-        be.textContent = "Envoi…";
-        const r = await Store.envoyerLienConnexion(compteCible.adresse, compteCible.jeton || null);
-        be.disabled = false;
-        if (r.ok) {
-          /* Vous vous l'envoyez à vous-même : on retient VOTRE adresse, comme
-             « Me connecter par e-mail », et le lien s'ouvrira sans rien
-             redemander dans ce navigateur. Pour quelqu'un d'autre, on ne garde
-             que « un lien est parti d'ici », jamais son adresse. */
-          if (moi && compteCible.membre === moi.id) Store.retenirEmail(compteCible.adresse);
-          else Store.marquerLienEnvoyeIci();
-          be.textContent = "✅ Envoyé à " + compteCible.adresse;
-          be.classList.remove("principal");
-          toast("Lien envoyé 💌");
-        } else {
-          be.textContent = "📧 Réessayer l'envoi";
-          toast(r.message || "Envoi impossible");
-        }
-      };
 
       const bp = zone.querySelector('[data-role="partager"]');
       bp.onclick = () => {
@@ -2496,12 +2796,6 @@ Formulaires.menuProfil = function () {
     "<hr class=\"sep\">" +
     '<button class="btn plein doux" data-action="retour" style="margin-bottom:.5rem">' +
     "🐞 Signaler un problème / proposer une idée</button>" +
-    '<button class="btn plein doux" data-action="effacer-appareil" style="margin-bottom:.5rem">' +
-    "🧹 Effacer les données de cet appareil</button>" +
-    (Store.mode === "nuage"
-      ? '<button class="btn plein doux" data-role="quitter-tribu" style="margin-bottom:.5rem">' +
-        "🚪 Quitter la tribu sur cet appareil</button>"
-      : "") +
     '<p class="aide centre" style="margin-bottom:.8rem">Version ' + esc(VERSION) +
     " — merci de vos retours !<br>" +
     /* Les comptes de Ma Tribu sur les réseaux (15/09/2026). De SIMPLES liens,
@@ -2516,6 +2810,16 @@ Formulaires.menuProfil = function () {
        utilisent l application : dire ce qui est collecté et comment le
        faire effacer. La page vit à part, elle se lit sans être connecté. */
     '<a href="confidentialite.html" target="_blank" rel="noopener">Confidentialité et données personnelles</a></p>' +
+    /* Les gestes qui touchent à CET appareil, rangés à part et en bas
+       (15/09/2026) : ils côtoyaient « Signaler un problème ». */
+    "<hr class=\"sep\">" +
+    '<p class="aide" style="margin:0 0 .5rem"><b>Sur cet appareil</b></p>' +
+    '<button class="btn plein doux" data-action="effacer-appareil" style="margin-bottom:.5rem">' +
+    "🧹 Effacer les données de cet appareil</button>" +
+    (Store.mode === "nuage"
+      ? '<button class="btn plein doux" data-role="quitter-tribu" style="margin-bottom:.5rem">' +
+        "🚪 Quitter la tribu sur cet appareil</button>"
+      : "") +
     '<button class="btn plein danger" data-action="deconnexion">Changer de membre / se déconnecter</button>';
 
   ouvrirFeuille("Mon profil", html, (f) => {
@@ -2702,15 +3006,21 @@ Formulaires.monProfilSimple = function () {
       const d = new FormData(ev.target);   // ev.target = le <form>, pas la feuille
       const pin = String(d.get("pin") || "").trim();
       if (pin && !/^[0-9]{4}$/.test(pin)) { toast("Le code doit faire 4 chiffres"); return; }
-      moi.prenom = String(d.get("prenom")).trim();
-      moi.emoji = emojiChoisi(f, "😀");
+      const champs = { prenom: String(d.get("prenom")).trim(), emoji: emojiChoisi(f, "😀") };
       if (pin) {
         const verrou = await champsPin(pin);
         if (!verrou) { toast("Connexion non sécurisée : le code ne peut pas être enregistré"); return; }
-        Object.assign(moi, verrou);
+        Object.assign(champs, verrou);
       }
+      /* SA fiche seulement, relue et réécrite d'un bloc (15/09/2026). Avant,
+         un membre ordinaire réécrivait toute la liste des membres : le serveur
+         le refusait, et « Modifier mon profil » ne marchait que pour les
+         administrateurs. La règle modifieSaFiche l'autorise désormais. */
+      const ok = await Store.modifierMaFiche(Store.code || etat.famille.code, moi.id, champs);
+      if (!ok) { toast("Enregistrement refusé — réessayez dans un instant"); return; }
+      Object.assign(moi, champs);
       fermerFeuille();
-      sauver("membres");
+      rendre();
       toast("Profil enregistré");
     };
   });
@@ -3214,7 +3524,7 @@ Formulaires.onglets = function () {
       if (off.indexOf(ui.vue) !== -1) ui.vue = "accueil";
       fermerFeuille();
       sauver("reglages");
-      toast(off.length ? off.length + " onglet(s) masqué(s)" : "Tous les onglets sont visibles");
+      toast(off.length ? pluriel(off.length, "onglet masqué", "onglets masqués") : "Tous les onglets sont visibles");
     };
   });
 };
@@ -3607,11 +3917,11 @@ Formulaires.exporterDonnees = async function () {
   const html = '<div id="f-export">' +
     "<p>Le fichier contient <b>tout le contenu de " + esc(etat.famille.nom) + "</b> :</p>" +
     '<ul class="aide" style="margin:.2rem 0 .9rem">' +
-    "<li>" + n(etat.membres) + " membre(s) — prénom, avatar, rôle, adresse e-mail le cas échéant</li>" +
-    "<li>" + n(etat.taches) + " tâche(s), et " + n(etat.etats) + " suivi(s) de tâches</li>" +
-    "<li>" + n(etat.journal) + " ligne(s) de points, les cadeaux et les échanges</li>" +
-    "<li>" + n(etat.recettes) + " recette(s), les menus, les courses, la réserve, les pense-bêtes</li>" +
-    "<li>" + n(Store.comptesFamille) + " compte(s) adulte(s) — adresse e-mail et profil lié</li>" +
+    "<li>" + pluriel(n(etat.membres), "membre", "membres") + " — prénom, avatar, rôle, adresse e-mail le cas échéant</li>" +
+    "<li>" + pluriel(n(etat.taches), "tâche", "tâches") + ", et " + pluriel(n(etat.etats), "suivi", "suivis") + " de tâches</li>" +
+    "<li>" + pluriel(n(etat.journal), "ligne", "lignes") + " de points, les cadeaux et les échanges</li>" +
+    "<li>" + pluriel(n(etat.recettes), "recette", "recettes") + ", les menus, les courses, la réserve, les pense-bêtes</li>" +
+    "<li>" + pluriel(n(Store.comptesFamille), "compte adulte", "comptes adultes") + " — adresse e-mail et profil lié</li>" +
     "<li>les appareils autorisés : type et date d’ajout, sans leurs identifiants</li>" +
     "<li>les réglages de la famille</li></ul>" +
     '<div class="bandeau">🔐<div><b>Ce qui n\'y est pas, volontairement :</b> les empreintes ' +

@@ -153,7 +153,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.51 bêta";
+const VERSION = "0.52 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -206,6 +206,15 @@ const CLES_DOC = ["famille", "membres", "membresUid", "adminsUid", "appareils", 
    document a part fait foi des qu'il existe (Store.recettesAPart). */
 const RUBRIQUES = "rubriques";
 const RUBRIQUE_RECETTES = "recettes";
+/* Firestore refuse un document de plus de 1 Mo. L'erreur renvoyée parle de
+   « bytes » ou porte le code « invalid-argument » : on la reconnaît pour dire
+   la vérité à l'écran au lieu d'accuser les droits (16/09/2026). */
+function tropGros(err) {
+  const code = String((err && err.code) || "");
+  const texte = String((err && err.message) || "");
+  return code.indexOf("invalid-argument") !== -1
+    || /bytes|too large|maximum size/i.test(texte);
+}
 
 /* ---------- INTERRUPTEUR DU DEPLACEMENT DES RECETTES ----------
 
@@ -227,19 +236,28 @@ const RUBRIQUE_RECETTES = "recettes";
    QUAND le passer a true : quand tous les telephones de toutes les familles
    ont ouvert la 0.50 au moins une fois. Le service worker etant en « reseau
    d'abord », il suffit que chacun ouvre l'application avec du reseau.
+   PASSE A true LE 15/09/2026, a la demande d'Amandine, avec la 0.52 : la
+   0.51 est en ligne sur les trois adresses depuis le 15/09, et la 0.50 —
+   qui sait deja lire les deux rangements — depuis le 12/09.
 
    Le retour en arriere n'est PAS automatique : une famille deja deplacee le
    reste (l'application continue de la lire correctement, quel que soit
    l'interrupteur). Il ne protege que celles qui ne le sont pas encore. */
-const DEPLACER_RECETTES = false;
+const DEPLACER_RECETTES = true;
 
 /* Les saisons, au sens cuisine : ce qu'on a envie de manger et ce qu'on
    trouve sur l'étal. Une recette sans saison indiquée convient toute l'annee. */
+/* LES VRAIES DATES, ET NON LE PREMIER DU MOIS (16/09/2026, demande
+   d'Amandine). L'application changeait de saison le 1er septembre ; elle suit
+   maintenant l'équinoxe et le solstice. Les dates bougent d'un jour selon les
+   années — on retient celles des années 2020, qui sont justes ou à un jour
+   près, et c'est bien assez pour dire quand la courge remplace la tomate.
+   [mois, jour] = le jour où la saison commence. */
 const SAISONS = [
-  { val: "printemps", nom: "Printemps", emoji: "🌸", mois: [3, 4, 5] },
-  { val: "ete", nom: "Été", emoji: "☀️", mois: [6, 7, 8] },
-  { val: "automne", nom: "Automne", emoji: "🍂", mois: [9, 10, 11] },
-  { val: "hiver", nom: "Hiver", emoji: "❄️", mois: [12, 1, 2] }
+  { val: "printemps", nom: "Printemps", emoji: "🌸", debut: [3, 20] },
+  { val: "ete", nom: "Été", emoji: "☀️", debut: [6, 21] },
+  { val: "automne", nom: "Automne", emoji: "🍂", debut: [9, 22] },
+  { val: "hiver", nom: "Hiver", emoji: "❄️", debut: [12, 21] }
 ];
 
 /* Calendrier des fruits et legumes, pour proposer les saisons d'une recette
@@ -258,6 +276,80 @@ const CALENDRIER = {
     "courge", "orange", "clémentine", "mandarine", "pamplemousse", "kiwi", "poire", "pomme",
     "salsifis", "topinambour", "mâche", "betterave"]
 };
+
+/* ======================== QUOI DE NEUF ========================
+   Ce que la famille lit, pas ce que le développeur a corrigé : on n'écrit
+   ici que les NOUVEAUTÉS. Un correctif n'intéresse que celui qui a subi le
+   défaut ; l'annoncer ne ferait qu'inquiéter les autres.
+   La plus récente en premier. Pour ajouter une version : une entrée de plus
+   en haut, et rien d'autre à faire — la pastille « nouveau » suit.
+   Ni correctif, ni sécurité, ni « sous le capot » : cette page ne parle que
+   de ce que la famille peut voir et utiliser. */
+const ACTUS = [
+  {
+    version: "0.52",
+    date: "2026-09-16",
+    titre: "Deux fois plus de plats, des menus moins répétitifs",
+    points: [
+      "Le cahier passe de 398 à <b>737 plats</b>, et les quatre saisons offrent enfin le même choix : plus de 315 plats quelle que soit la période de l'année.",
+      "Le générateur de menus ne sert plus <b>deux repas de suite dans la même catégorie</b> — fini la viande midi et soir. Il tient aussi compte de vos <b>plats favoris ⭐</b>, et peut <b>désigner qui cuisine</b>, chacun son tour.",
+      "Le <b>placard</b> (huile, farine, épices…) ne remplit plus la liste de courses : ces produits arrivent à part, décochés, et ce que vous laissez de côté rejoint votre réserve.",
+      "Sur l'accueil d'un administrateur, tout ce qui attend une réponse est réuni en haut, dans <b>« ✅ À valider »</b>.",
+      "<b>Chacun choisit son code à 4 chiffres</b>, et « Me connecter par e-mail » marche du premier coup.",
+      "Et cette page : ce qui change, et un mot à chaque changement de saison."
+    ]
+  },
+  {
+    version: "0.51",
+    date: "2026-09-15",
+    titre: "Ma Tribu sur Instagram et Facebook",
+    points: [
+      "Les liens vers l'<b>Instagram</b> et le <b>Facebook</b> de Ma Tribu, en bas de <i>Mon profil</i>."
+    ]
+  }
+];
+
+/* Ce que cet appareil a déjà lu. Sur l'appareil, pas dans la famille : on ne
+   va pas marquer la nouvelle comme lue pour tout le monde parce qu'une seule
+   personne l'a ouverte. */
+function actuDerniere() { return ACTUS[0] || null; }
+function actuANoter() {
+  const d = actuDerniere();
+  if (!d) return false;
+  try { return localStorage.getItem("tribu:actuVue") !== d.version; } catch (e) { return false; }
+}
+function marquerActuLue() {
+  const d = actuDerniere();
+  try { if (d) localStorage.setItem("tribu:actuVue", d.version); } catch (e) { /* tant pis */ }
+}
+
+/* LES SAISONS, CÔTÉ MARCHÉ. Le calendrier des fruits et légumes existait déjà
+   pour deviner la saison d'une recette : il sert ici à dire ce qui ARRIVE sur
+   les étals (présent dans la nouvelle saison, absent de la précédente) et ce
+   qui s'en va. */
+function saisonPrecedente(val) {
+  const i = SAISONS.findIndex((s) => s.val === val);
+  return SAISONS[(i + SAISONS.length - 1) % SAISONS.length].val;
+}
+function arrivagesDeSaison(val) {
+  const avant = CALENDRIER[saisonPrecedente(val)] || [];
+  return (CALENDRIER[val] || []).filter((p) => avant.indexOf(p) === -1);
+}
+function departsDeSaison(val) {
+  const maintenant = CALENDRIER[val] || [];
+  return (CALENDRIER[saisonPrecedente(val)] || []).filter((p) => maintenant.indexOf(p) === -1);
+}
+function saisonVientDeChanger() {
+  try { return localStorage.getItem("tribu:saisonVue") !== saisonActuelle(); } catch (e) { return false; }
+}
+function marquerSaisonVue() {
+  try { localStorage.setItem("tribu:saisonVue", saisonActuelle()); } catch (e) { /* tant pis */ }
+}
+/* « en été », « en hiver », mais « au printemps ». */
+function enLaSaison(s) { return (s.val === "printemps" ? "au " : "en ") + s.nom.toLowerCase(); }
+function platsDeSaison() {
+  return etat.recettes.filter((r) => !estDessert(r) && estDeSaison(r)).length;
+}
 
 /* Types de liste de courses. « mensuelle » = on la remplit au fil de l'eau
    sans acheter tout de suite : elle ne déclenche donc pas les rappels. */
@@ -282,6 +374,52 @@ function esc(s) {
 }
 function pad(n) { return String(n).padStart(2, "0"); }
 function propre(v) { return JSON.parse(JSON.stringify(v)); }
+
+/* LES DÉROULÉS DES PLATS FOURNIS NE VONT PAS EN LIGNE (16/09/2026).
+
+   Le cahier fourni est passé à 737 recettes. Recopié tel quel dans Firestore,
+   le document des recettes d'une famille pesait 700 Ko — sur les 1 024 Ko
+   qu'un document peut contenir. Or les déroulés de ces plats sont DÉJÀ dans
+   recettes.js, c'est-à-dire dans l'application, sur chaque téléphone : les
+   envoyer en plus, c'était payer deux fois la même chose (224 Ko).
+
+   On les retire donc au moment d'écrire, et on les remet au moment de lire.
+   En mémoire, une recette est toujours complète : l'affichage, les filtres,
+   le partage et l'export ne voient aucune différence.
+
+   Deux garde-fous :
+   - on ne retire QUE si le déroulé est identique, mot pour mot, à celui du
+     fichier. Une étape réécrite par la famille part en ligne comme avant ;
+   - un plat que la famille a créé n'est jamais concerné. */
+let _refDepart = null;
+function recetteFournie(nom) {
+  if (!_refDepart) {
+    _refDepart = new Map((window.RECETTES_DEPART || [])
+      .map((r) => [String(r.nom || "").toLowerCase().trim(), r]));
+  }
+  return _refDepart.get(String(nom || "").toLowerCase().trim()) || null;
+}
+function memeDeroule(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  for (let k = 0; k < a.length; k++) { if (a[k] !== b[k]) return false; }
+  return true;
+}
+function recettesAEnvoyer(liste) {
+  return (liste || []).map((r) => {
+    const ref = recetteFournie(r && r.nom);
+    if (!ref || !memeDeroule(r.etapes, ref.etapes)) return r;
+    const copie = Object.assign({}, r);
+    delete copie.etapes;
+    return copie;
+  });
+}
+function recettesRecues(liste) {
+  return (liste || []).map((r) => {
+    if (!r || Array.isArray(r.etapes)) return r;
+    const ref = recetteFournie(r.nom);
+    return ref ? Object.assign({}, r, { etapes: (ref.etapes || []).slice() }) : r;
+  });
+}
 
 /* Le champ du code a 4 chiffres : masque, avec un oeil pour le relire.
 
@@ -347,6 +485,27 @@ function texteNombre(n) {
   if (n === null || n === undefined) return "";
   return String(Math.round(n * 100) / 100).replace(".", ",");
 }
+/* « 1 article », « 3 articles » : fini les « article(s) » (15/09/2026). En
+   français, 0 et 1 restent au singulier.
+   PAS « compter » : ce nom est déjà pris par les profils santé, plus bas.
+   Les quatre fichiers partagent une seule portée : la seconde déclaration
+   écrasait la première sans erreur, et tous ces textes affichaient « 0 »
+   (vu à l'écran le 15/09/2026, avant tout dépôt). */
+function pluriel(n, un, plusieurs) {
+  return n + " " + (Math.abs(n) > 1 ? plusieurs : un);
+}
+/* « 1 boîte », « 8 tranches », « 2 bocaux » — et plus « boîte(s) ». Les
+   données gardent l'unité telle quelle (« boîte(s) ») : seul l'affichage
+   accorde, d'après la quantité. Sans quantité connue : le pluriel. */
+function accorderUnite(unite, n) {
+  const u = String(unite || "");
+  /* Le « (s) » peut être au MILIEU : « cuillère(s) à soupe » (16/09/2026).
+     On ne regardait que la fin du mot, et l'écran l'affichait tel quel. */
+  if (!/\((s|x|aux)\)/.test(u)) return u;
+  const seul = n !== null && n !== undefined && Math.abs(n) <= 1;
+  return u.replace(/([^\s(]*)\((s|x|aux)\)/g, (tout, mot, fin) =>
+    seul ? mot : (fin === "aux" ? mot.replace(/al$/, "aux") : mot + fin));
+}
 function formaterQte(qte, unite) {
   const brut = String(qte == null ? "" : qte).trim();
   /* Ancien format, d'avant la séparation quantité / unité : « 800 g »,
@@ -354,18 +513,31 @@ function formaterQte(qte, unite) {
   if (!unite && /[a-zà-ÿ]/i.test(brut)) return brut;
   const n = nombre(brut);
   const q = n === null ? brut : texteNombre(n);
-  if (!q) return unite || "";
-  return unite ? q + " " + unite : q;
+  if (!q) return unite ? accorderUnite(unite, null) : "";
+  return unite ? q + " " + accorderUnite(unite, n) : q;
 }
 function familleUnite(u) {
   for (const f in FAMILLES_UNITES) if (FAMILLES_UNITES[f][u] !== undefined) return f;
   return null;
 }
 /* Convertit une quantite d'une unite vers une autre. null si impossible. */
+/* Deux écritures pour la même cuillère (16/09/2026) : une partie des recettes
+   fournies dit « cuillère(s) à soupe », les autres « c. à soupe ». Comparées
+   telles quelles, elles ne s'additionnaient pas — « 15 c. à soupe +
+   3 cuillère(s) à soupe • unités différentes » dans les ingrédients de la
+   semaine. Les copies des familles gardent leur écriture : c'est donc ici, au
+   moment de comparer, qu'on les ramène à une seule. */
+const UNITES_SYNONYMES = { "cuillère(s) à soupe": "c. à soupe", "cuillère(s) à café": "c. à café" };
+function uniteCanonique(u) {
+  const t = String(u || "").trim();
+  return UNITES_SYNONYMES[t] || t;
+}
 function convertirUnite(qte, de, vers) {
   const n = nombre(qte);
   if (n === null) return null;
-  if ((de || "") === (vers || "")) return n;
+  de = uniteCanonique(de);
+  vers = uniteCanonique(vers);
+  if (de === vers) return n;
   const fa = familleUnite(de), fb = familleUnite(vers);
   if (!fa || fa !== fb) return null;
   return n * FAMILLES_UNITES[fa][de] / FAMILLES_UNITES[fa][vers];
@@ -699,7 +871,10 @@ async function terminerLienCompte(adresse, jeton) {
      profil est introuvable, on retombe sur la liste. */
   const d = { code: r.code, donnees: donnees, jeton: null };
   const profil = (donnees.membres || []).find((x) => x.id === r.membre);
-  Connexion.aller(profil ? "pin" : "profils", profil ? Object.assign(d, { membre: profil }) : d);
+  /* choisirCode : cet appareil vient d'être rattaché à CE profil ; s'il n'a
+     pas encore de code, c'est ici que la personne le choisit (15/09/2026). */
+  Connexion.aller(profil ? "pin" : "profils",
+    profil ? Object.assign(d, { membre: profil, choisirCode: true }) : d);
   return true;
 }
 
@@ -941,8 +1116,17 @@ function basculerFavori(rid) {
 /* --- Saisons --- */
 
 function saisonActuelle(d) {
-  const m = (d || new Date()).getMonth() + 1;
-  return (SAISONS.find((s) => s.mois.indexOf(m) !== -1) || SAISONS[0]).val;
+  const q = d || new Date();
+  /* Un nombre qui se compare tout seul : le 22 septembre devient 922. */
+  const jour = (q.getMonth() + 1) * 100 + q.getDate();
+  /* On regarde de la dernière saison vers la première : la première qui a
+     déjà commencé est la bonne. Avant le 20 mars, aucune n'a commencé cette
+     année-là — c'est encore l'hiver, celui de décembre dernier. */
+  for (let i = SAISONS.length - 1; i >= 0; i--) {
+    const s = SAISONS[i];
+    if (jour >= s.debut[0] * 100 + s.debut[1]) return s.val;
+  }
+  return "hiver";
 }
 function infoSaison(val) {
   return SAISONS.find((s) => s.val === val) || null;
@@ -1406,8 +1590,13 @@ const Store = {
 
     /* Garde-fou : sur un serveur de test (localhost), on reste en mode local
        pour ne pas écrire dans la vraie base de la famille. Pour tester quand
-       même la synchronisation, ouvrir l'adresse avec « ?nuage=1 ». */
-    const local = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+       même la synchronisation, ouvrir l'adresse avec « ?nuage=1 ».
+       Même règle pour index.html ouvert directement depuis le dossier
+       (file://) : sans nom d'hôte, il passait ce garde-fou et se branchait
+       sur la vraie base (relevé le 15/09/2026, quand un éditeur en a ouvert
+       un aperçu tout seul). */
+    const local = location.protocol === "file:" ||
+      location.hostname === "localhost" || location.hostname === "127.0.0.1";
     if (local && !new URLSearchParams(location.search).has("nuage")) {
       this.raison = "localhost";
       console.info("Serveur de test : mode local forcé (ajoutez ?nuage=1 pour utiliser Firebase).");
@@ -1936,10 +2125,33 @@ const Store = {
          la demande vise bien cette adresse, cette tribu, ce profil et ces
          droits ; sans cela l'ecriture est refusee. C'est ce qui empeche
          d'accaparer l'adresse de quelqu'un d'autre. */
-      if (!fiche.exists() && jetonDemande) {
+      /* SANS LE LIEN DE L'ADMINISTRATEUR (15/09/2026). « Me connecter par
+         e-mail » envoie un lien sans jeton : avant, une personne dont la
+         famille venait d'enregistrer l'adresse lisait « aucune famille n'a
+         enregistré cette adresse », alors que la demande existait bel et bien.
+         Elle la retrouve maintenant elle-même : les règles ne montrent à cette
+         session que les demandes qui visent SON adresse, qu'elle vient de
+         prouver. Plusieurs demandes pour le même profil (adresse ré-enregistrée) :
+         la plus récente. Des demandes de tribus ou de profils différents : on
+         ne choisit pas à sa place, c'est le lien de sa famille qui tranche. */
+      let jeton = jetonDemande || null;
+      if (!fiche.exists() && !jeton) {
+        res.etape = "demande";
+        const trouvees = await this._borner(
+          this._demandesPourAdresse(c, adresse), "recherche de l’invitation");
+        const cibles = new Set(trouvees.map((x) => x.famille + "|" + x.membre + "|" + (x.admin === true)));
+        if (cibles.size > 1) {
+          res.message = "Plusieurs familles ont enregistré cette adresse. Ouvrez le lien que " +
+            "la vôtre vous a envoyé par e-mail : il dit laquelle vous attend.";
+          return res;
+        }
+        if (trouvees.length) jeton = trouvees[0].jeton;
+      }
+
+      if (!fiche.exists() && jeton) {
         res.etape = "demande";
         const dem = await this._borner(
-          c.fs.getDoc(c.fs.doc(c.db, "demandesCompte", jetonDemande)), "lecture de l’invitation");
+          c.fs.getDoc(c.fs.doc(c.db, "demandesCompte", jeton)), "lecture de l’invitation");
         const d = dem.exists() ? dem.data() : null;
         if (!d) {
           res.message = "Cette invitation par e-mail n’existe plus. Demandez-en une nouvelle.";
@@ -1955,7 +2167,7 @@ const Store = {
         }
         await this._borner(c.fs.setDoc(c.fs.doc(c.db, "comptes", adresse), {
           famille: d.famille, membre: d.membre, admin: d.admin === true,
-          ajouteLe: new Date().toISOString(), demande: jetonDemande
+          ajouteLe: new Date().toISOString(), demande: jeton
         }), "création du rattachement");
         /* Si l'ecriture a fini par passer malgre le delai, la reprise la
            retrouvera ici : on relit, on ne recree pas. */
@@ -1965,8 +2177,12 @@ const Store = {
 
       res.etape = "compte";
       if (!fiche.exists()) {
-        res.message = "Aucune famille n'a enregistré cette adresse. Demandez à un " +
-          "administrateur de l’ajouter à votre profil.";
+        /* Dire vrai (15/09/2026) : ni rattachement, ni demande pour cette
+           adresse. L'ancien message affirmait « aucune famille » même quand
+           une demande attendait — on la cherche désormais avant. */
+        res.message = "Cette adresse n’est reliée à aucune famille pour l’instant. Demandez à " +
+          "l’administrateur de votre famille de l’enregistrer sur votre profil " +
+          "(Administration › Membres), puis de vous envoyer le lien.";
         return res;
       }
       const f = fiche.data();
@@ -2001,6 +2217,28 @@ const Store = {
     } finally {
       /* Fermee dans TOUS les cas : cette session ne doit jamais survivre. */
       await this._effacerCompteConnexion(c);
+    }
+  },
+
+  /* Les demandes qui visent CETTE adresse, lues par la session du compte qui
+     vient de la prouver (15/09/2026, règle list de demandesCompte). Les
+     périmées ne comptent pas ; la plus récente d'abord. Ne lève jamais : tant
+     que les règles ne sont pas republiées, on retombe simplement sur « aucune
+     famille ». */
+  async _demandesPourAdresse(c, adresse) {
+    try {
+      const q = await c.fs.getDocs(c.fs.query(c.fs.collection(c.db, "demandesCompte"),
+        c.fs.where("adresse", "==", adresse)));
+      const l = [];
+      const maintenant = Date.now();
+      q.forEach((d) => {
+        const v = Object.assign({ jeton: d.id }, d.data());
+        if (!v.expireLe || v.expireLe > maintenant) l.push(v);
+      });
+      return l.sort((a, b) => (b.creeeLe || 0) - (a.creeeLe || 0));
+    } catch (err) {
+      console.warn("Demandes illisibles pour cette adresse :", err);
+      return [];
     }
   },
 
@@ -2125,6 +2363,39 @@ const Store = {
     for (const d of aRetirer) await this.supprimerDemande(d.jeton);
     return { ok: true, n: aRetirer.length };
   },
+  /* Un appareil modifie la fiche de SON profil : prénom, avatar, code à 4
+     chiffres (15/09/2026, règle modifieSaFiche). Relue et réécrite d'un bloc
+     dans une transaction : on ne remplace QUE sa fiche, jamais une copie
+     périmée de celles des autres — le serveur refuserait d'ailleurs une
+     écriture qui en toucherait deux. Rend true ou false, ne lève jamais. */
+  async modifierMaFiche(code, membreId, champs) {
+    const appliquer = (liste) => (liste || []).map((m) =>
+      (m && m.id === membreId) ? Object.assign({}, m, champs) : m);
+    if (this.mode !== "nuage") {
+      const d = this._lireLocal(code);
+      if (!d) return false;
+      d.membres = appliquer(d.membres);
+      this._ecrireLocal(code, d);
+      return true;
+    }
+    try {
+      const fs = this._fs;
+      const ref = fs.doc(this._db, "familles", code);
+      await this._borner(fs.runTransaction(this._db, async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists()) throw new Error("famille introuvable");
+        const liste = snap.data().membres || [];
+        if (!liste.some((m) => m && m.id === membreId)) throw new Error("profil introuvable");
+        tx.update(ref, { membres: propre(appliquer(liste)) });
+      }), "enregistrement du profil");
+      return true;
+    } catch (err) {
+      console.warn("Fiche non enregistrée :", err);
+      this.derniereErreur = err;
+      return false;
+    }
+  },
+
   async enregistrerCompte(email, membreId, admin) {
     /* Conservee pour la lecture du code : elle ne doit plus servir. Le serveur
        la refuserait de toute facon depuis le 14/09/2026 — seule la personne
@@ -2423,14 +2694,14 @@ const Store = {
       CLES_DOC.forEach((c) => { principal[c] = propre(donnees[c]); });
       /* Interrupteur ferme : la famille nait a l'ancienne, recettes dans le
          document principal, pour rester lisible par un telephone en 0.48. */
-      if (!DEPLACER_RECETTES) principal.recettes = propre(donnees.recettes || []);
+      if (!DEPLACER_RECETTES) principal.recettes = propre(recettesAEnvoyer(donnees.recettes || []));
       await this._fs.setDoc(this._fs.doc(this._db, "familles", code), principal);
       if (DEPLACER_RECETTES) {
         /* Interrupteur ouvert : une famille neuve nait deja rangee, elle
            n'aura donc jamais a etre deplacee. */
         await this._fs.setDoc(
           this._fs.doc(this._db, "familles", code, RUBRIQUES, RUBRIQUE_RECETTES),
-          { liste: propre(donnees.recettes || []) });
+          { liste: propre(recettesAEnvoyer(donnees.recettes || [])) });
         this.recettesAPart = true;
       }
       return true;
@@ -2445,8 +2716,10 @@ const Store = {
     this.code = code;
     this._cbAbonnement = cb;             // pour se réabonner après un simple accroc
     /* On ne sait pas encore si CETTE famille a ete deplacee : c'est l'ecoute
-       du document des recettes qui le dira. */
+       du document des recettes qui le dira. Ni si son document principal
+       porte encore une copie des recettes : son premier instantane le dira. */
     this.recettesAPart = false;
+    this.recettesDansDocument = false;
     this._detacher();
     if (this.mode === "nuage") {
       const d = this._db, fs = this._fs;
@@ -2724,13 +2997,15 @@ const Store = {
     }
     const morceau = {};
     cles.forEach((c) => { if (CLES_DOC.indexOf(c) !== -1) morceau[c] = propre(etat[c]); });
-    if (veutRecettes && !this.recettesAPart) morceau.recettes = propre(etat.recettes);
+    if (veutRecettes && !this.recettesAPart) morceau.recettes = propre(recettesAEnvoyer(etat.recettes));
     if (!Object.keys(morceau).length) return;
     try {
       await this._fs.setDoc(this._fs.doc(this._db, "familles", this.code), morceau, { merge: true });
     } catch (err) {
       console.warn("Echec de l'enregistrement :", err);
-      toast("Enregistrement refusé (droits insuffisants ?)");
+      toast(tropGros(err)
+        ? "Trop de données pour un seul enregistrement"
+        : "Enregistrement refusé (droits insuffisants ?)");
     }
   },
 
@@ -2741,11 +3016,15 @@ const Store = {
     try {
       await this._fs.setDoc(
         this._fs.doc(this._db, "familles", this.code, RUBRIQUES, RUBRIQUE_RECETTES),
-        { liste: propre(etat.recettes) });
+        { liste: propre(recettesAEnvoyer(etat.recettes)) });
       this.recettesAPart = true;
     } catch (err) {
       console.warn("Echec de l'enregistrement des recettes :", err);
-      toast("Enregistrement refusé (droits insuffisants ?)");
+      /* Un document Firestore ne peut pas dépasser 1 Mo. Le dire vraiment,
+         plutôt que d'accuser les droits (16/09/2026). */
+      toast(tropGros(err)
+        ? "Cahier de recettes trop volumineux pour être enregistré en ligne"
+        : "Enregistrement refusé (droits insuffisants ?)");
     }
   },
 
@@ -2754,17 +3033,32 @@ const Store = {
      L'ordre compte : on ecrit d'abord les recettes a leur nouvelle place, on
      ne retire le champ de l'ancien document QU'ENSUITE. Si le reseau coupe au
      milieu, au pire les recettes existent aux deux endroits — jamais nulle
-     part. */
+     part.
+
+     REVU LE 15/09/2026, en passant l'interrupteur a true :
+     - l'existence du document a part se demande AU SERVEUR. La copie locale
+       d'un telephone reste hors ligne pouvait encore le dire absent alors
+       qu'il existe : on l'aurait recouvert par une vieille liste ;
+     - quand il existe deja, on retire quand meme la copie restee dans le
+       document principal (deplacement coupe entre les deux ecritures, ou
+       telephone en retard qui l'y a remise). Avant, elle y restait pour
+       toujours, avec ses 350 Ko renvoyes a chaque modification.
+     Renvoie vrai quand tout est en ordre : recettes a leur place, plus de
+     copie dans le document principal. Faux = a retenter. */
   async migrerRecettes(code) {
     try {
       const ref = this._fs.doc(this._db, "familles", code, RUBRIQUES, RUBRIQUE_RECETTES);
-      const s = await this._fs.getDoc(ref);
-      if (s.exists()) { this.recettesAPart = true; return false; }
-      await this._fs.setDoc(ref, { liste: propre(etat.recettes) });
+      const s = await this._fs.getDocFromServer(ref);
+      if (!s.exists()) {
+        await this._fs.setDoc(ref, { liste: propre(recettesAEnvoyer(etat.recettes)) });
+        console.info("Recettes déplacées dans leur propre document (" + etat.recettes.length + ").");
+      }
       this.recettesAPart = true;
-      await this._fs.setDoc(this._fs.doc(this._db, "familles", code),
-        { recettes: this._fs.deleteField() }, { merge: true });
-      console.info("Recettes déplacées dans leur propre document (" + etat.recettes.length + ").");
+      if (this.recettesDansDocument) {
+        await this._fs.setDoc(this._fs.doc(this._db, "familles", code),
+          { recettes: this._fs.deleteField() }, { merge: true });
+        this.recettesDansDocument = false;
+      }
       return true;
     } catch (err) {
       console.warn("Déplacement des recettes impossible :", err);
@@ -3341,17 +3635,14 @@ function reconcilierCoursesDuMenu() {
       const b = besoins.get(cleArticle(c.nom));
       if (!b) { change = true; return false; }
       const m = manquePour(b.nom, b.qte, b.unite);
-      /* Ingredient demande en deux unites differentes : on recopie le besoin
-         ENTIER (« 500 g + 2 boîtes »), sans unite — sinon on n'en garde que
-         le premier nombre et on achete la moitie (14/09/2026). */
-      const qte = b.plusieursUnites
-        ? b.besoinTexte
-        : (m.connu && m.manque !== null && m.enStock !== null)
-          ? texteNombre(m.manque)
-          : (nombre(b.qte) !== null ? texteNombre(nombre(b.qte)) : b.besoinTexte);
-      const unite = b.plusieursUnites ? "" : (b.unite || "");
-      if (qte !== c.qte || unite !== (c.unite || "")) {
-        c.qte = qte; c.unite = unite; change = true;
+      /* Le MÊME calcul que la fenêtre « Ingrédients de la semaine »
+         (quantiteACourses, 16/09/2026) : besoin entier quand il est en deux
+         unités, ce qui manque vraiment sinon, et rien pour les petites mesures
+         et le placard. Deux calculs, et le premier changement de menu
+         remettait « 15 c. à soupe » sur la liste. */
+      const q = quantiteACourses(b, m);
+      if (q.qte !== c.qte || q.unite !== (c.unite || "")) {
+        c.qte = q.qte; c.unite = q.unite; change = true;
       }
       return true;
     });
@@ -3404,7 +3695,9 @@ function ecrireSession(s) {
 function appliquerDonnees(d, portee) {
   if (portee === "etats") { etat.etats = d.etats || {}; return; }
   if (portee === "journal") { etat.journal = d.journal || []; return; }
-  if (portee === "recettes") { etat.recettes = d.recettes || []; return; }
+  /* Les déroulés des plats fournis ne voyagent plus : on les remet ici, une
+     bonne fois, pour que tout le reste de l'application les trouve. */
+  if (portee === "recettes") { etat.recettes = recettesRecues(d.recettes || []); return; }
 
   const v = etatVide();
   const garde = { etats: etat.etats, journal: etat.journal, recettes: etat.recettes };
@@ -3417,6 +3710,13 @@ function appliquerDonnees(d, portee) {
      perime — il n'y est meme plus. Sans cette ligne, un instantane du
      document principal ecraserait la bonne liste par un tableau vide. */
   if (Store.recettesAPart) etat.recettes = garde.recettes;
+  else etat.recettes = recettesRecues(etat.recettes);
+  /* Le document principal porte-t-il encore une copie des recettes ? C'est ce
+     qui dit a un administrateur qu'il reste un deplacement a faire, ou un
+     reste a retirer (migrerRecettesSiBesoin, 15/09/2026). */
+  if (portee === "doc" || portee === undefined) {
+    Store.recettesDansDocument = Array.isArray((d || {}).recettes);
+  }
   /* Reprise des donnees de la version 1 */
   if (d && d.etatsTaches && !Object.keys(etat.etats || {}).length) etat.etats = d.etatsTaches;
 
@@ -3762,17 +4062,19 @@ async function noterOuverture(code) {
    Reserve a un administrateur : l'operation retire un champ du document
    principal. Une famille dont aucun administrateur n'ouvre l'application
    reste a l'ancienne organisation — elle fonctionne, elle coute seulement
-   plus cher. Le drapeau est garde sur l'appareil pour ne pas refaire la
-   verification a chaque ouverture. */
+   plus cher.
+
+   Plus de drapeau garde sur l'appareil (15/09/2026) : il etait pose meme
+   apres un echec (reseau coupe, regles pas encore republiees), et l'appareil
+   ne retentait plus jamais. C'est le document principal qui dit s'il reste
+   quelque chose a faire (Store.recettesDansDocument) : sans copie des
+   recettes, rien a faire et aucune requete ; avec, on deplace ou on nettoie,
+   et un echec se retente a l'ouverture suivante. */
 async function migrerRecettesSiBesoin(code) {
   if (!DEPLACER_RECETTES) return;         // voir l'interrupteur, en haut du fichier
   if (Store.mode !== "nuage" || !estAdmin()) return;
-  if (Store.recettesAPart) return;
-  const cle = "tribu:recettesAPart:" + code;
-  try { if (localStorage.getItem(cle)) return; } catch (e) { /* memoire indisponible */ }
-  if (!etat.recettes.length) return;      // rien a deplacer : on reessaiera
+  if (!Store.recettesDansDocument) return;
   const fait = await Store.migrerRecettes(code);
-  try { localStorage.setItem(cle, "1"); } catch (e) { /* sans importance */ }
   if (fait) rendre();
 }
 
@@ -4191,7 +4493,9 @@ const Actions = {
       return;
     }
     rendre();
-    toast(estAdmin() ? "Fait ! À valider ci-dessous." : "Fait ! En attente de validation.");
+    /* Plus « ci-dessous » (16/09/2026) : sur l'accueil, « À valider » passe
+       désormais AVANT « Mes tâches », et l'onglet Tâches a son propre bouton. */
+    toast(estAdmin() ? "Fait ! Il ne reste qu'à le valider." : "Fait ! En attente de validation.");
   },
 
   annulerFaite(tacheId) {
@@ -4403,7 +4707,9 @@ const Actions = {
     const dedans = etat.stock.filter((s) => s.rayon === nom).length +
       etat.courses.filter((c) => c.rayon === nom).length;
     const ok = await confirmer("Retirer le rayon « " + nom + " » ?" + (dedans
-      ? " " + dedans + " article(s) y sont rangés : ils garderont ce nom jusqu'à ce que vous les changiez."
+      ? " " + (dedans > 1
+        ? dedans + " articles y sont rangés : ils garderont ce nom jusqu'à ce que vous les changiez."
+        : "1 article y est rangé : il gardera ce nom jusqu'à ce que vous le changiez.")
       : ""), { titre: "Retirer un rayon", ok: "Retirer", danger: true });
     if (!ok) return;
     etat.reglages = Object.assign({}, etat.reglages, {
@@ -4436,9 +4742,9 @@ const Actions = {
     });
     if (ajoutes.length) sauver("stock");
     if (ajoutes.length && connus.length) {
-      toast(ajoutes.length + " ajouté(s) — " + connus.length + " déjà en réserve");
+      toast(pluriel(ajoutes.length, "ajouté", "ajoutés") + " — " + connus.length + " déjà en réserve");
     } else if (ajoutes.length) {
-      toast(ajoutes.length + " article(s) en réserve 🥫");
+      toast(pluriel(ajoutes.length, "article", "articles") + " en réserve 🥫");
     } else if (connus.length) {
       toast(connus.length > 1 ? "Ils sont déjà en réserve" : "Il est déjà en réserve");
     }
@@ -4467,7 +4773,7 @@ const Actions = {
     if (listesCourses().length <= 1) { toast("Gardez au moins une liste"); return; }
     const n = coursesDe(lid).length;
     const ok = await confirmer("Supprimer « " + l.nom + " »" +
-      (n ? " et ses " + n + " article(s)" : "") + " ?",
+      (n ? " et " + (n > 1 ? "ses " + n + " articles" : "son article") : "") + " ?",
       { titre: "Supprimer la liste", ok: "Supprimer", danger: true });
     if (!ok) return;
     etat.courses = etat.courses.filter((c) => listeDe(c) !== lid);
@@ -4517,6 +4823,18 @@ const Actions = {
       achetes.forEach((c) => {
         const s = articleStock(c.nom);
         if (s) {
+          /* Acheté sans quantité (15/09/2026) : on sait qu'il y en a, pas
+             combien. Une réserve à zéro redevient « en réserve » au lieu de
+             rester à racheter ; une quantité connue ne bouge pas. Avant, ce cas
+             finissait en « unités différentes, à vérifier ».
+             Réserve elle-même sans quantité (16/09/2026) : rapporter 2 kg
+             n'apprend pas combien il y en a en tout. Elle reste « en réserve ». */
+          if (quantiteInconnue(c.qte) || quantiteInconnue(s.qte)) {
+            if (quantiteInconnue(c.qte) && (nombre(s.qte) || 0) === 0) s.qte = "";
+            s.majLe = new Date().toISOString();
+            majes++;
+            return;
+          }
           let ajout = convertirUnite(c.qte, c.unite || "", s.unite || "");
           /* Unités incompatibles (2 boîtes vs 500 g) : on ne bricole pas un
              chiffre faux. Si la quantité a été saisie à la main, on la prend ;
@@ -4546,9 +4864,9 @@ const Actions = {
     if (crees) bilan.push(crees + " ajouté" + (crees > 1 ? "s" : "") + " à la réserve");
     toast(bilan.length
       ? "Courses terminées : " + bilan.join(", ") + " ✅"
-      : achetes.length + " article(s) retiré(s) de la liste");
+      : pluriel(achetes.length, "article retiré", "articles retirés") + " de la liste");
     if (ignores) {
-      setTimeout(() => toast(ignores + " article(s) à vérifier : unités différentes"), 2800);
+      setTimeout(() => toast(pluriel(ignores, "article", "articles") + " à vérifier : unités différentes"), 2800);
     }
   },
 
@@ -4605,7 +4923,7 @@ const Actions = {
       toast("Ils sont déjà dans « " + liste.nom + " »");
       return;
     }
-    const ok = await confirmer("Ajouter " + aAjouter.length + " article(s) à « " + liste.nom + " » ?",
+    const ok = await confirmer("Ajouter " + pluriel(aAjouter.length, "article", "articles") + " à « " + liste.nom + " » ?",
       { titre: "Réapprovisionner", ok: "Ajouter" });
     if (!ok) return;
     aAjouter.slice().reverse().forEach((s) => {
@@ -4623,7 +4941,7 @@ const Actions = {
       });
     });
     sauver("courses");
-    toast(aAjouter.length + " article(s) ajouté(s) 🛒");
+    toast(pluriel(aAjouter.length, "article ajouté", "articles ajoutés") + " 🛒");
   },
 
   /* --- Repas --- */
@@ -5361,7 +5679,8 @@ const GROUPES_ALIMENTS = {
       "pomme de terre", "puree", "polenta", "tortilla", "wrap", "frite",
       "couscous", "baguette", "chips"],
     sauf: ["pate de curry", "pate de miso", "riz complet", "pain complet",
-      "farine complete", "pate a tartiner", "pate complete", "pates completes"]
+      "farine complete", "pate a tartiner", "pate complete", "pates completes",
+      "vinaigre de riz"]
   },
   sucres: {
     mots: ["sucre", "miel", "sirop", "confiture", "chocolat", "caramel", "nutella",
@@ -5383,7 +5702,13 @@ const GROUPES_ALIMENTS = {
     sauf: ["lait de coco", "lait de soja", "lait d amande"]
   },
   huileOlive: { mots: ["huile d olive"] },
-  oleagineux: { mots: ["noix", "amande", "noisette", "pignon", "cacahuete", "graine"] },
+  /* « Noix » ne suffit pas : la noix de muscade est une épice, la noix de
+     Saint-Jacques un coquillage. Elles faisaient gagner des points « fruits
+     à coque » à des plats qui n'en ont pas. */
+  oleagineux: {
+    mots: ["noix", "amande", "noisette", "pignon", "cacahuete", "graine"],
+    sauf: ["noix de muscade", "noix de saint jacques"]
+  },
   /* Volontairement court : le thym d'un bouquet garni ne fait pas un plat
      anti-inflammatoire. On ne garde que ce qui est utilisé en quantité. */
   epicesAntiInflam: { mots: ["curcuma", "gingembre", "cannelle"] },
@@ -5692,6 +6017,11 @@ const GENRES_PLAT = [
    l'observation : trop haut, on n'a jamais deux fois des pâtes ; trop bas,
    on retombe sur quatre soupes. */
 const PENALITE_GENRE = 4;
+/* Le coût d'un repas de la même catégorie (viande, poisson, végétarien) que
+   celui d'avant ou d'après. Réglé à l'observation sur 30 semaines générées :
+   plus bas, il en restait autant qu'avant ; beaucoup plus haut, les nombres
+   demandés (« 5 viandes ») ne tenaient plus. */
+const PENALITE_SUITE = 7;
 
 /* Le genre est demandé pour CHAQUE recette à CHAQUE case de la semaine :
    353 plats x 14 repas. Sans mise en mémoire, la génération passait de
@@ -5710,6 +6040,63 @@ function genrePlat(r) {
     }
   }
   _cacheGenre.set(nom, trouve);
+  return trouve;
+}
+
+/* L'INGRÉDIENT PRINCIPAL (15/09/2026). La variété tenait au seul GENRE du plat
+   (soupe, gratin…) : une même semaine pouvait servir un parmentier de canard
+   ET un magret de canard, ou deux plats d'œufs. On repère donc aussi ce qui
+   fait le cœur du plat — sa viande, son poisson, ses œufs —, d'abord dans son
+   nom, sinon dans ses ingrédients de boucherie ou de poissonnerie. Même règle
+   souple que pour le genre : le deuxième coûte, il n'est pas interdit. */
+const PRINCIPAUX = ["poulet", "dinde", "canard", "boeuf", "veau", "porc", "agneau", "lapin",
+  "jambon", "lardons", "saucisse", "chorizo", "merguez", "saumon", "thon", "cabillaud", "colin",
+  "merlu", "lieu", "truite", "sardine", "maquereau", "dorade", "bar", "crevette", "moule",
+  "calamar",
+  /* Les noms qui manquaient encore (16/09/2026), trouvés en listant les plats
+     de viande ou de poisson dont la base n'était pas reconnue : 20 sur 217.
+     « Poisson blanc » en réunit huit à lui seul — trois fois du poisson blanc
+     dans la semaine, ce n'est pas de la variété. */
+  "poisson blanc", "fruit de mer", "morue", "daurade", "sole", "saint jacques",
+  "gamba", "encornet", "steak", "poule", "hareng", "boudin",
+  "rouget", "merlan", "anchois", "poulpe", "rosbif", "raie",
+  "oeuf",
+  /* LES BASES VÉGÉTALES (16/09/2026). Elles manquaient : une semaine pouvait
+     servir un dahl de lentilles, une salade de lentilles et un petit salé aux
+     lentilles sans que rien ne s'en aperçoive — et en végétarien, c'était
+     criant (pois chiches, œufs). Elles viennent APRÈS la viande et le poisson :
+     un plat qui contient les deux reste classé par sa viande. */
+  "lentille", "pois chiche", "haricot rouge", "haricot blanc", "pois casse",
+  "flageolet", "feve", "tofu", "quinoa"];
+/* Ce qu'on cherche aussi dans la LISTE DES INGRÉDIENTS, et pas seulement dans
+   le nom du plat. La viande et le poisson se repèrent à leur rayon ; les
+   lentilles et les œufs, eux, sont rangés au milieu de l'épicerie et de la
+   crèmerie. On les y cherche donc, mais eux seuls : chercher tout le reste
+   ferait passer un plat pour un plat de carottes. */
+const PRINCIPAUX_DISCRETS = ["lentille", "pois chiche", "haricot rouge", "haricot blanc",
+  "pois casse", "flageolet", "feve", "tofu", "quinoa", "oeuf"];
+const _cachePrincipal = new Map();
+function principalDuPlat(r) {
+  const nom = String((r && r.nom) || "");
+  if (_cachePrincipal.has(nom)) return _cachePrincipal.get(nom);
+  const chercher = (texte) => {
+    const mots = motsDe(texte);
+    return PRINCIPAUX.find((p) => contientProduit(mots, p)) || null;
+  };
+  let trouve = chercher(nom);
+  /* La viande et le poisson d'abord, quel que soit leur rang dans la liste des
+     ingredients : un cassoulet est un plat de canard, pas de haricots blancs. */
+  for (const i of (r && r.ingredients) || []) {
+    if (trouve) break;
+    if (i && i.nom && (i.rayon === "Boucherie" || i.rayon === "Poissonnerie")) trouve = chercher(i.nom);
+  }
+  for (const i of (r && r.ingredients) || []) {
+    if (trouve) break;
+    if (!i || !i.nom) continue;
+    const mots = motsDe(i.nom);
+    trouve = PRINCIPAUX_DISCRETS.find((p) => contientProduit(mots, p)) || null;
+  }
+  _cachePrincipal.set(nom, trouve);
   return trouve;
 }
 
@@ -5757,7 +6144,41 @@ function repartitionSouhaitee(nb, quotas) {
     const j = Math.floor(Math.random() * (i + 1));
     const t = l[i]; l[i] = l[j]; l[j] = t;
   }
-  return { plan: l, places: places };
+  return { plan: etalerPlan(l), places: places };
+}
+
+/* Les repas sont remplis dans l'ordre du temps : deux cases voisines de ce
+   plan, ce sont midi et soir du même jour, ou le soir et le lendemain midi.
+   Un tirage au sort y met donc régulièrement deux viandes côte à côte — et
+   là, aucune préférence ne peut plus rien, puisqu'un nombre demandé passe
+   avant tout le reste. On sépare donc les doublons dans le plan lui-même :
+   les mêmes nombres, mieux répartis dans la semaine (16/09/2026).
+   « libre » n'est pas une catégorie : deux cases libres voisines vont bien. */
+function etalerPlan(l) {
+  const colle = (arr, i) =>
+    arr[i] !== "libre" && ((i > 0 && arr[i - 1] === arr[i]) ||
+      (i < arr.length - 1 && arr[i + 1] === arr[i]));
+  for (let passe = 0; passe < 6; passe++) {
+    let bouge = false;
+    for (let i = 1; i < l.length; i++) {
+      if (l[i] === "libre" || l[i] !== l[i - 1]) continue;
+      /* On cherche une case à échanger qui règle le problème sans en créer
+         un autre. Si rien ne convient (trop peu de choix), on laisse : mieux
+         vaut deux viandes de suite que le nombre demandé non respecté. */
+      for (let k = 0; k < l.length; k++) {
+        if (k === i || l[k] === l[i]) continue;
+        const essai = l.slice();
+        essai[i] = l[k]; essai[k] = l[i];
+        if (!colle(essai, i) && !colle(essai, k)) {
+          l[i] = essai[i]; l[k] = essai[k];
+          bouge = true;
+          break;
+        }
+      }
+    }
+    if (!bouge) break;
+  }
+  return l;
 }
 
 function recettesUtiliseesRecemment(cleSem, nbSemaines) {
@@ -5770,6 +6191,34 @@ function recettesUtiliseesRecemment(cleSem, nbSemaines) {
     Object.values(sem).forEach((c) => { if (c && c.recetteId) vus.add(c.recetteId); });
   }
   return vus;
+}
+
+/* COMBIEN DE FOIS CE PLAT A-T-IL DÉJÀ ÉTÉ SERVI ? (16/09/2026)
+   « Ne pas resservir un plat vu depuis 3 semaines » est bien respecté, mais
+   la quatrième semaine, les mêmes reviennent : ceux dont on a les ingrédients
+   en réserve, qui sont de saison, légers, rapides… Mesuré sur 20 semaines :
+   77 plats différents sur les 398 d'alors, le même velouté cinq fois, et
+   six soupes identiques — d'où l'impression de manger sans arrêt la même chose.
+   On regarde donc plus loin que le délai, sur douze semaines, et un plat
+   déjà servi plusieurs fois recule un peu. */
+const SEMAINES_MEMOIRE = 12;
+/* Le coût de chaque passage déjà servi, plafonné à trois passages : au pire
+   9 points. Assez pour laisser sa chance au reste du cahier, jamais assez
+   pour passer devant un nombre demandé (30) ni devant l'anti-gaspillage (14). */
+const PENALITE_DEJA_SERVI = 3;
+const PLAFOND_DEJA_SERVI = 3;
+function foisServiesRecemment(cleSem, nbSemaines) {
+  const m = new Map();
+  const lundi = lundiDeCle(cleSem);
+  for (let k = 1; k <= nbSemaines; k++) {
+    const d = new Date(lundi); d.setDate(d.getDate() - 7 * k);
+    const sem = etat.repas[cleSemaine(d)];
+    if (!sem) continue;
+    Object.values(sem).forEach((c) => {
+      if (c && c.recetteId) m.set(c.recetteId, (m.get(c.recetteId) || 0) + 1);
+    });
+  }
+  return m;
 }
 
 function genererMenus(cleSem, opt) {
@@ -5871,28 +6320,65 @@ function genererMenus(cleSem, opt) {
   const antiGaspi = opt.antiGaspi !== undefined
     ? !!opt.antiGaspi : reglagesFamille().antiGaspi !== false;
   const recents = recettesUtiliseesRecemment(cleSem, Math.max(0, Number(opt.semaines) || 3));
+  const dejaServi = foisServiesRecemment(cleSem, SEMAINES_MEMOIRE);
   const utilises = new Set();
   /* Combien de plats de chaque genre sont déjà posés dans la semaine. */
   const genresPoses = {};
+  /* Et combien de fois chaque ingrédient principal (canard, œufs…). */
+  const principauxPoses = {};
+  /* PAS DEUX REPAS DE SUITE DANS LA MÊME CATÉGORIE (16/09/2026). Mesuré sur
+     30 semaines générées : viande midi ET soir 2,4 jours par semaine, et
+     autant de « soir, puis midi du lendemain ». Les nombres demandés étaient
+     respectés, mais posés au hasard dans la semaine. On regarde donc les
+     repas dans l'ordre : un plat de la même catégorie que le repas d'avant ou
+     d'après coûte des points — assez pour changer, pas assez pour empêcher
+     « 5 viandes » quand on les demande. */
+  const ORDRE_REPAS = [];
+  JOURS.forEach((j) => ["midi", "soir"].forEach((m) => ORDRE_REPAS.push(j + "-" + m)));
+  const aRemplir = new Set(cases.map((c) => c.jour + "-" + c.moment));
+  const categorieEn = (k) => {
+    const r = recetteDeCase((etat.repas[cleSem] || {})[k]);
+    return r ? categorieRepas(r) : null;
+  };
+  /* Les voisins d'un repas : celui d'avant (déjà posé, ou déjà prévu) et
+     celui d'après — ce dernier seulement s'il ne va pas être refait, sinon on
+     regarderait un plat sur le point de disparaître. */
+  const categoriesVoisines = (jour, moment) => {
+    const i = ORDRE_REPAS.indexOf(jour + "-" + moment);
+    const l = [];
+    if (i > 0) l.push(categorieEn(ORDRE_REPAS[i - 1]));
+    const apres = ORDRE_REPAS[i + 1];
+    if (apres && !aRemplir.has(apres)) l.push(categorieEn(apres));
+    return l.filter((c) => c && c !== "autre");
+  };
+  /* Les étoiles ⭐ posées par les membres encore dans la tribu. */
+  const idsMembres = new Set((etat.membres || []).map((m) => m.id));
+  const etoiles = (r) => (r.favoris || []).filter((id) => idsMembres.has(id)).length;
   const bilan = { poisson: 0, viande: 0, vege: 0, autre: 0 };
-  /* En regeneration ciblee, le reste de la semaine compte : pas de doublon
-     avec un plat deja prevu un autre jour, et la variete des genres tient
-     compte de ce qui est deja pose. */
-  if (cibles) {
-    Object.keys(semaine).forEach((k) => {
-      if (cibles.has(k)) return;
-      const r = recetteDeCase(semaine[k]);
-      if (!r) return;
-      utilises.add(r.id);
-      const g = genrePlat(r);
-      if (g !== "autre") genresPoses[g] = (genresPoses[g] || 0) + 1;
-    });
-  }
+  /* CE QUI EST DÉJÀ DANS LA SEMAINE COMPTE — TOUJOURS (16/09/2026).
+     Ce bloc ne servait qu'à « 🎲 Autre idée ». Or « Générer » ne remplace pas
+     les repas déjà prévus : compléter une semaine à moitié remplie — le geste
+     le plus courant — repartait donc de zéro. Ni les doublons, ni la variété
+     des genres, ni l'ingrédient principal ne tenaient compte de ce qui était
+     déjà là. Mesuré sur 20 semaines remplies en deux fois : 1,75 plat servi
+     DEUX FOIS dans la même semaine, et 2,1 soupes (jusqu'à 3) au lieu de 1,35.
+     On regarde donc tous les repas qui ne vont pas être refaits. */
+  Object.keys(semaine).forEach((k) => {
+    if (aRemplir.has(k)) return;
+    const r = recetteDeCase(semaine[k]);
+    if (!r) return;
+    utilises.add(r.id);
+    const g = genrePlat(r);
+    if (g !== "autre") genresPoses[g] = (genresPoses[g] || 0) + 1;
+    const p = principalDuPlat(r);
+    if (p) principauxPoses[p] = (principauxPoses[p] || 0) + 1;
+  });
 
   if (!etat.repas[cleSem]) etat.repas[cleSem] = {};
 
   cases.forEach((c, rang) => {
     const voulu = plan[rang];
+    const voisines = categoriesVoisines(c.jour, c.moment);
     let meilleur = null, meilleurScore = -1e9;
     pool.forEach((r) => {
       let s = Math.random() * 1.5;
@@ -5904,12 +6390,24 @@ function genererMenus(cleSem, opt) {
         if (a && a.id === r.id) s -= 100;
       }
       if (recents.has(r.id)) s -= 6;
+      /* Déjà servi ces douze dernières semaines : on laisse la place aux
+         autres, sans jamais l'interdire (16/09/2026). */
+      s -= PENALITE_DEJA_SERVI * Math.min(dejaServi.get(r.id) || 0, PLAFOND_DEJA_SERVI);
       /* Variété : chaque plat du même genre déjà posé rend le suivant moins
          probable. Le premier est gratuit, le deuxième coûte, le troisième
          coûte le double. Assez fort pour tenir tête aux bonus cumulés,
          assez souple pour céder quand le choix est vraiment étroit. */
       const genre = genrePlat(r);
       if (genre !== "autre") s -= PENALITE_GENRE * (genresPoses[genre] || 0);
+      const principal = principalDuPlat(r);
+      if (principal) s -= PENALITE_GENRE * (principauxPoses[principal] || 0);
+      /* Deux repas de suite dans la même catégorie : on évite (16/09/2026). */
+      if (cat !== "autre" && voisines.length) {
+        s -= PENALITE_SUITE * voisines.filter((v) => v === cat).length;
+      }
+      /* Les plats que la famille a mis en favori passent devant — sans
+         écraser la saison ni les nombres demandés (16/09/2026). */
+      if (opt.favoris !== false) s += Math.min(etoiles(r), 3) * 2.5;
       /* La répartition demandée passe avant le reste. */
       if (voulu !== "libre") s += (cat === voulu ? 30 : -30);
       else if (fixees.indexOf(cat) !== -1) s -= 20;   // son compte est déjà fait
@@ -5936,6 +6434,8 @@ function genererMenus(cleSem, opt) {
     utilises.add(meilleur.id);
     const gm = genrePlat(meilleur);
     if (gm !== "autre") genresPoses[gm] = (genresPoses[gm] || 0) + 1;
+    const pm = principalDuPlat(meilleur);
+    if (pm) principauxPoses[pm] = (principauxPoses[pm] || 0) + 1;
     bilan[categorieRepas(meilleur)]++;
     const k = c.jour + "-" + c.moment;
     const nouvelle = { recetteId: meilleur.id, texte: "" };
@@ -5944,6 +6444,13 @@ function genererMenus(cleSem, opt) {
     if (avant[k]) {
       if (avant[k].cuisinier) nouvelle.cuisinier = avant[k].cuisinier;
       if ((avant[k].absents || []).length) nouvelle.absents = avant[k].absents.slice();
+    }
+    /* « Chacun son tour » (16/09/2026) : le générateur peut proposer qui
+       cuisine, avec la rotation du bouton 🔁 de la fiche d'un repas. Un
+       cuisinier déjà choisi n'est jamais remplacé. */
+    if (opt.cuisinier && !nouvelle.cuisinier) {
+      const tour = cuisinierDuTour(cleSem, c.jour, c.moment);
+      if (tour) nouvelle.cuisinier = tour;
     }
     etat.repas[cleSem][k] = nouvelle;
   });
@@ -6001,7 +6508,10 @@ function ingredientsDeLaSemaine(cleSem) {
       if (!parNom.has(cle)) {
         parNom.set(cle, { nom: ing.nom, rayon: ing.rayon || "Autre", morceaux: [] });
       }
-      parNom.get(cle).morceaux.push({ qte: qteAjustee(ing.qte, facteur, ing.unite || ""), unite: ing.unite || "" });
+      /* Unité ramenée à son écriture courte : « cuillère(s) à soupe » et
+         « c. à soupe » s'additionnent (uniteCanonique, 16/09/2026). */
+      const unite = uniteCanonique(ing.unite);
+      parNom.get(cle).morceaux.push({ qte: qteAjustee(ing.qte, facteur, unite), unite: unite });
     });
   });
 
@@ -6225,6 +6735,9 @@ function ingredientsARetirer(cleSem, jour, moment) {
   (r.ingredients || []).forEach((ing) => {
     const s = articleStock(ing.nom);
     if (!s) return;                               // pas en réserve : rien à retirer
+    /* « En réserve » sans quantité (16/09/2026) : rien à décompter. Sinon
+       chaque repas demanderait combien de sel ou d'huile on a pris. */
+    if (quantiteInconnue(s.qte)) return;
     const besoin = qteAjustee(ing.qte, facteur, ing.unite || "");
     const retire = convertirUnite(besoin, ing.unite || "", s.unite || "");
     lignes.push({
@@ -6336,6 +6849,88 @@ function articleStock(nom) {
   return etat.stock.find((s) => cleArticle(s.nom) === n) || null;
 }
 
+/* Une quantité « non précisée » : champ vide. C'est « il y en a, on ne sait
+   pas combien » (15/09/2026) — ni zéro, ni une unité qui ne se convertit pas.
+   Les trois cas se confondaient, et les écrans parlaient d'« unités
+   différentes » à tort (16/09/2026). */
+function quantiteInconnue(q) {
+  return String(q == null ? "" : q).trim() === "";
+}
+
+/* LES PETITES MESURES (16/09/2026). Personne n'achète « 15 cuillères à soupe »
+   d'huile ni « 4 gousses » d'ail : on achète le produit. Ces unités disent ce
+   que la recette prélève, pas ce qu'on met dans le caddie. Sur la liste de
+   courses, l'article part donc sans quantité ; la fenêtre « Ingrédients de la
+   semaine » continue de montrer ce qu'il faut pour les plats. */
+const PETITES_MESURES = ["c. à soupe", "c. à café", "cuillère(s) à soupe", "cuillère(s) à café",
+  "pincée(s)", "feuille(s)", "gousse(s)", "branche(s)"];
+function estPetiteMesure(unite) {
+  return PETITES_MESURES.indexOf(String(unite || "").trim()) !== -1;
+}
+
+/* LE PLACARD (16/09/2026, point 6 de la revue du 15/09). Une famille neuve
+   appuyait sur « Aux courses » et trouvait, cochés et comptés à la cuillère,
+   l'huile, la farine, le cumin… qu'elle a déjà : sa réserve est vide,
+   l'application ne peut pas le savoir. Plutôt que de deviner dans un sens ou
+   dans l'autre, on le DEMANDE, une fois : ces produits arrivent à part et
+   décochés, et ceux qu'on laisse décochés peuvent rejoindre la réserve
+   (« en réserve », sans quantité). La semaine suivante, ils sont connus.
+   Liste volontairement courte : ce qu'on trouve dans presque toutes les
+   cuisines. Un produit plus rare (pâte de curry, vinaigre de riz, sucre
+   glace…) reste coché comme un ingrédient ordinaire — le laisser décoché, ce
+   serait risquer de rentrer sans. Seul le rayon Épicerie compte : le thym ou
+   le gingembre frais du rayon fruits et légumes, eux, s'achètent. */
+const PRODUITS_PLACARD = {
+  mots: ["huile", "vinaigre", "sel", "poivre", "sucre", "miel", "farine", "fecule", "maizena",
+    "levure chimique", "bicarbonate", "moutarde", "sauce soja", "bouillon", "concentre de tomate",
+    "cumin", "curry", "curcuma", "paprika", "piment", "cannelle", "muscade", "girofle",
+    "gingembre en poudre", "herbes de provence", "origan", "thym", "laurier", "ketchup",
+    "mayonnaise"],
+  sauf: ["huile de sesame", "huile de noix", "huile de noisette", "huile de friture",
+    "huile de coco", "vinaigre de riz", "sucre glace", "farine de sarrasin", "farine de riz",
+    "farine de mais", "farine de pois chiche", "farine complete", "farine d epeautre",
+    "farine de chataigne", "pate de curry", "feuille de curry", "sauce soja sucree",
+    "bouillon de poisson", "graine de moutarde", "pate de piment"]
+};
+const _motsPlacard = {
+  mots: PRODUITS_PLACARD.mots.map(motsDe),
+  sauf: PRODUITS_PLACARD.sauf.map(motsDe)
+};
+const _cachePlacard = new Map();
+function estDePlacard(nom, rayon) {
+  if (rayon !== "Épicerie") return false;
+  const brut = String(nom || "");
+  let v = _cachePlacard.get(brut);
+  if (v === undefined) {
+    const mots = motsDe(brut);
+    v = !_motsPlacard.sauf.some((p) => suiteDeMots(mots, p)) &&
+      _motsPlacard.mots.some((p) => suiteDeMots(mots, p));
+    _cachePlacard.set(brut, v);
+  }
+  return v;
+}
+
+/* Ce qu'on inscrit sur la liste pour un besoin de la semaine. SOURCE UNIQUE
+   (16/09/2026) : la fenêtre « Ingrédients de la semaine » et le suivi du menu
+   (reconcilierCoursesDuMenu) avaient chacun leur calcul ; au premier
+   changement de menu, le second aurait remis « 15 c. à soupe » là où le
+   premier n'avait rien mis.
+   besoin = une ligne d'ingredientsDeLaSemaine, m = son manquePour. */
+function quantiteACourses(besoin, m) {
+  /* Besoin en deux unités : on recopie le texte ENTIER (« 500 g + 2 boîtes »),
+     sans unité — sinon on n'en garde que le premier nombre (14/09/2026). */
+  if (besoin.plusieursUnites) return { qte: besoin.besoinTexte || "", unite: "" };
+  /* La réserve suit ce produit en quantité : on achète ce qui manque vraiment,
+     même pour le placard — sinon son calcul ne tomberait plus juste. */
+  const suivi = !!(m && m.connu && m.manque !== null && m.enStock !== null);
+  if (suivi) return { qte: texteNombre(m.manque), unite: besoin.unite || "" };
+  if (estPetiteMesure(besoin.unite) || estDePlacard(besoin.nom, besoin.rayon)) {
+    return { qte: "", unite: "" };
+  }
+  const n = nombre(besoin.qte);
+  return { qte: n !== null ? texteNombre(n) : (besoin.besoinTexte || ""), unite: besoin.unite || "" };
+}
+
 /* ---------------------- Saisie d'une liste, à la voix ----------------------
 
    Au clavier on écrit « pain, lait, œufs ». Au micro du téléphone on dit
@@ -6369,7 +6964,10 @@ function stockSousMinimum() {
   return etat.stock.filter((s) => {
     const mini = nombre(s.mini);
     const q = nombre(s.qte);
-    return mini !== null && mini > 0 && (q === null || q < mini);
+    /* Quantité non précisée : il y en a, on ne sait pas combien — ce n'est pas
+       « sous le minimum » (15/09/2026). « Un peu », en toutes lettres, le reste. */
+    const inconnue = String(s.qte == null ? "" : s.qte).trim() === "";
+    return mini !== null && mini > 0 && !inconnue && (q === null || q < mini);
   });
 }
 
@@ -6380,6 +6978,12 @@ function manquePour(nom, qte, unite) {
   const s = articleStock(nom);
   const besoin = nombre(qte);
   if (!s) return { manque: besoin, unite: unite, connu: true, enStock: null };
+  /* En réserve SANS quantité : il y en a, on ne sait pas combien. Rien à
+     soustraire, mais ce n'est pas une affaire d'unités — les écrans le
+     disaient pourtant (16/09/2026). sansQuantite le leur apprend. */
+  if (quantiteInconnue(s.qte)) {
+    return { manque: besoin, unite: unite, connu: false, enStock: "en réserve", sansQuantite: true };
+  }
   const dispo = convertirUnite(s.qte, s.unite || "", unite || "");
   if (besoin === null || dispo === null) {
     return { manque: besoin, unite: unite, connu: false, enStock: formaterQte(s.qte, s.unite) };
@@ -6412,9 +7016,20 @@ function rendre() {
   $("#btn-profil").innerHTML = esc(moi.emoji || "🙂") +
     (maj.length ? '<span class="point-maj"></span>' : "");
   $("#btn-profil").title = maj.length
-    ? maj.length + " mise(s) à jour disponible(s)" : "Mon profil";
+    ? pluriel(maj.length, "mise à jour disponible", "mises à jour disponibles") : "Mon profil";
   $("#titre-vue").textContent = TITRES[v] ? TITRES[v][0] : "Ma Tribu";
   $("#sous-titre-vue").textContent = v === "accueil" ? etat.famille.nom : (TITRES[v] ? TITRES[v][1] : "");
+  /* L'icône « Quoi de neuf » de l'en-tête : visible partout, avec sa pastille
+     tant qu'il reste quelque chose à lire — une nouvelle version, ou une
+     saison qui vient de changer. On vérifie qu'elle existe : un téléphone
+     peut tourner avec le nouveau code et un index.html encore en cache, et
+     l'application ne doit pas s'arrêter pour si peu (16/09/2026). */
+  const bActu = $("#btn-actu");
+  if (bActu) {
+    const aLire = actuANoter() || saisonVientDeChanger();
+    bActu.innerHTML = "✨" + (aLire ? '<span class="point-maj"></span>' : "");
+    bActu.title = aLire ? "Quoi de neuf — du nouveau" : "Quoi de neuf";
+  }
   $("#btn-points").hidden = !pointsActifs();
   $("#mes-points").textContent = pointsActifs() ? pointsDe(moi.id) : "0";
 
@@ -6699,6 +7314,18 @@ document.addEventListener("click", (e) => {
 
     /* retours */
     case "retour": Formulaires.retour(); break;
+
+    /* quoi de neuf */
+    case "actu": Formulaires.actu(); break;
+    case "actu-saison": {
+      /* On emmène sur le cahier, filtre « de saison » posé : la note parle de
+         ce qui arrive sur les étals, autant montrer quoi en faire. */
+      if (ui.filtresRecettes.indexOf("saison") === -1) ui.filtresRecettes.push("saison");
+      memoriserListe("tribu:filtresRecettes", ui.filtresRecettes);
+      fermerFeuille();
+      aller("recettes");
+      break;
+    }
 
     case "semaine-prec": {
       const d = lundiDeCle(ui.semaine); d.setDate(d.getDate() - 7);

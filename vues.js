@@ -242,6 +242,32 @@ function bandeauMaj() {
    lisible d'un coup d'oeil, même une semaine où tout s'accumule. */
 const MAX_LIGNES_ACCUEIL = 5;
 
+/* La carte « Quoi de neuf » de l'accueil : la saison en une ligne, la dernière
+   nouveauté en une autre. Elle est tout en bas — c'est agréable à lire, ce
+   n'est pas urgent — mais elle porte une pastille tant qu'on ne l'a pas
+   ouverte, et le mot de la saison passe devant les quatre fois où il change. */
+function carteActu() {
+  const s = infoSaison(saisonActuelle());
+  const d = actuDerniere();
+  const neuf = actuANoter();
+  const saisonNeuve = saisonVientDeChanger();
+  const arrivent = arrivagesDeSaison(s.val).slice(0, 3)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1));
+  const lignes = [];
+  lignes.push('<div class="ligne"><span style="font-size:1.4rem">' + s.emoji + "</span>" +
+    '<div class="ligne-corps"><b>' + (saisonNeuve ? "Bienvenue " : "Nous sommes ") + esc(enLaSaison(s)) +
+    "</b><small>" + (arrivent.length ? esc(arrivent.join(", ")) + " arrivent sur les étals" :
+      platsDeSaison() + " plats de saison dans votre cahier") + "</small></div></div>");
+  if (d) {
+    lignes.push('<div class="ligne"><span style="font-size:1.4rem">✨</span>' +
+      '<div class="ligne-corps"><b>' + esc(d.titre) + "</b><small>Version " + esc(d.version) +
+      "</small></div></div>");
+  }
+  return bloc("✨ Quoi de neuf" +
+    (neuf || saisonNeuve ? ' <span class="etiquette chaud">nouveau</span>' : ""),
+    lignes.join(""), "Lire", "actu");
+}
+
 function resteAVoir(n) {
   if (n <= 0) return "";
   return '<p class="aide" style="margin:.6rem 0 0">+ ' + n + " autre" +
@@ -286,8 +312,7 @@ Vues.accueil = function () {
     !localStorage.getItem("tribu:conseilEcranAccueil")) {
     h.push('<div class="bandeau info">📱<div><b>Vous comptez ajouter Ma Tribu à votre ' +
       "écran d'accueil ?</b><br>L'icône est une application séparée : il lui faudra " +
-      "son propre code, et celui qui vous a servi ici ne fonctionne plus. " +
-      "Créez-le maintenant, pendant que vous êtes connecté." +
+      "son propre code d'invitation. Créez-le maintenant, pendant que vous êtes connecté." +
       '<div class="rangee-btn" style="margin-top:.6rem">' +
       '<button class="btn mini" data-action="masquer-conseil-icone">Plus tard</button>' +
       '<button class="btn mini principal" data-action="mon-appareil">Créer mon code</button>' +
@@ -345,6 +370,64 @@ Vues.accueil = function () {
 
   h.push(carteFondatrice());
 
+  /* À VALIDER, EN PREMIER (16/09/2026, point 8 de la revue du 15/09).
+     Ce qui attend la réponse d'un administrateur arrivait APRÈS ses propres
+     tâches, en deux blocs séparés : la tâche faite par un enfant, le repas
+     cuisiné, le cadeau demandé restaient sous le pli — et les points avec.
+     Tout est réuni ici, avant « Mes tâches », avec leur nombre.
+     Les tâches et les repas suivent l'onglet qui les montre ailleurs. Les
+     demandes de cadeaux ne dépendent d'aucun onglet : elles disparaissaient
+     quand l'onglet Tâches était masqué. */
+  if (estAdmin()) {
+    const attente = [];
+    if (!ongletMasque("taches")) {
+      tachesAValider().forEach((x) => {
+        attente.push('<div class="ligne">' + avatarDe(membre(x.et.parQui)) +
+          '<div class="ligne-corps"><b>' + esc(x.t.emoji + " " + x.t.nom) + "</b><small>" +
+          esc(nomDe(x.et.parQui)) + " dit l'avoir faite" +
+          (pointsActifs() ? " • +" + x.t.points + " pts" : "") + "</small></div>" +
+          '<button class="btn mini danger" data-action="tache-refuser" data-id="' + x.t.id + '">✕</button>' +
+          '<button class="btn mini principal" data-action="tache-valider" data-id="' + x.t.id + '">Valider</button>' +
+          "</div>");
+      });
+    }
+    /* Les repas cuisinés attendent la même validation que les tâches : sans
+       ce rappel, les points de la cuisine ne tomberaient jamais. */
+    if (!ongletMasque("menus")) {
+      repasAValider().forEach((x) => {
+        const r = x.repas.recetteId ? etat.recettes.find((y) => y.id === x.repas.recetteId) : null;
+        attente.push('<div class="ligne">' + avatarDe(membre(x.etat.parQui)) +
+          '<div class="ligne-corps"><b>' +
+          esc(r ? (r.emoji || "🍽️") + " " + r.nom : "🍽️ " + (x.repas.texte || "Repas")) +
+          "</b><small>" + esc(nomDe(x.etat.parQui)) + " a cuisiné • " + esc(x.jour) + " " +
+          esc(x.moment) + "</small></div>" +
+          '<button class="btn mini principal" data-action="repas-valider" data-semaine="' +
+          esc(x.cleSem) + '" data-jour="' + esc(x.jour) + '" data-moment="' +
+          esc(x.moment) + '">Valider</button></div>');
+      });
+    }
+    echangesEnAttente().forEach((e) => {
+      attente.push('<div class="ligne">' + avatarDe(membre(e.membreId)) +
+        '<div class="ligne-corps"><b>' + esc((e.cadeauEmoji || "🎁") + " " + e.cadeauNom) + "</b><small>" +
+        esc(nomDe(e.membreId)) + " demande ce cadeau • " + e.cout + " pts</small></div>" +
+        '<button class="btn mini danger" data-action="echange-refuser" data-id="' + e.id + '">✕</button>' +
+        '<button class="btn mini principal" data-action="echange-accorder" data-id="' + e.id + '">Accorder</button>' +
+        "</div>");
+    });
+    if (attente.length) {
+      /* Même limite que les autres blocs de l'accueil, mais le reste se
+         déplie SUR PLACE : il mêle tâches, repas et cadeaux, et aucun onglet
+         ne les montre tous. */
+      const autres = attente.slice(MAX_LIGNES_ACCUEIL);
+      h.push(bloc("✅ À valider" + ' <span class="etiquette chaud">' + attente.length + "</span>",
+        attente.slice(0, MAX_LIGNES_ACCUEIL).join("") +
+        (autres.length
+          ? '<details class="repli"><summary>+ ' + pluriel(autres.length, "autre", "autres") +
+            " à valider</summary>" + autres.join("") + "</details>"
+          : "")));
+    }
+  }
+
   /* Mes taches.
      L'accueil est un tableau de bord, pas la liste complète. Sans limite, une
      semaine chargée repoussait le menu du soir, l'agenda et les courses à
@@ -358,51 +441,6 @@ Vues.accueil = function () {
         resteAVoir(mes.length - mesMontrees.length)
       : rienDu("🎉", "Rien à faire pour le moment. Profitez-en !"),
     "Tout voir", "aller", "taches"));
-
-  /* A valider (admin) */
-  if (estAdmin()) {
-    const aValider = tachesAValider();
-    const demandes = echangesEnAttente();
-    if (aValider.length || demandes.length) {
-      const l = [];
-      aValider.forEach((x) => {
-        l.push('<div class="ligne">' + avatarDe(membre(x.et.parQui)) +
-          '<div class="ligne-corps"><b>' + esc(x.t.emoji + " " + x.t.nom) + "</b><small>" +
-          esc(nomDe(x.et.parQui)) + " dit l'avoir faite" +
-          (pointsActifs() ? " • +" + x.t.points + " pts" : "") + "</small></div>" +
-          '<button class="btn mini danger" data-action="tache-refuser" data-id="' + x.t.id + '">✕</button>' +
-          '<button class="btn mini principal" data-action="tache-valider" data-id="' + x.t.id + '">Valider</button>' +
-          "</div>");
-      });
-      demandes.forEach((e) => {
-        l.push('<div class="ligne">' + avatarDe(membre(e.membreId)) +
-          '<div class="ligne-corps"><b>' + esc((e.cadeauEmoji || "🎁") + " " + e.cadeauNom) + "</b><small>" +
-          esc(nomDe(e.membreId)) + " demande ce cadeau • " + e.cout + " pts</small></div>" +
-          '<button class="btn mini danger" data-action="echange-refuser" data-id="' + e.id + '">✕</button>' +
-          '<button class="btn mini principal" data-action="echange-accorder" data-id="' + e.id + '">Accorder</button>' +
-          "</div>");
-      });
-      if (!ongletMasque("taches")) h.push(bloc("✅ À valider", l.join("")));
-    }
-
-    /* Les repas cuisinés attendent la même validation que les tâches : sans
-       ce rappel, les points de la cuisine ne tomberaient jamais. */
-    const rav = repasAValider();
-    if (rav.length && !ongletMasque("menus")) {
-      h.push(bloc("🍽️ Repas à valider" +
-        ' <span class="etiquette chaud">' + rav.length + "</span>",
-        rav.map((x) => {
-          const r = x.repas.recetteId ? etat.recettes.find((y) => y.id === x.repas.recetteId) : null;
-          return '<div class="ligne">' + avatarDe(membre(x.etat.parQui)) +
-            '<div class="ligne-corps"><b>' + esc(r ? r.nom : (x.repas.texte || "Repas")) + "</b><small>" +
-            esc(nomDe(x.etat.parQui)) + " a cuisiné • " + esc(x.jour) + " " + esc(x.moment) +
-            "</small></div>" +
-            '<button class="btn mini principal" data-action="repas-valider" data-semaine="' +
-            esc(x.cleSem) + '" data-jour="' + esc(x.jour) + '" data-moment="' +
-            esc(x.moment) + '">Valider</button></div>';
-        }).join("")));
-    }
-  }
 
   /* Menu du jour.
      Il passe avant les tâches des enfants : « qu'est-ce qu'on mange ce soir »
@@ -574,6 +612,8 @@ Vues.accueil = function () {
       "Récompenses", "aller", "points"));
   }
 
+  h.push(carteActu());
+
   return h.join("");
 };
 
@@ -732,7 +772,7 @@ function vueListeCourses() {
 
   const bas = stockSousMinimum();
   if (bas.length && t.alerte) {
-    h.push('<div class="bandeau">🥫<div><b>' + bas.length + " article(s) sous le minimum</b> dans votre réserve. " +
+    h.push('<div class="bandeau">🥫<div><b>' + pluriel(bas.length, "article", "articles") + " sous le minimum</b> dans votre réserve. " +
       '<button class="lien" data-action="stock-racheter">Les ajouter à cette liste</button></div></div>');
   }
 
@@ -748,7 +788,7 @@ function vueListeCourses() {
 
   const enVrac = actifs.filter((c) => c.vrac).length;
   if (enVrac) {
-    h.push('<div class="bandeau">🫙<div><b>' + enVrac + " article(s) en vrac</b> : pensez aux " +
+    h.push('<div class="bandeau">🫙<div><b>' + pluriel(enVrac, "article", "articles") + " en vrac</b> : pensez aux " +
       "bocaux et aux sacs réutilisables.</div></div>");
   }
 
@@ -913,10 +953,14 @@ function etiquettePeremption(s) {
 function ligneStock(s) {
   const mini = nombre(s.mini);
   const q = nombre(s.qte);
-  const manque = mini !== null && mini > 0 && (q === null || q < mini);
+  /* Quantité non précisée (acheté sans quantité, ou ajouté par son seul nom) :
+     on sait qu'il y en a, pas combien. Avant, la ligne affichait « 0 » et
+     passait « à racheter » juste après les courses (15/09/2026). */
+  const inconnue = String(s.qte == null ? "" : s.qte).trim() === "";
+  const manque = mini !== null && mini > 0 && !inconnue && (q === null || q < mini);
   return '<div class="ligne">' +
     '<div class="ligne-corps"><b>' + esc(s.nom) + "</b><small>" +
-    esc(formaterQte(s.qte, s.unite) || "0") +
+    (inconnue ? "en réserve" : esc(formaterQte(s.qte, s.unite) || "0")) +
     (mini !== null && mini > 0 ? " • minimum " + esc(formaterQte(s.mini, s.unite)) : "") + "</small>" +
     (manque || s.vrac || s.peremption
       ? '<span class="etiquettes">' +
@@ -1118,6 +1162,13 @@ Vues.recettes = function () {
       '<button class="' + (ui.triRecettes === v ? "on" : "") +
       '" data-action="recettes-tri" data-valeur="' + v + '">' + l + "</button>").join("") +
     "</div>");
+
+  /* La légende des petites icônes santé (15/09/2026) : sur téléphone, leur
+     info-bulle ne s'affiche jamais, et une famille qui découvre le cahier ne
+     savait pas ce que voulaient dire 🧂 🍬 🌾 🥛. Repliée par défaut. */
+  h.push('<details class="legende-sante"><summary>Que veulent dire les petites icônes ?</summary>' +
+    '<p class="aide">' + PROFILS_SANTE.map((p) => esc(p.emoji) + " " + esc(p.nom.toLowerCase()))
+      .join(" · ") + '. <button class="lien" data-action="sante-info">En savoir plus</button></p></details>');
 
   const ligneRecette = (r) =>
     '<div class="ligne ligne-recette" data-action="recette-voir" data-id="' + r.id + '">' +
@@ -1454,7 +1505,7 @@ Vues.admin = function () {
         (t.frequence === "jour" ? "chaque jour" : t.frequence === "mois" ? "chaque mois" : "chaque semaine") +
         " • " + t.points + " pts • " +
         (participantsValides(t).length
-          ? participantsValides(t).length + " participant(s)"
+          ? pluriel(participantsValides(t).length, "participant", "participants")
           : "⚠️ personne : elle n’apparaît nulle part") +
         (t.actif === false ? " • en pause" : "") + "</small></div>" +
         '<button class="btn mini icone" data-action="tache-editer" data-id="' + t.id + '">✏️</button></div>').join("")
@@ -1485,12 +1536,13 @@ Vues.admin = function () {
   h.push(blocAncre("recettes", "📖 Recettes (" + etat.recettes.length + ")",
     '<p class="aide">La bibliothèque de plats sert au générateur de menus.</p>' +
     (aCompleter
-      ? '<div class="bandeau" style="margin-top:.6rem">🔄<div><b>' + aCompleter +
-        " recette(s) d'une version précédente</b> : saisons et unités incomplètes.</div></div>"
+      ? '<div class="bandeau" style="margin-top:.6rem">🔄<div><b>' + pluriel(aCompleter, "recette", "recettes") +
+        " d'une version précédente</b> : saisons et unités incomplètes.</div></div>"
       : "") +
     (nouvelles
-      ? '<div class="bandeau info" style="margin-top:.6rem">✨<div><b>' + nouvelles +
-        " nouveau(x) plat(s) disponible(s)</b> dans la bibliothèque de l'application.</div></div>"
+      ? '<div class="bandeau info" style="margin-top:.6rem">✨<div><b>' +
+        pluriel(nouvelles, "nouveau plat disponible", "nouveaux plats disponibles") +
+        "</b> dans la bibliothèque de l'application.</div></div>"
       : "") +
     '<button class="btn plein doux" data-action="aller" data-vue="recettes" style="margin-top:.6rem">Gérer les recettes</button>' +
     '<button class="btn plein" data-action="recettes-maj" style="margin-top:.5rem">🔄 Mettre à jour les recettes fournies</button>'));
@@ -1567,8 +1619,8 @@ Vues.admin = function () {
       '<span class="puce ' + (o.obligatoire || caches.indexOf(o.vue) === -1 ? "on" : "") + '">' +
       o.emoji + " " + esc(o.nom) + "</span>").join("") + "</div>" +
     (caches.length
-      ? '<p class="aide" style="margin-top:.6rem">' + caches.length +
-        " onglet(s) masqué(s) pour toute la famille.</p>"
+      ? '<p class="aide" style="margin-top:.6rem">' +
+        pluriel(caches.length, "onglet masqué", "onglets masqués") + " pour toute la famille.</p>"
       : "") +
     '<button class="btn plein doux" data-action="admin-onglets" style="margin-top:.7rem">Choisir les onglets</button>'));
   /* Les deux droits du RGPD qu'on ne peut pas se contenter d'écrire sur une
@@ -1672,8 +1724,8 @@ const Connexion = {
       "<b>Elle envoie une invitation à chacun</b><small>Un lien par personne — et un par " +
       "téléphone. Il ne sert qu'une fois.</small></div></div>" +
       '<div class="ligne"><span class="etape">3</span><div class="ligne-corps">' +
-      "<b>Chacun ouvre son lien</b><small>Il choisit son prénom, son avatar et un code à " +
-      "4 chiffres personnel.</small></div></div>" +
+      "<b>Chacun ouvre son lien</b><small>Il choisit son code à 4 chiffres personnel — et " +
+      "son prénom et son avatar, si son profil n'existe pas encore.</small></div></div>" +
       '<div class="ligne"><span class="etape">4</span><div class="ligne-corps">' +
       "<b>Une icône sur l'écran d'accueil compte comme un appareil de plus</b>" +
       "<small>Elle a sa propre mémoire : il lui faut sa propre invitation. " +
@@ -1707,7 +1759,7 @@ const Connexion = {
       '<input type="hidden" name="code" value="' + suggere + '">' +
       "<hr class=\"sep\">" +
       '<label class="champ"><span>Votre prénom</span>' +
-      '<input type="text" name="prenom" placeholder="Amandine" required maxlength="20"></label>' +
+      '<input type="text" name="prenom" placeholder="Camille" required maxlength="20"></label>' +
       '<label class="champ"><span>Votre avatar</span></label>' +
       '<div class="puces grille-emojis" id="choix-emoji">' +
       EMOJIS_MEMBRES.map((e, i) => '<button type="button" class="puce ' + (i === 0 ? "on" : "") +
@@ -1848,9 +1900,11 @@ const Connexion = {
         "de la personne qui l’a reçu.",
       expire: "Ce lien a été demandé il y a plus d’une heure : par sécurité, l’adresse " +
         "n’est plus gardée sur cet appareil.",
-      ailleurs: "Ce lien s’est ouvert dans un autre navigateur que celui où vous l’avez " +
-        "demandé (application mail, fenêtre privée, icône Ma Tribu) : il ne connaît pas " +
-        "encore votre adresse."
+      /* Neutre (15/09/2026) : le cas le plus courant est un lien envoyé par
+         l'administrateur de la famille, que la personne n'a pas « demandé ». */
+      ailleurs: "Ce navigateur ne connaît pas encore votre adresse : le lien vous a peut-être " +
+        "été envoyé par votre famille, ou il s’est ouvert dans une autre application " +
+        "(messagerie, fenêtre privée, icône Ma Tribu)."
     };
     return this.entete("Dernière étape : votre adresse e-mail") +
       err +
@@ -1922,22 +1976,33 @@ const Connexion = {
 
   /* --- 6. Code a 4 chiffres --- */
   pin(d) {
-    /* Un profil « sans téléphone », ou dont le code n'a jamais été choisi, ne
+    const sansCode = !d.membre.pinHash && !d.membre.pin;
+    /* CHACUN CHOISIT SON CODE (15/09/2026). Un profil créé sans code le reçoit
+       ici, de la personne elle-même : en arrivant avec son invitation, ou sur
+       l'appareil que le registre associe déjà à ce profil (lien e-mail tout
+       juste suivi). Le code se tape deux fois. */
+    const aChoisir = sansCode && !!(d.jeton || d.choisirCode);
+    /* Ailleurs (téléphone partagé, profil d'un autre), un profil sans code ne
        peut PAS entrer : n'importe quels quatre chiffres seraient refusés, à
-       l'infini et sans explication. On le dit, au lieu de laisser quelqu'un
-       devant un clavier qui ne s'ouvrira jamais (14/09/2026). */
-    if (!d.membre.pinHash && !d.membre.pin) {
+       l'infini et sans explication. On le dit (14/09/2026). */
+    if (sansCode && !aChoisir) {
       return this.entete("<b>" + esc(d.membre.prenom) + "</b> " + esc(d.membre.emoji || "") +
-        "<br>Ce profil n'a pas de code à 4 chiffres.") +
-        '<p class="aide centre">Un administrateur de la tribu peut lui en créer un, ' +
+        "<br>Ce profil n'a pas encore de code à 4 chiffres.") +
+        '<p class="aide centre">' + esc(d.membre.prenom) + " le choisira en arrivant, avec son " +
+        "invitation ou son lien e-mail. Un administrateur peut aussi lui en donner un, " +
         "depuis Administration → Membres → son prénom.</p>" +
         '<button class="lien" type="button" id="b-retour" style="display:block;margin:1.6rem auto 0">Changer de profil</button>';
     }
     return this.entete("Bonjour <b>" + esc(d.membre.prenom) + "</b> " + esc(d.membre.emoji || "") +
-      "<br>Entrez votre code à 4 chiffres.") +
+      '<br><span id="consigne-code">' +
+      (aChoisir ? "Choisissez votre code à 4 chiffres." : "Entrez votre code à 4 chiffres.") + "</span>") +
+      (aChoisir
+        ? '<p class="aide centre" style="margin:-.4rem 0 .6rem">Il ouvrira votre profil sur les ' +
+          "appareils de la famille. Gardez-le pour vous.</p>"
+        : "") +
       '<div class="pin-points" id="pin-points">' +
       "0123".split("").map(() => '<span class="pin-point"></span>').join("") + "</div>" +
-      '<div class="clavier" id="clavier">' +
+      '<div class="clavier" id="clavier"' + (aChoisir ? ' data-choisir="1"' : "") + ">" +
       [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => '<button data-n="' + n + '">' + n + "</button>").join("") +
       '<button class="vide"></button><button data-n="0">0</button><button data-n="eff">⌫</button></div>' +
       '<button class="lien" type="button" id="b-retour" style="display:block;margin:1.6rem auto 0">Changer de profil</button>';
@@ -2169,7 +2234,9 @@ const Connexion = {
             const vise = r.invitation && r.invitation.pour &&
               (donnees.membres || []).find((m) => m.id === r.invitation.pour);
             const d = { code: r.code, donnees: donnees, jeton: null };
-            this.aller(vise ? "pin" : "profils", vise ? Object.assign(d, { membre: vise }) : d);
+            this.aller(vise ? "pin" : "profils", vise
+              ? Object.assign(d, { membre: vise, choisirCode: (donnees.appareils || {})[Store.uid] === vise.id })
+              : d);
             return;
           }
         }
@@ -2192,7 +2259,10 @@ const Connexion = {
       el.querySelectorAll("[data-membre]").forEach((b) => {
         b.onclick = () => {
           const m = d.donnees.membres.find((x) => x.id === b.dataset.membre);
-          this.aller("pin", Object.assign({}, d, { membre: m }));
+          /* Le profil que le registre associe à CET appareil peut choisir son
+             code ici s'il n'en a pas (15/09/2026) ; celui d'un autre, non. */
+          const monProfil = (d.donnees.appareils || {})[Store.uid] === m.id;
+          this.aller("pin", Object.assign({}, d, { membre: m, choisirCode: monProfil }));
         };
       });
       const bn = el.querySelector("#b-nouveau-profil");
@@ -2249,7 +2319,12 @@ const Connexion = {
     /* --- saisie du code a 4 chiffres --- */
     if (etape === "pin") {
       const clavier = el.querySelector("#clavier");
-      if (!clavier) return;        // profil sans code : il n'y a rien a saisir
+      if (!clavier) return;        // profil sans code, ailleurs : il n'y a rien a saisir
+      /* Choisir son code (15/09/2026) : deux saisies identiques, puis on
+         entre, et le code s'enregistre sur SA fiche (Store.modifierMaFiche). */
+      const aChoisir = clavier.dataset.choisir === "1";
+      const consigne = el.querySelector("#consigne-code");
+      let premier = null;
       let saisie = "";
       let occupe = false;
       const points = el.querySelectorAll("#pin-points .pin-point");
@@ -2265,13 +2340,35 @@ const Connexion = {
         if (saisie.length < 4) return;
 
         occupe = true;
-        const bon = await verifiePin(saisie, d.membre);
-        if (!bon) {
-          toast("Code incorrect");
-          saisie = ""; maj(); occupe = false;
-          return;
+        if (aChoisir) {
+          if (premier === null) {
+            premier = saisie; saisie = ""; maj(); occupe = false;
+            if (consigne) consigne.textContent = "Tapez-le une seconde fois pour confirmer.";
+            return;
+          }
+          if (saisie !== premier) {
+            toast("Les deux codes ne sont pas pareils : on recommence");
+            premier = null; saisie = ""; maj(); occupe = false;
+            if (consigne) consigne.textContent = "Choisissez votre code à 4 chiffres.";
+            return;
+          }
+        } else {
+          const bon = await verifiePin(saisie, d.membre);
+          if (!bon) {
+            toast("Code incorrect");
+            saisie = ""; maj(); occupe = false;
+            return;
+          }
         }
         const pinSaisi = saisie;
+        /* Le verrou se calcule AVANT d'écrire quoi que ce soit : sans
+           WebCrypto, on s'arrête ici plutôt que d'entrer sans code. */
+        const verrouChoisi = aChoisir ? await champsPin(pinSaisi) : null;
+        if (aChoisir && !verrouChoisi) {
+          toast("Connexion non sécurisée : le code ne peut pas être enregistré");
+          premier = null; saisie = ""; maj(); occupe = false;
+          return;
+        }
 
         /* Arrivee par invitation : on inscrit cet appareil dans la famille.
            On n'a pas le droit de lire la famille avant cette inscription,
@@ -2297,6 +2394,15 @@ const Connexion = {
               "sécurité Firebase ne sont peut-être pas à jour.");
             return;
           }
+        }
+
+        /* Le code choisi s'enregistre maintenant que l'appareil est inscrit
+           sous ce profil. En cas d'échec on entre quand même : le code sera
+           simplement redemandé à la prochaine ouverture. */
+        if (aChoisir) {
+          const okCode = await Store.modifierMaFiche(d.code, d.membre.id, verrouChoisi);
+          if (okCode) Object.assign(d.membre, verrouChoisi);
+          else toast("Votre code n'a pas pu être enregistré : il vous sera redemandé");
         }
 
         const entre = await entrerDansFamille(d.code, d.membre.id);

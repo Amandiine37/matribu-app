@@ -222,6 +222,14 @@ button{cursor:pointer;}
 .topbar-titre{flex:1;min-width:0;text-align:left;background:none;border:none;padding:0;}
 .topbar-titre b{display:block;font-family:var(--font-display);font-size:1.1rem;line-height:1.2;}
 .topbar-titre span{display:block;font-size:.75rem;color:var(--ink-muted);}
+/* L'icône « Quoi de neuf », entre le titre et les points (16/09/2026). */
+.topbar-actu{
+  position:relative;flex:none;
+  width:38px;height:38px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--border);
+  font-size:1.05rem;line-height:1;
+}
 .pastille-points{
   display:flex;align-items:center;gap:.3rem;
   background:var(--gold-soft);color:var(--gold);
@@ -248,6 +256,39 @@ h2.titre-section{
 .sous-titre h3{
   margin:0;font-size:.75rem;letter-spacing:.09em;text-transform:uppercase;
   color:var(--ink-muted);font-weight:700;
+}
+/* Un complément replié, à déplier sur place (16/09/2026) : « + 3 autres à
+   valider » sur l'accueil, « produits du placard déjà en réserve » dans les
+   ingrédients de la semaine. */
+/* « Quoi de neuf » (16/09/2026) : le mot de la saison, puis les nouveautés.
+   La carte de saison est le seul endroit un peu festif de l'application —
+   c'est voulu : elle ne s'affiche que quatre fois par an. */
+.carte-saison{
+  background:linear-gradient(165deg,var(--accent-soft),var(--surface) 72%);
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.1rem 1rem 1.2rem;text-align:center;
+}
+.carte-saison .saison-emoji{font-size:2.6rem;line-height:1.15}
+.carte-saison h3{margin:.2rem 0 .9rem}
+.carte-saison .aide{margin:.6rem 0 .4rem}
+.puces{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center}
+.puce-saison{
+  background:var(--surface);border:1px solid var(--border);border-radius:999px;
+  padding:.2rem .65rem;font-size:.85rem;
+}
+.puces.fane .puce-saison{opacity:.5}
+.actu{border-top:1px solid var(--border);padding:1rem 0}
+.actu:first-of-type{border-top:0}
+.actu-tete{display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem}
+.actu-tete small{color:var(--ink-muted)}
+.actu h4{margin:0 0 .5rem}
+.actu ul{margin:0;padding-left:1.1rem}
+.actu li{margin:.45rem 0;line-height:1.55}
+
+details.repli{margin-top:.5rem}
+details.repli > summary{
+  cursor:pointer;color:var(--accent-strong);font-weight:600;font-size:.85rem;
+  padding:.4rem 0;
 }
 
 .carte{
@@ -494,6 +535,12 @@ input[type=checkbox]{min-width:18px;min-height:18px;accent-color:var(--accent);}
   min-width:17px;height:17px;padding:0 .25rem;border-radius:999px;
   background:var(--warm);color:#fff;font-size:.62rem;line-height:17px;font-weight:700;
 }
+/* En mode sombre, le terracotta s'éclaircit : un chiffre blanc dessus tombait
+   à 2,5 de contraste (mesuré le 15/09/2026). Chiffre foncé à la place. */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .nav .pastille{color:#1d140e;}
+}
+:root[data-theme="dark"] .nav .pastille{color:#1d140e;}
 
 /* ---------- Présentation de bienvenue (carrousel) ---------- */
 .carrousel{
@@ -557,6 +604,13 @@ body.feuille-ouverte{position:fixed;left:0;right:0;height:auto;}
   max-width:88vw;text-align:center;
 }
 .toast.on{opacity:1;transform:translate(-50%,0);}
+/* Une feuille ouverte : le message passe EN HAUT de l'écran. En bas, il se
+   posait sur les champs et les boutons de la feuille — « Choisissez un code »
+   cachait justement le champ du code (15/09/2026). */
+body.feuille-ouverte .toast{
+  top:calc(14px + env(safe-area-inset-top));bottom:auto;transform:translate(-50%,-20px);
+}
+body.feuille-ouverte .toast.on{transform:translate(-50%,0);}
 
 /* ---------- Ecran de connexion ---------- */
 .connexion{

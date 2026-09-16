@@ -478,7 +478,8 @@ laisserait derrière lui son repère, ses tâches, ses points, ses invitations,
 les comptes e-mail liés et ses recettes publiées. À la main, dans cet ordre :
 
 1. `reperes/{code}` ;
-2. les sous-collections `etats` et `journal` de la tribu ;
+2. les sous-collections `etats`, `journal` et `rubriques` de la tribu (depuis la
+   0.52, `rubriques` contient le document des recettes) ;
 3. `invitations` où `famille` vaut le code ;
 4. `comptes` où `famille` vaut le code ;
 5. `recettesPartagees` où `familleRef` vaut le code ;
@@ -487,3 +488,115 @@ les comptes e-mail liés et ses recettes publiées. À la main, dans cet ordre :
 Depuis l'application (Administration ▸ 🔒 Vos données ▸ Supprimer la famille),
 tout cela est fait dans le bon ordre, automatiquement — mais seulement pour une
 tribu dont cet appareil est administrateur.
+
+---
+
+## Étape 12 — Sauvegarder la base sur votre ordinateur
+
+**Pourquoi.** Firebase sait sauvegarder tout seul, mais seulement sur son offre
+payante. Sans cela, il n'existe **aucune copie** de la base : une fausse
+manœuvre dans la console, une règle mal écrite, et le contenu des familles est
+perdu. Chaque famille peut exporter ses propres données depuis l'application,
+mais personne n'a de copie de l'ensemble.
+
+Deux petits programmes s'en chargent, dans le dossier
+`Documents\Projets perso\famille-sauvegarde` :
+
+| Fichier | Ce qu'il fait |
+| --- | --- |
+| `sauvegarder.cmd` | **Double-cliquez** : il lit toute la base et écrit une copie datée. |
+| `sauvegarde-tribu.mjs` | Le programme lui-même, en lecture seule. |
+| `restaurer-tribu.mjs` | Remet une copie en place — dans le faux Firebase, ou dans la vraie base. |
+
+Ils sont **volontairement rangés hors du dossier `famille`**, celui qu'on dépose
+sur GitHub : rien de tout cela ne doit se retrouver en ligne.
+
+### 12.1 — La clé qui autorise votre ordinateur (six clics)
+
+1. Console Firebase ▸ la roue dentée ▸ **Paramètres du projet**.
+2. Onglet **Comptes de service**.
+3. Bouton **Générer une nouvelle clé privée**, puis **Générer la clé**.
+4. Un fichier `.json` se télécharge.
+5. Renommez-le **`cle-service.json`**.
+6. Déposez-le dans le dossier `famille-sauvegarde`.
+
+> ⚠️ **Cette clé donne TOUS les droits sur le projet**, sans mot de passe et
+> sans code : qui l'a peut tout lire et tout effacer. Elle reste sur cet
+> ordinateur. **Jamais sur GitHub, jamais par e-mail, jamais dans le dossier
+> `famille`.** Si vous pensez l'avoir laissée traîner, retournez dans *Comptes
+> de service* et supprimez-la : elle cesse aussitôt de fonctionner.
+
+### 12.2 — Sauvegarder
+
+Double-cliquez sur **`sauvegarder.cmd`**. Une fenêtre noire s'ouvre et affiche :
+
+```
+Sauvegarde de « matribu-b360d » vers …\sauvegardes\2026-09-16-23h00
+  comptes… 12 document(s)
+  familles… 4 document(s)
+  …
+Terminé : 39 documents en 3.1 s.
+```
+
+Vous obtenez un dossier daté, **un fichier par document**, rangé comme la base
+elle-même (`familles\MAISON-XXXXXX.json`, puis ses sous-collections `etats`,
+`journal`, `rubriques`), plus un `resume.json` lisible. Un bon rythme : **avant
+chaque dépôt d'une nouvelle version**, et une fois par mois.
+
+Seules les **trois dernières copies** sont conservées ; les plus anciennes sont
+effacées automatiquement à la fin de chaque sauvegarde. Ce n'est pas pour gagner
+de la place : une sauvegarde contient les données de familles qui ont le droit
+de tout effacer. Une tribu supprimée disparaît ainsi de vos copies au bout de
+trois sauvegardes. (`--garder 5` pour en conserver cinq.)
+
+**Ce qui est sauvegardé :** tout le contenu de Firestore. Le programme ne
+travaille pas sur une liste écrite d'avance : il **demande à Firestore quelles
+collections existent**, et redescend dans celles qui sont rangées sous un
+document. Il n'en oublie donc aucune, même celles ajoutées plus tard.
+
+**Ce qui ne l'est pas :** les *connexions* (Firebase Authentication), qui vivent
+à côté de la base. Ce n'est pas gênant pour le cas qui arrive vraiment — une
+fausse manœuvre dans la base : les connexions, elles, sont intactes. Après une
+restauration, les appareils reconnus **au moment de la sauvegarde** le
+redeviennent ; un appareil ou un membre ajouté depuis devra être réinvité.
+
+### 12.3 — Vérifier une sauvegarde, sans rien risquer
+
+Une sauvegarde qu'on n'a jamais su relire n'est pas une sauvegarde. Le faux
+Firebase local (l'émulateur, dossier `famille-tests`) sert exactement à ça :
+
+```
+cd "Documents\Projets perso\famille-tests"
+firebase emulators:start
+```
+
+puis, dans une autre fenêtre :
+
+```
+node "..\famille-sauvegarde\restaurer-tribu.mjs" --depuis "..\famille-sauvegarde\sauvegardes\2026-09-16-23h00"
+```
+
+Ouvrez ensuite l'application avec `?emulateur=1` : vous regardez votre
+sauvegarde, sans toucher à la vraie base.
+
+*Vérifié le 16/09/2026 sur l'émulateur : 16 documents (dont un document de
+recettes de 40 plats, un journal et des états) sauvegardés, base entièrement
+vidée, restaurée, puis resauvegardée — les deux copies sont identiques, fichier
+par fichier.*
+
+### 12.4 — Remettre une sauvegarde dans la vraie base
+
+C'est le geste des mauvais jours. Il demande deux options, volontairement
+pénibles à taper :
+
+```
+node restaurer-tribu.mjs --depuis "sauvegardes\2026-09-16-23h00" --cle cle-service.json --ecraser-la-vraie-base
+```
+
+- chaque document est réécrit **tel qu'il était** ;
+- rien n'est effacé : ce qui a été créé **après** la sauvegarde reste en place ;
+- une sauvegarde d'un projet ne peut pas être restaurée dans un autre : le
+  programme refuse.
+
+Avant de le lancer pour de bon : **faites d'abord une sauvegarde de l'état
+actuel**, même abîmé. On ne sait jamais.
