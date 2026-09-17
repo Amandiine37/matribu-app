@@ -44,11 +44,12 @@ function carteAjout(action, titre, aide) {
    bouton), elle n'est donc pas échappée : elle est écrite ici, jamais tapée
    par une famille. Les identifiants du formulaire et du champ ne changent
    pas : c'est par eux que app.js reconnaît l'envoi. */
-function carteAjoutSaisie(idForm, idChamp, exemple, aide) {
+function carteAjoutSaisie(idForm, idChamp, titre, exemple, aide) {
   return '<form class="ajouter-carte saisie" id="' + idForm + '">' +
     '<button class="rond" type="submit" title="Ajouter" aria-label="Ajouter">＋</button>' +
+    '<span class="txt"><b>' + esc(titre) + "</b>" +
     '<input type="text" id="' + idChamp + '" placeholder="' + esc(exemple) + '" autocomplete="off">' +
-    "</form>" +
+    "</span></form>" +
     '<p class="aide" style="margin:0 0 1rem">' + aide + "</p>";
 }
 function rienDu(emoji, texte) {
@@ -800,7 +801,8 @@ function vueListeCourses() {
 
   /* L'ajout se pose juste au-dessus de la liste, comme dans le cahier de
      recettes : même carte blanche, même carré vert, même place (17/09/2026). */
-  h.push(carteAjoutSaisie("form-course-rapide", "champ-course", "pain, lait, œufs…",
+  h.push(carteAjoutSaisie("form-course-rapide", "champ-course",
+    "Ajouter un article", "pain, lait, œufs…",
     'Séparez par des virgules pour en ajouter plusieurs. ' +
     '<button class="lien" data-action="courses-plusieurs">Coller une liste</button>'));
 
@@ -875,7 +877,8 @@ function ligneCourse(c) {
    dictée : le micro du clavier remplit ce champ comme n'importe quel autre,
    et « du riz des pâtes et du lait » donne bien trois articles. */
 function champRapideStock() {
-  return carteAjoutSaisie("form-stock-rapide", "champ-stock", "riz, pâtes, lait…",
+  return carteAjoutSaisie("form-stock-rapide", "champ-stock",
+    "Ajouter un produit", "riz, pâtes, lait…",
     "Séparez par des virgules, ou dictez avec le micro de votre clavier. " +
     "Les quantités se règlent ensuite.");
 }

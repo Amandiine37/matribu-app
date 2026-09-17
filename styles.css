@@ -379,10 +379,14 @@ button.ajouter-carte:active{transform:scale(.99);box-shadow:var(--shadow-lg);}
 .ajouter-carte.saisie{padding:.6rem .7rem;gap:.7rem;margin-bottom:.4rem;}
 .ajouter-carte.saisie > .rond{border:none;cursor:pointer;}
 .ajouter-carte.saisie > .rond:active{filter:brightness(.92);}
+/* Le champ vient sous le titre, à la place du texte d'aide des autres
+   cartes : même carré vert, même titre, même hauteur — seule la deuxième
+   ligne se tape au lieu de se lire. */
+.ajouter-carte.saisie > .txt{flex:1;}
 .ajouter-carte.saisie input[type=text]{
-  flex:1;min-width:0;width:auto;
+  width:100%;
   background:transparent;border:none;box-shadow:none;
-  padding:.35rem .1rem;font-size:.95rem;color:var(--ink);
+  padding:.05rem 0 0;font-size:.86rem;color:var(--ink);
 }
 .ajouter-carte.saisie input[type=text]:focus{outline:none;box-shadow:none;}
 
@@ -933,7 +937,12 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
 .ligne-papier .qte{font-size:.8rem;color:var(--ink-muted);white-space:nowrap;}
 
 @media print{
-  .topbar, .nav, .fab, .sans-impression, #ecran-app > main { display:none !important; }
+  /* `#ecran-app` EN ENTIER, et pas seulement son `main` : le cadre porte
+     min-height:100dvh, et même vide il occupait une page complète — d'où
+     une première feuille blanche (signalé le 17/09/2026). Ce qui s'imprime,
+     `#feuille`, est en dehors de ce cadre. */
+  #ecran-app, #ecran-connexion,
+  .topbar, .nav, .fab, .sans-impression, .toast { display:none !important; }
   #voile{position:static;background:none;display:block !important;}
   #feuille{position:static;max-height:none;box-shadow:none;border-radius:0;overflow:visible;}
   .feuille-poignee{display:none;}

@@ -7567,7 +7567,10 @@ document.addEventListener("submit", (e) => {
   e.preventDefault();
   const champ = document.getElementById("champ-course");
   const val = champ.value.trim();
-  if (!val) return;
+  /* Appuyé sans rien avoir tapé, le ＋ ouvre la fiche complète : c'est ce
+     qu'on attend d'un bouton d'ajout, et cela ne coûte pas la saisie
+     rapide (17/09/2026). */
+  if (!val) { Formulaires.course(); return; }
   champ.value = "";
   ui.focus = "champ-course";
   Actions.ajouterPlusieursCourses(val);
@@ -7579,7 +7582,8 @@ document.addEventListener("submit", (e) => {
   e.preventDefault();
   const champ = document.getElementById("champ-stock");
   const val = champ.value.trim();
-  if (!val) return;
+  /* Même chose pour la réserve : à vide, on ouvre la fiche. */
+  if (!val) { Formulaires.stock(null); return; }
   champ.value = "";
   ui.focus = "champ-stock";
   Actions.ajouterPlusieursStock(val);
