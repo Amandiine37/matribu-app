@@ -39,6 +39,18 @@ function carteAjout(action, titre, aide) {
     '<span class="rond">＋</span><span class="txt"><b>' + esc(titre) + "</b>" +
     (aide ? "<small>" + esc(aide) + "</small>" : "") + "</span></button>";
 }
+/* La même carte, avec un champ de saisie : courses et réserve, où l'on pose
+   plusieurs articles d'un coup. `aide` est du HTML (elle contient parfois un
+   bouton), elle n'est donc pas échappée : elle est écrite ici, jamais tapée
+   par une famille. Les identifiants du formulaire et du champ ne changent
+   pas : c'est par eux que app.js reconnaît l'envoi. */
+function carteAjoutSaisie(idForm, idChamp, exemple, aide) {
+  return '<form class="ajouter-carte saisie" id="' + idForm + '">' +
+    '<button class="rond" type="submit" title="Ajouter" aria-label="Ajouter">＋</button>' +
+    '<input type="text" id="' + idChamp + '" placeholder="' + esc(exemple) + '" autocomplete="off">' +
+    "</form>" +
+    '<p class="aide" style="margin:0 0 1rem">' + aide + "</p>";
+}
 function rienDu(emoji, texte) {
   return '<div class="vide"><span class="emoji">' + emoji + "</span>" + texte + "</div>";
 }
@@ -779,17 +791,17 @@ function vueListeCourses() {
       "pas dans les rappels de l'accueil.</div></div>");
   }
 
-  h.push('<form id="form-course-rapide" style="display:flex;gap:.5rem;margin:0 0 .4rem">' +
-    '<input type="text" id="champ-course" placeholder="pain, lait, œufs…" autocomplete="off">' +
-    '<button class="btn principal" type="submit" style="flex-shrink:0">Ajouter</button></form>' +
-    '<p class="aide" style="margin:0 0 1rem">Séparez par des virgules pour en ajouter ' +
-    'plusieurs. <button class="lien" data-action="courses-plusieurs">Coller une liste</button></p>');
-
   const bas = stockSousMinimum();
   if (bas.length && t.alerte) {
     h.push('<div class="bandeau">🥫<div><b>' + pluriel(bas.length, "article", "articles") + " sous le minimum</b> dans votre réserve. " +
       '<button class="lien" data-action="stock-racheter">Les ajouter à cette liste</button></div></div>');
   }
+
+  /* L'ajout se pose juste au-dessus de la liste, comme dans le cahier de
+     recettes : même carte blanche, même carré vert, même place (17/09/2026). */
+  h.push(carteAjoutSaisie("form-course-rapide", "champ-course", "pain, lait, œufs…",
+    'Séparez par des virgules pour en ajouter plusieurs. ' +
+    '<button class="lien" data-action="courses-plusieurs">Coller une liste</button>'));
 
   const dansLaListe = coursesDe(active.id);
   const actifs = dansLaListe.filter((c) => !c.coche);
@@ -862,11 +874,9 @@ function ligneCourse(c) {
    dictée : le micro du clavier remplit ce champ comme n'importe quel autre,
    et « du riz des pâtes et du lait » donne bien trois articles. */
 function champRapideStock() {
-  return '<form id="form-stock-rapide" style="display:flex;gap:.5rem;margin:0 0 .4rem">' +
-    '<input type="text" id="champ-stock" placeholder="riz, pâtes, lait…" autocomplete="off">' +
-    '<button class="btn principal" type="submit" style="flex-shrink:0">Ajouter</button></form>' +
-    '<p class="aide" style="margin:0 0 1rem">Séparez par des virgules, ou dictez avec le ' +
-    "micro de votre clavier. Les quantités se règlent ensuite.</p>";
+  return carteAjoutSaisie("form-stock-rapide", "champ-stock", "riz, pâtes, lait…",
+    "Séparez par des virgules, ou dictez avec le micro de votre clavier. " +
+    "Les quantités se règlent ensuite.");
 }
 
 function vueReserve() {
@@ -880,8 +890,6 @@ function vueReserve() {
       "quand il faut racheter."));
     return h.join("");
   }
-  h.push(champRapideStock());
-
   /* Ce qui va se perdre passe avant ce qui manque : on peut racheter demain,
      on ne peut pas rattraper un yaourt périmé. */
   const presses = stockBientotPerime();
@@ -930,6 +938,11 @@ function vueReserve() {
     '<button class="btn doux" data-action="stock-replier-tout" data-valeur="' +
     (toutReplie ? "deplier" : "replier") + '">' +
     (toutReplie ? "▾ Tout déplier" : "▸ Tout replier") + "</button></div>");
+
+  /* L'ajout se pose juste au-dessus de la liste, comme dans le cahier de
+     recettes : même carte blanche, même carré vert, même place (17/09/2026).
+     Il était auparavant tout en haut de l'écran, avant les bandeaux. */
+  h.push(champRapideStock());
 
   if (q && !vus.length) {
     h.push(rienDu("🔎", "Aucun article ne correspond à « " + esc(ui.rechercheStock) + " » de ce côté."));

@@ -10,13 +10,13 @@
 /* v3 (14/09/2026 : forcer une copie propre apres les passes de densite ; sinon v2)
  * v2 (13/09/2026) : les fichiers de l'app sont demandes en "no-cache", voir
  * plus bas. Changer ce nom fait repartir chaque appareil d'un cache propre. */
-var CACHE = "tribu-v15";
+var CACHE = "tribu-v16";
 var ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=11",
+  "./styles.css?v=12",
   "./recettes.js?v=5",
-  "./vues.js?v=11",
+  "./vues.js?v=12",
   "./formulaires.js?v=11",
   "./app.js?v=15",
   "./firebase-config.js?v=4",

@@ -368,7 +368,23 @@ details.legende-sante > summary{
 .ajouter-carte > .txt{display:flex;flex-direction:column;gap:.1rem;min-width:0;}
 .ajouter-carte > .txt b{font-size:.92rem;font-weight:700;color:var(--ink);}
 .ajouter-carte > .txt small{font-size:.76rem;color:var(--ink-muted);}
-.ajouter-carte:active{transform:scale(.99);box-shadow:var(--shadow-lg);}
+button.ajouter-carte:active{transform:scale(.99);box-shadow:var(--shadow-lg);}
+/* La même carte, mais avec un champ : courses et réserve, où l'on tape un
+   ou plusieurs articles d'un coup. Le carré vert ＋ est ici le bouton qui
+   valide — la touche Entrée du clavier marche aussi. Le champ perd son
+   cadre : c'est la carte qui en tient lieu. */
+/* Mêmes marges intérieures que la carte à texte : le carré vert tombe alors
+   exactement au même endroit d'un écran à l'autre, et les deux cartes ont
+   la même hauteur. */
+.ajouter-carte.saisie{padding:.6rem .7rem;gap:.7rem;margin-bottom:.4rem;}
+.ajouter-carte.saisie > .rond{border:none;cursor:pointer;}
+.ajouter-carte.saisie > .rond:active{filter:brightness(.92);}
+.ajouter-carte.saisie input[type=text]{
+  flex:1;min-width:0;width:auto;
+  background:transparent;border:none;box-shadow:none;
+  padding:.35rem .1rem;font-size:.95rem;color:var(--ink);
+}
+.ajouter-carte.saisie input[type=text]:focus{outline:none;box-shadow:none;}
 
 .fab{
   position:fixed;
