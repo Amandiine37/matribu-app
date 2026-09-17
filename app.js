@@ -7076,6 +7076,7 @@ const NOMS_ICONES = {
   "stock-plus": "Ajouter une unité",
   "stock-moins": "Retirer une unité",
   "liste-editer": "Modifier la liste",
+  "liste-afficher": "Imprimer la liste",
   "liste-nouvelle": "Nouvelle liste",
   "membre-editer": "Modifier la fiche",
   "cadeau-editer": "Modifier le cadeau",
@@ -7365,6 +7366,7 @@ document.addEventListener("click", (e) => {
     case "liste-choisir": ui.listeActive = b.dataset.valeur; ui.ongletCourses = "liste"; rendre(); break;
     case "liste-nouvelle": Formulaires.liste(null); break;
     case "liste-editer": Formulaires.liste(listeCourante().id); break;
+    case "liste-afficher": Formulaires.listeAAfficher(); break;
     case "course-deplacer": Formulaires.deplacerCourse(v); break;
 
     /* réserve */

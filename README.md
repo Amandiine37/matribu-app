@@ -629,6 +629,18 @@ utilisent ce qui va se perdre. Mesuré sur une réserve où courgettes et
 aubergines expirent : la ratatouille est retenue **12 fois sur 12** avec
 l'option, **1 fois sur 12** sans.
 
+### 🖨️ La liste sur papier
+
+*Courses → l'icône **🖨️** à côté du nom de la liste*. La liste telle qu'elle
+est, rangée par rayon, avec une case à cocher au crayon devant chaque article
+et la quantité à droite. On n'y trouve que **ce qui reste à prendre** : ce qui
+est déjà dans le panier est seulement compté en bas.
+
+C'est pour les fois où l'on ne sort pas son téléphone dans les rayons — ou
+quand ce n'est pas la même personne qui fait les courses. Comme pour le menu,
+le bouton **Imprimer** ne met sur le papier que la liste : ni barre du bas,
+ni boutons, ni reste de l'application.
+
 ### Au magasin : terminer les courses
 
 C'est là que les deux listes se rejoignent. Vous cochez au fur et à mesure dans

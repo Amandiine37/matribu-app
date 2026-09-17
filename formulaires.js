@@ -3750,6 +3750,51 @@ Formulaires.menuAAfficher = function () {
     });
 };
 
+/* La liste de courses sur papier. Demandée le 17/09/2026 : on ne sort pas
+   toujours son téléphone dans les rayons, et ce n'est pas toujours la même
+   personne qui fait les courses. On n'imprime que ce qui reste à prendre,
+   rangé par rayon comme dans l'écran, avec une case à cocher au crayon. */
+Formulaires.listeAAfficher = function () {
+  const active = listeCourante();
+  const dans = coursesDe(active.id);
+  const aPrendre = dans.filter((c) => !c.coche);
+  const dejaPris = dans.length - aPrendre.length;
+
+  const parRayon = {};
+  aPrendre.forEach((c) => { (parRayon[c.rayon] = parRayon[c.rayon] || []).push(c); });
+  const corps = ordreRayons(Object.keys(parRayon)).map((r) => {
+    const l = parRayon[r].slice().sort((a, b) => a.nom.localeCompare(b.nom));
+    return "<h3>" + esc(r) + "</h3>" + l.map((c) => {
+      const q = formaterQte(c.qte, c.unite);
+      return '<div class="ligne-papier"><span class="case"></span>' +
+        '<span class="nom">' + esc(c.nom) + (c.vrac ? " 🫙" : "") + "</span>" +
+        (q ? '<span class="qte">' + esc(q) + "</span>" : "") + "</div>";
+    }).join("");
+  }).join("");
+
+  const quand = new Date().toLocaleDateString("fr-FR",
+    { weekday: "long", day: "numeric", month: "long" });
+
+  ouvrirFeuille("",
+    '<div class="liste-papier">' +
+    '<h2 style="font-family:var(--font-display);text-align:center;margin:.2rem 0 .1rem">' +
+    esc(etat.famille.nom) + "</h2>" +
+    '<p class="aide centre" style="margin:0 0 .9rem">' +
+    esc((active.emoji || typeListe(active).emoji) + " " + active.nom) + " — " + esc(quand) + "</p>" +
+    (aPrendre.length ? corps
+      : '<p class="aide centre">Rien à acheter : tout est déjà dans le panier.</p>') +
+    (dejaPris ? '<p class="aide" style="margin-top:1rem">' +
+      esc(pluriel(dejaPris, "article déjà dans le panier", "articles déjà dans le panier")) +
+      "</p>" : "") +
+    '<div class="rangee-btn sans-impression" style="margin-top:1.2rem">' +
+    '<button class="btn" data-action="fermer">Fermer</button>' +
+    '<button class="btn principal" data-role="imprimer">🖨️ Imprimer</button></div></div>',
+    (fe) => {
+      const b = fe.querySelector('[data-role="imprimer"]');
+      if (b) b.onclick = () => window.print();
+    });
+};
+
 /* ==================== LE BILAN DE LA SEMAINE ====================
 
    Ce qui a été fait, pas ce qui reste à faire. C'est ce qui donne le

@@ -784,6 +784,7 @@ function vueListeCourses() {
   h.push('<div class="entete-liste">' +
     "<div><b>" + esc(active.nom) + "</b><small>" + esc(t.nom) +
     (active.magasin ? " • " + esc(active.magasin) : "") + "</small></div>" +
+    '<button class="btn mini icone" data-action="liste-afficher">🖨️</button>' +
     '<button class="btn mini icone" data-action="liste-editer">✏️</button></div>');
 
   if (!t.alerte) {
