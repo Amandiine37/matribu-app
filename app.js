@@ -7251,13 +7251,17 @@ function ongletsVisibles() {
   return ONGLETS.filter((o) => o.obligatoire || !ongletMasque(o.vue));
 }
 
+/* Le bouton flottant ＋ se pose en bas à droite — juste au-dessus des petits
+   boutons d'action des lignes. Mesuré le 16/09/2026 : il cachait la moitié de
+   « Fait » dans les tâches, et jusqu'à la TOTALITÉ de − + ✏️ dans la réserve.
+   Le déplacer ne sert à rien : il fait 54 px de haut, contre 40 px d'espace
+   libre entre deux boutons dans les tâches et 14 px dans la réserve — il
+   tombera toujours sur quelque chose.
+   Il ne reste donc que sur les écrans où l'ajout n'a pas sa place ailleurs.
+   Courses et Réserve ont déjà leur case « Ajouter » en haut de l'écran, et
+   les Tâches ont maintenant leur bouton en tête de liste (Vues.taches). */
 const FAB = {
-  taches: { admin: true, action: "tache-nouvelle" },
-  courses: { admin: false, action: "course-nouvelle" },
-  stock: { admin: false, action: "stock-nouveau" },
-  reserve: { admin: false, action: "stock-nouveau" },
   notes: { admin: false, action: "note-nouvelle" },
-  recettes: { admin: false, action: "recette-nouvelle" },
   points: { admin: true, action: "cadeau-nouveau" }
 };
 function majFab() {

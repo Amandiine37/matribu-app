@@ -31,6 +31,14 @@ function bloc(titre, contenu, lienTexte, lienAction, lienVue) {
       (lienVue ? '" data-vue="' + lienVue : "") + '">' + esc(lienTexte) + "</button>" : "") +
     "</div>" + contenu + "</div>";
 }
+/* Le bouton d'ajout d'une liste, en tête de celle-ci. Il a remplacé le ＋
+   flottant, qui se posait pile sur les boutons des lignes — « Fait », ✏️,
+   − + — et en cachait jusqu'à la totalité (mesuré le 16/09/2026). */
+function carteAjout(action, titre, aide) {
+  return '<button class="ajouter-carte" data-action="' + action + '">' +
+    '<span class="rond">＋</span><span class="txt"><b>' + esc(titre) + "</b>" +
+    (aide ? "<small>" + esc(aide) + "</small>" : "") + "</span></button>";
+}
 function rienDu(emoji, texte) {
   return '<div class="vide"><span class="emoji">' + emoji + "</span>" + texte + "</div>";
 }
@@ -669,10 +677,17 @@ Vues.taches = function () {
     '<button class="' + (ui.filtreTaches === "toutes" ? "on" : "") + '" data-action="taches-filtre" data-valeur="toutes">Toute la famille</button>' +
     "</div>");
 
+  /* L'ajout d'une tâche se fait ici, et non plus par le ＋ flottant : celui-ci
+     recouvrait les boutons « Fait » des lignes (16/09/2026). */
+  if (estAdmin()) {
+    h.push(carteAjout("tache-nouvelle", "Nouvelle tâche",
+      "qui la fait, à quelle fréquence, combien de points"));
+  }
+
   const toutes = tachesDuMoment();
   if (!toutes.length) {
     h.push(rienDu("🧹", estAdmin()
-      ? "Aucune tâche pour l'instant.<br>Appuyez sur <b>+</b> pour en créer une."
+      ? "Aucune tâche pour l'instant.<br>Appuyez sur <b>Nouvelle tâche</b>, juste au-dessus."
       : "Aucune tâche pour l'instant."));
     return h.join("");
   }
@@ -1140,13 +1155,19 @@ Vues.recettes = function () {
 
   h.push(bandeauMaj());
 
+  /* Ajouter une recette se fait ici : le ＋ flottant recouvrait la ligne d'un
+     plat (43 %) et ses boutons ☆ ✏️ — on ouvrait le formulaire au lieu du
+     plat qu'on visait (16/09/2026). */
+  h.push(carteAjout("recette-nouvelle", "Ajouter une recette",
+    "la vôtre, ou une trouvée ailleurs"));
+
   const liste = recettesFiltrees();
   const actif = ui.filtresRecettes.length || ui.rechercheRecette.trim();
 
   if (!liste.length) {
     h.push(rienDu("📖", actif
       ? "Aucun plat ne correspond.<br><button class=\"lien\" data-action=\"recettes-filtre-vider\">Enlever les filtres</button>"
-      : "Aucune recette.<br>Appuyez sur <b>+</b> pour en ajouter une."));
+      : "Aucune recette.<br>Appuyez sur <b>Ajouter une recette</b>, juste au-dessus."));
     return h.join("");
   }
 
