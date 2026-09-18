@@ -864,7 +864,7 @@ async function terminerLienCompte(adresse, jeton) {
       { message: "L’appareil est rattaché, mais la famille reste illisible pour l’instant. Rechargez la page." });
     return false;
   }
-  localStorage.setItem("tribu:derniereFamille", r.code);
+  try { localStorage.setItem("tribu:derniereFamille", r.code); } catch (e) { /* confort seulement */ }
   toast(r.dejaMembre ? "Cet appareil était déjà rattaché" : "Appareil rattaché à votre profil ✅");
   /* Le lien dit deja QUI entre : on va droit a son code a 4 chiffres, sans
      lui faire rechoisir son nom dans la liste de tous les membres. « Changer
@@ -1862,6 +1862,25 @@ const Store = {
     }
   },
 
+  /* LA SESSION DU MOMENT, PAS CELLE DU DÉMARRAGE (18/09/2026, lancement).
+
+     Deux fenêtres du même site partagent la même mémoire : quand l'une ouvre
+     une session neuve, Firebase la recopie dans l'autre, sans prévenir. Ma
+     Tribu gardait l'identifiant lu au démarrage : une tribu créée dans la
+     première fenêtre naissait au nom d'une session qui n'était plus la bonne,
+     et la règle de création refusait — « Création impossible,
+     permission-denied » (capture d'une famille dans le navigateur de
+     Facebook ; reproduit sur l'émulateur avec deux onglets). On relit donc la
+     session juste avant d'écrire en son nom — créer, entrer par invitation,
+     rattacher par e-mail — et on en rouvre une si elle a disparu. */
+  async sessionActuelle() {
+    if (this.mode !== "nuage" || !this._au) return this.uid;
+    let u = this._au.currentUser;
+    if (!u) u = (await this._auth.signInAnonymously(this._au)).user;
+    this.uid = u.uid;
+    return this.uid;
+  },
+
   /* La session deja restauree par Firebase, s'il y en a une.
      onAuthStateChanged repond une premiere fois des que la restauration est
      finie : c'est le seul moyen fiable de savoir si quelqu'un est deja
@@ -2193,6 +2212,7 @@ const Store = {
       const deja = await this._borner(this.charger(f.famille), "lecture de la tribu");
       if (deja) { res.dejaMembre = true; res.ok = true; this.derniereErreur = null; return res; }
       res.etape = "ecriture";
+      await this.sessionActuelle();      // l'appareil rattaché est celui du moment
       const morceau = {
         appareils: { [this.uid]: f.membre },
         appareilsInfos: { [this.uid]: infoAppareil("compte") },
@@ -3699,6 +3719,26 @@ function ecrireSession(s) {
   } catch (e) { /* il faudra rechoisir son profil a la prochaine ouverture */ }
 }
 
+/* CET APPAREIL SAIT-IL SE SOUVENIR ? (18/09/2026, jour du lancement)
+
+   Si le navigateur refuse d'enregistrer quoi que ce soit (Safari avec
+   « Bloquer tous les cookies », certains modes privés, mémoire pleine), une
+   tribu créée d'ici naît bien sur le serveur, mais l'appareil ne pourra
+   jamais la retrouver : son identité ne vit qu'en mémoire vive, et disparaît
+   à la fermeture de la page. Les écrans de connexion posent donc la question
+   AVANT de créer ou de rejoindre (Connexion.aller), par un vrai essai
+   d'écriture. Faux au moindre refus — y compris quand le simple accès à
+   localStorage lève une erreur, comme le fait Safari quand il bloque tout. */
+function appareilRetient() {
+  try {
+    const cle = "tribu:essai-memoire";
+    localStorage.setItem(cle, "1");
+    const ok = localStorage.getItem(cle) === "1";
+    localStorage.removeItem(cle);
+    return ok;
+  } catch (e) { return false; }
+}
+
 function appliquerDonnees(d, portee) {
   if (portee === "etats") { etat.etats = d.etats || {}; return; }
   if (portee === "journal") { etat.journal = d.journal || []; return; }
@@ -3989,7 +4029,11 @@ async function entrerDansFamille(code, membreId, opts) {
     return true;
   }
   ecrireSession({ code: code, membreId: membreId });
-  localStorage.setItem("tribu:derniereFamille", code);
+  /* Protégée comme ecrireSession (18/09/2026, jour du lancement) : sur un
+     appareil qui refuse d'enregistrer, cette seule ligne arrêtait l'entrée
+     juste après la création de la tribu — bouton grisé, écran immobile,
+     aucun message. */
+  try { localStorage.setItem("tribu:derniereFamille", code); } catch (e) { /* confort seulement */ }
   verifierRepere(code);          // en arrière-plan, sans bloquer l'ouverture
   noterOuverture(code);          // idem : la date du jour, pour le ménage
   suivreProgrammeFondatrices(code);   // idem : la place dans le programme

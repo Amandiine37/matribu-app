@@ -1681,6 +1681,58 @@ Vues.admin = function () {
   return h.join("");
 };
 
+/* Les étapes qui, une fois remplies, écrivent sur le serveur au nom de cet
+   appareil : créer une tribu, en rejoindre une, rattacher l'appareil par
+   e-mail. Sur un appareil qui ne sait pas se souvenir (appareilRetient),
+   elles fabriqueraient une tribu ou un rattachement perdus d'avance : on
+   montre plutôt l'étape stockageRefuse (18/09/2026). */
+const ETAPES_QUI_ENREGISTRENT = ["creer", "invitation", "email", "confirmerEmail"];
+
+/* UN BOUTON QUI NE RÉPOND PLUS EST UNE PANNE MUETTE (18/09/2026).
+
+   Jour du lancement : une famille appuie sur « Créer la famille » et rien ne
+   se passe. Une erreur levée pendant l'envoi d'un formulaire de connexion
+   n'arrivait nulle part : le filet d'index.html la note, mais n'affiche rien
+   quand un écran est déjà là. Le bouton restait grisé, sans un mot. Tous les
+   formulaires de ces écrans passent donc par ce filet (Connexion.aller) :
+   l'erreur imprévue s'affiche, avec son détail, pour une capture d'écran. */
+function avecFilet(action) {
+  return async function (ev) {
+    /* Jamais d'envoi « à l'ancienne » : il mettrait les champs, code à
+       4 chiffres compris, dans l'adresse de la page. */
+    if (ev && ev.preventDefault) ev.preventDefault();
+    try {
+      await action.call(this, ev);
+    } catch (err) {
+      console.warn("Action interrompue :", err);
+      ecranPanne(err, "Ça n'a pas abouti",
+        "Une erreur imprévue a interrompu l'opération. Rechargez la page : " +
+        "ce qui était déjà enregistré ne sera pas perdu.");
+    }
+  };
+}
+
+/* LE NAVIGATEUR DE FACEBOOK OU D'INSTAGRAM, SUR APPLE (18/09/2026, lancement).
+
+   Les familles arrivent par les publications Instagram et Facebook : le lien
+   s'ouvre alors dans le navigateur de l'application, qui a sa PROPRE mémoire,
+   séparée de Safari. Une tribu créée là y reste enfermée — ouverte ensuite
+   dans Safari ou depuis une icône, Ma Tribu ne la connaît pas — et l'on ne
+   peut pas y ajouter l'application à l'écran d'accueil. Une ligne discrète le
+   dit, sur iPhone et iPad seulement (choix d'Amandine). Rien sinon. */
+function conseilNavigateurIntegre() {
+  const ua = navigator.userAgent || "";
+  if (!/iPhone|iPad|iPod/.test(ua)) return "";
+  const appli = /Instagram/.test(ua) ? "d'Instagram"
+    : /Messenger/.test(ua) ? "de Messenger"
+    : /FBAN|FBAV|FB_IAB/.test(ua) ? "de Facebook" : "";
+  if (!appli) return "";
+  return '<p class="aide centre" style="margin:0 0 1rem">📱 Vous êtes dans le navigateur ' + appli +
+    ". Pour installer Ma Tribu sur votre écran d'accueil et la retrouver ensuite, " +
+    "ouvrez-la dans Safari : « ⋯ » en haut à droite, puis « Ouvrir dans Safari » " +
+    "ou « Ouvrir dans le navigateur ».</p>";
+}
+
 /* =========================================================================
    ECRANS DE CONNEXION
    =========================================================================
@@ -1694,10 +1746,24 @@ Vues.admin = function () {
 const Connexion = {
 
   aller(etape, donnees) {
+    /* Créer ou rejoindre depuis un appareil qui ne sait pas se souvenir :
+       on l'explique AVANT, au lieu d'échouer après (18/09/2026). */
+    if (ETAPES_QUI_ENREGISTRENT.indexOf(etape) !== -1 && !appareilRetient()) {
+      donnees = { suite: etape, donnees: donnees || {} };
+      etape = "stockageRefuse";
+    }
     const el = document.getElementById("ecran-connexion");
     el.innerHTML = this[etape](donnees || {});
     window.scrollTo({ top: 0 });
     this.brancher(etape, donnees || {});
+    /* Chaque formulaire de ces écrans passe par le filet (voir avecFilet) —
+       et le clavier du code à 4 chiffres aussi : ce n'est pas un formulaire,
+       mais il fait le même travail, vérifier puis entrer (18/09/2026). */
+    el.querySelectorAll("form").forEach((f) => {
+      if (typeof f.onsubmit === "function") f.onsubmit = avecFilet(f.onsubmit);
+    });
+    const clavier = el.querySelector("#clavier");
+    if (clavier && typeof clavier.onclick === "function") clavier.onclick = avecFilet(clavier.onclick);
   },
 
   entete(sousTitre) {
@@ -1708,7 +1774,10 @@ const Connexion = {
 
   /* --- 1. Accueil --- */
   accueil() {
-    const derniere = localStorage.getItem("tribu:derniereFamille");
+    /* Lue sous protection (18/09/2026) : sur un navigateur qui refuse toute
+       mémoire, cette seule lecture faisait tomber l'écran d'accueil. */
+    let derniere = null;
+    try { derniere = localStorage.getItem("tribu:derniereFamille"); } catch (e) { }
     const local = bandeauModeLocal();
     /* Le piège de l'icône sur l'écran d'accueil : sur iPhone (et sur beaucoup
        d'Android), cette icône lance une application À PART, avec sa propre
@@ -1742,6 +1811,7 @@ const Connexion = {
     return this.entete("La maison, c'est l'affaire de tous.") +
       demenagement +
       avertissement +
+      (derniere ? "" : conseilNavigateurIntegre()) +
       (derniere
         ? '<button class="btn principal plein" id="b-reprendre" style="margin-bottom:.6rem">Continuer sur cet appareil</button>'
         : "") +
@@ -1814,6 +1884,38 @@ const Connexion = {
       '<button class="btn principal plein" type="submit" style="margin-top:.4rem">Créer la famille</button>' +
       '<button class="lien" type="button" id="b-retour" style="display:block;margin:1rem auto 0">Retour</button>' +
       "</form>";
+  },
+
+  /* --- Appareil sans mémoire (18/09/2026, jour du lancement) ---
+     Le navigateur refuse toute écriture : une tribu créée ou rejointe d'ici
+     serait introuvable dès la fermeture de la page. On le dit AVANT, avec le
+     réglage à changer ; rien n'est envoyé au serveur. */
+  stockageRefuse(d) {
+    return this.entete("Cet appareil ne peut pas garder votre tribu en mémoire.") +
+      '<div class="bandeau" style="margin-bottom:1.2rem">🔒<div>' +
+      "<b>Le navigateur refuse que Ma Tribu enregistre quoi que ce soit ici.</b><br>" +
+      "Sans cette mémoire, l'application ne vous reconnaîtrait pas à la prochaine " +
+      "ouverture : votre tribu serait perdue pour vous. <b>Rien n'a été enregistré.</b>" +
+      "</div></div>" +
+      '<div class="carte">' +
+      '<div class="carte-titre">Pour corriger</div>' +
+      '<div class="ligne"><span class="etape">1</span><div class="ligne-corps">' +
+      "<b>Quittez la navigation privée</b><small>Si vous y êtes : elle efface tout à la " +
+      "fermeture de la page.</small></div></div>" +
+      '<div class="ligne"><span class="etape">2</span><div class="ligne-corps">' +
+      "<b>Autorisez les cookies</b><small>Sur iPhone ou iPad : Réglages → Safari (ou Réglages " +
+      "→ Apps → Safari), désactivez « Bloquer tous les cookies » — parfois rangé dans " +
+      "« Avancé ». Sur Mac : Safari → Réglages → Confidentialité. Ailleurs : autorisez les " +
+      "cookies et les données des sites.</small></div></div>" +
+      '<div class="ligne"><span class="etape">3</span><div class="ligne-corps">' +
+      "<b>Revenez ici et appuyez sur Réessayer</b><small>" +
+      (d.suite === "invitation"
+        ? "Gardez votre lien d'invitation : il resservira tel quel."
+        : "Si rien ne change, rechargez la page.") +
+      "</small></div></div>" +
+      "</div>" +
+      '<button class="btn principal plein" id="b-reessayer-memoire" style="margin-top:.6rem">Réessayer</button>' +
+      '<button class="lien" type="button" id="b-retour" style="display:block;margin:1rem auto 0">Retour</button>';
   },
 
   /* --- 3. Ouvrir une invitation --- */
@@ -1961,6 +2063,7 @@ const Connexion = {
 
   invitation(d) {
     return this.entete("Tapez le code d'invitation reçu — ou collez le lien.") +
+      conseilNavigateurIntegre() +
       '<form id="f-invitation">' +
       '<label class="champ"><span>Code ou lien d\'invitation</span>' +
       '<input type="text" name="jeton" required autocomplete="off" autocapitalize="characters" ' +
@@ -2058,6 +2161,15 @@ const Connexion = {
       if (versProfils) this.aller("profils", d);
       else this.aller("accueil");
     };
+
+    /* Appareil sans mémoire : on revérifie avant de reprendre là où l'on
+       allait — le réglage peut changer sans recharger la page. */
+    if (etape === "stockageRefuse") {
+      el.querySelector("#b-reessayer-memoire").onclick = () => {
+        if (appareilRetient()) { this.aller(d.suite, d.donnees); return; }
+        toast("Toujours refusé : changez le réglage, puis rechargez la page.");
+      };
+    }
 
     if (etape === "accueil") {
       el.querySelector("#b-creer").onclick = () => this.aller("creer");
@@ -2181,6 +2293,14 @@ const Connexion = {
         const pin = String(f.get("pin")).trim();
         if (!/^[0-9]{4}$/.test(pin)) { toast("Le code doit faire 4 chiffres"); return; }
         bouton.disabled = true;
+        /* Le bouton dit ce qui se passe (18/09/2026) : grisé sans un mot
+           pendant les quelques secondes de la création — davantage sur une
+           connexion lente —, il donnait l'impression que rien ne se passait. */
+        const libelle = bouton.textContent;
+        bouton.textContent = "Création de votre tribu…";
+        const patience = setTimeout(() => {
+          bouton.textContent = "Connexion lente, on patiente…";
+        }, 15000);
 
         /* Vérification honnête : on interroge l'annuaire des repères, qui
            répond oui ou non. On ne devine plus à partir d'un refus. */
@@ -2192,6 +2312,9 @@ const Connexion = {
           code = nouveauRepere();
         }
 
+        /* La tribu naît au nom de la session du MOMENT : une autre fenêtre
+           a pu en ouvrir une neuve depuis le démarrage (18/09/2026). */
+        await Store.sessionActuelle();
         const moiId = id();
         const donnees = etatVide();
         donnees.famille = {
@@ -2199,7 +2322,10 @@ const Connexion = {
           creeLe: new Date().toISOString(), version: 2
         };
         const verrou = await champsPin(pin);
-        if (!verrou) { toast("Connexion non sécurisée : le code ne peut pas être enregistré"); bouton.disabled = false; return; }
+        if (!verrou) {
+          clearTimeout(patience); bouton.textContent = libelle;
+          toast("Connexion non sécurisée : le code ne peut pas être enregistré"); bouton.disabled = false; return;
+        }
         donnees.membres = [Object.assign({
           id: moiId, prenom: String(f.get("prenom")).trim(), emoji: emojiChoisi(),
           role: "admin", creeLe: new Date().toISOString()
@@ -2215,14 +2341,21 @@ const Connexion = {
         recalculerIndex();
         const cree = await Store.creer(code, etat);
         if (!cree) {
+          clearTimeout(patience);
+          bouton.textContent = libelle;
           bouton.disabled = false;
-          const e = Store.derniereErreur;
-          /* On n'invente plus la cause : on l'affiche, avec les pistes. */
+          /* On n'invente plus la cause : on l'affiche. Le détail technique
+             dit aussi où en est la session (18/09/2026) — un refus du serveur
+             se lit alors d'un coup d'œil sur une capture. Le texte, lui, parle
+             à la famille : c'est elle qui le voit, plus seulement nous. */
+          const e0 = Store.derniereErreur || {};
+          const s = Store._au && Store._au.currentUser;
+          const e = { code: e0.code, message: (e0.message || "") + " [session " +
+            (!s ? "absente" : s.uid === Store.uid ? "identique" : "changée") + "]" };
           ecranPanne(e, "Création impossible",
-            "Firebase a refusé de créer la famille. Les causes possibles : les " +
-            "règles de sécurité ne sont pas publiées dans leur dernière version, " +
-            "ou le domaine du site n'est pas autorisé dans Firebase " +
-            "(Authentication → Paramètres → Domaines autorisés).");
+            "La base en ligne a refusé de créer votre tribu. Rechargez la page, " +
+            "puis réessayez. Si le message revient, envoyez une capture d'écran " +
+            "de cette page.");
           return;
         }
         await Store.marquerRepere(code);
@@ -2236,6 +2369,7 @@ const Connexion = {
            ici, un simple rechargement y ramene. */
         ecrireSession({ code: code, membreId: moiId });
         const entre = await entrerDansFamille(code, moiId);
+        clearTimeout(patience);
         if (!entre) {
           ecranPanne(Store.derniereErreur, "Votre tribu est bien créée",
             "Elle n'a pas pu s'ouvrir tout de suite. Rechargez la page : vous y " +
@@ -2327,6 +2461,7 @@ const Connexion = {
           role: "membre", creeLe: new Date().toISOString()
         }, verrou);
 
+        await Store.sessionActuelle();     // l'invitation sert à la session du moment
         Store.code = d.code;
         /* On RESERVE le jeton avant d'entrer : c'est ce qui le rend vraiment
            a usage unique. Si quelqu'un d'autre l'a pris entre-temps, on
@@ -2414,6 +2549,7 @@ const Connexion = {
         if (d.jeton) {
           const r = await Invitations.valider(d.jeton);
           if (!r.ok) { toast(r.message); occupe = false; return; }
+          await Store.sessionActuelle();   // l'invitation sert à la session du moment
           Store.code = d.code;
           /* Meme principe : on reserve d'abord, on entre ensuite. */
           const reserve = await Store.reserverInvitation(d.jeton);
