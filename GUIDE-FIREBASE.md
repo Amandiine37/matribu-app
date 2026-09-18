@@ -85,7 +85,7 @@ de Firebase. Il faut l'autoriser.
 1. En haut à gauche, cliquez sur la **roue dentée ⚙️** → **Paramètres du projet**.
 2. Descendez jusqu'à **« Vos applications »**.
 3. Cliquez sur l'icône **`</>`** (application Web).
-4. Surnom de l'application : `Ma Tribu`. Ne cochez **pas** « Firebase Hosting ».
+4. Surnom de l'application : `MaTribu`. Ne cochez **pas** « Firebase Hosting ».
 5. Cliquez sur **Enregistrer l'application**.
 6. Firebase affiche un bloc de texte qui ressemble à ça :
 
@@ -206,7 +206,7 @@ la requête vient bien de vos sites à vous.
 ### 8.1 — Obtenir la clé reCAPTCHA
 
 1. Allez sur **google.com/recaptcha/admin/create**.
-2. Libellé : `Ma Tribu`.
+2. Libellé : `MaTribu`.
 3. Type : **reCAPTCHA Enterprise**.
 4. Dans **Domaines**, ajoutez les **deux** adresses, une par ligne :
    - `matribu-app.fr`
@@ -324,7 +324,7 @@ la même publication que celles de l'étape 10.
 ### 9.4 — Le piège de l'iPhone
 
 Sur iPhone, ouvrir un lien depuis l'application Mail lance **Safari**, pas
-l'icône Ma Tribu posée sur l'écran d'accueil. Or les deux ont des mémoires
+l'icône MaTribu posée sur l'écran d'accueil. Or les deux ont des mémoires
 séparées : la personne se retrouve connectée dans Safari, et l'icône continue
 de lui demander de se connecter.
 

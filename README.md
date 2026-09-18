@@ -1,4 +1,4 @@
-# 🏡 Ma Tribu — l'organisation de la maison, en famille
+# 🏡 MaTribu — l'organisation de la maison, en famille
 
 > ### 🧪 Version 0.52 — BÊTA
 > L'application est utilisable au quotidien, mais elle est encore jeune : des
@@ -258,8 +258,8 @@ Application pour téléphone (à installer sur l'écran d'accueil) qui rassemble
 **Plus agréable**
 
 - Sur téléphone, l'ouverture est plus légère : un module de connexion par compte
-  Google ou Facebook, dont Ma Tribu ne se sert pas, n'est plus chargé.
-- Les liens vers l'**Instagram** et le **Facebook** de Ma Tribu, en bas de
+  Google ou Facebook, dont MaTribu ne se sert pas, n'est plus chargé.
+- Les liens vers l'**Instagram** et le **Facebook** de MaTribu, en bas de
   *Mon profil*.
 - Une tribu qui n'a plus rien à faire pour sa place de Famille Fondatrice ou de
   Pionnière le voit tout de suite, en attendant la confirmation.
@@ -1047,9 +1047,28 @@ Juste au-dessus de la liste, trois façons de la trier :
 Les accents et les ligatures sont ignorés pour le classement : *Émincé de dinde*
 se range à **E**, *Œufs cocotte* à **O**, *Bœuf bourguignon* à **B**.
 
+### 📊 Les macronutriments (option)
+
+Sur la fiche de chaque recette, MaTribu peut afficher une estimation **par
+portion** : calories, protéines, glucides et lipides. L'option est
+**désactivée par défaut** ; un administrateur l'active dans
+*Administration › ⚙️ Réglages de la famille*, case « Macronutriments ».
+
+- **Les valeurs** viennent de la table officielle **Ciqual 2025 de l'Anses**
+  (licence ouverte Etalab 2.0). Chaque ingrédient des recettes fournies est
+  relié à un aliment de la table, dans le fichier `nutrition.js`.
+- **Les poids** d'une pièce, d'une cuillère ou d'une boîte (« 1 oignon »,
+  « 2 c. à soupe d'huile ») sont des moyennes de cuisine : c'est pourquoi la
+  fiche dit « estimation ».
+- On compte **ce qui se mange** : la chair d'une daurade entière, pas les
+  arêtes ; une petite part de l'huile de friture ; rien pour le laurier.
+- Un ingrédient que la table ne connaît pas (dans une recette de la famille,
+  par exemple) n'est pas deviné : la fiche le nomme (« sans : … »).
+- Rien ne quitte le téléphone : la table est dans l'application.
+
 ### Partager vos recettes avec d'autres familles
 
-Les familles qui utilisent Ma Tribu disposent d'un **catalogue commun**, accessible
+Les familles qui utilisent MaTribu disposent d'un **catalogue commun**, accessible
 depuis *Mes recettes* → **🌍 Recettes partagées par d'autres familles**. Vous
 pouvez y feuilleter les plats publiés, les prévisualiser, et en recopier un chez
 vous d'un geste.
@@ -1093,7 +1112,7 @@ Comme pour l'application *reventes* :
 
 ### ⚠️ L'icône de l'écran d'accueil est un appareil de plus
 
-C'est le piège le plus déroutant, surtout sur iPhone. Quand vous ajoutez Ma Tribu
+C'est le piège le plus déroutant, surtout sur iPhone. Quand vous ajoutez MaTribu
 à l'écran d'accueil, le téléphone en fait une **application séparée**, avec sa
 **propre mémoire**. Elle ne voit pas la session ouverte dans Safari ou Chrome :
 elle affiche donc l'écran de départ et propose de **créer une famille**.
@@ -1105,7 +1124,7 @@ resteraient dans l'autre. Faites plutôt :
    *Mon profil ▸ **📱 Connecter un appareil*** ▸ **Créer mon code d'invitation**.
    **Chacun peut créer le sien**, administrateur ou non — le code ne vaut que
    pour son propre profil et ne donne aucun droit supplémentaire.
-2. Ouvrez Ma Tribu **depuis l'icône** de l'écran d'accueil.
+2. Ouvrez MaTribu **depuis l'icône** de l'écran d'accueil.
 3. **« J'ai reçu une invitation »**, tapez le code, puis votre code à
    4 chiffres habituel.
 

@@ -914,6 +914,13 @@ Formulaires.reglagesFamille = function () {
     '<br><small style="font-weight:400">Le générateur de menus propose en priorité ' +
     "les plats qui utilisent ce qui va bientôt périmer dans la réserve.</small></span></label>" +
 
+    '<label class="champ" style="display:flex;gap:.6rem;align-items:flex-start">' +
+    '<input type="checkbox" name="macros"' + (g.macros === true ? " checked" : "") +
+    ' style="width:auto;margin-top:.25rem"><span style="margin:0">Macronutriments' +
+    '<br><small style="font-weight:400">Sur la fiche de chaque recette : calories, ' +
+    "protéines, glucides et lipides par portion, estimés d'après la table Ciqual de " +
+    "l'Anses. Décoché, rien ne s'affiche.</small></span></label>" +
+
     boutonsFormulaire("Enregistrer", false) + "</form>";
 
   ouvrirFeuille("Réglages de la famille", html, (f) => {
@@ -926,7 +933,8 @@ Formulaires.reglagesFamille = function () {
         convives: n,
         points: !!d.get("points"),
         pointsRepas: Math.max(0, Math.min(200, Number(d.get("pointsRepas")) || 0)),
-        antiGaspi: !!d.get("antiGaspi")
+        antiGaspi: !!d.get("antiGaspi"),
+        macros: !!d.get("macros")
       });
       fermerFeuille();
       sauver("reglages");
@@ -2200,7 +2208,7 @@ Formulaires.invitation = async function (pourId) {
       bp.onclick = () => {
         if (navigator.share) {
           navigator.share({
-            title: "Rejoindre " + etat.famille.nom + " sur Ma Tribu",
+            title: "Rejoindre " + etat.famille.nom + " sur MaTribu",
             text: "Voici ton invitation pour rejoindre notre organisation familiale :",
             url: lien
           }).catch(() => { });
@@ -2255,7 +2263,7 @@ Formulaires.bienvenue = function () {
     '<button class="btn principal" data-role="suivant">Suivant</button></div>';
 
   ui.bienvenueOuverte = true;
-  ouvrirFeuille("Ma Tribu en une minute", html, (feuille) => {
+  ouvrirFeuille("MaTribu en une minute", html, (feuille) => {
     const bande = feuille.querySelector("#carrousel");
     const points = feuille.querySelectorAll("#points-carrousel i");
     const bSuivant = feuille.querySelector('[data-role="suivant"]');
@@ -2334,7 +2342,7 @@ Formulaires.fondatrice = function (feter) {
   const html =
     (feter
       ? '<div class="bandeau info">🎉<div><b>Vous êtes officiellement la ' + nom + " " +
-        numeroFondatrice(p.numero) + " de Ma Tribu !</b><br>" +
+        numeroFondatrice(p.numero) + " de MaTribu !</b><br>" +
         "Ce numéro est le vôtre, et il le restera.</div></div>"
       : "") +
 
@@ -2435,7 +2443,7 @@ Formulaires.demenagement = function () {
   const admin = estAdmin();
 
   const html =
-    '<div class="bandeau info">🚚<div><b>Ma Tribu déménage.</b> La nouvelle adresse ' +
+    '<div class="bandeau info">🚚<div><b>MaTribu déménage.</b> La nouvelle adresse ' +
     "est plus courte et plus facile à dire. Rien n'est perdu : vos points, vos " +
     "tâches, les menus, les courses et les recettes vous suivent.</div></div>" +
 
@@ -2502,7 +2510,7 @@ Formulaires.demenagement = function () {
 
 /* ==================== CONNECTER UN AUTRE APPAREIL ==================== */
 
-/* Le cas typique, et déroutant : on ajoute Ma Tribu à l'écran d'accueil de son
+/* Le cas typique, et déroutant : on ajoute MaTribu à l'écran d'accueil de son
    iPhone, et l'icône ouvre une application vierge qui propose de créer une
    famille. Elle n'a pas accès à la mémoire du navigateur — pour le téléphone,
    c'est une autre application. Il lui faut donc sa propre invitation, comme
@@ -2521,7 +2529,7 @@ Formulaires.monAppareil = function () {
     "<b>Créez le code ci-dessous</b><small>Il vaut pour votre profil " +
     esc(moi.emoji || "🙂") + " " + esc(moi.prenom) + ", et ne sert qu'une fois.</small></div></div>" +
     '<div class="ligne"><span class="etape">2</span><div class="ligne-corps">' +
-    "<b>Ouvrez Ma Tribu depuis l'icône</b><small>Celle de l'écran d'accueil, pas le navigateur.</small></div></div>" +
+    "<b>Ouvrez MaTribu depuis l'icône</b><small>Celle de l'écran d'accueil, pas le navigateur.</small></div></div>" +
     '<div class="ligne"><span class="etape">3</span><div class="ligne-corps">' +
     "<b>« J'ai reçu une invitation »</b><small>Tapez le code, puis votre code à " +
     "4 chiffres habituel.</small></div></div></div>" +
@@ -2798,12 +2806,12 @@ Formulaires.menuProfil = function () {
     "🐞 Signaler un problème / proposer une idée</button>" +
     '<p class="aide centre" style="margin-bottom:.8rem">Version ' + esc(VERSION) +
     " — merci de vos retours !<br>" +
-    /* Les comptes de Ma Tribu sur les réseaux (15/09/2026). De SIMPLES liens,
+    /* Les comptes de MaTribu sur les réseaux (15/09/2026). De SIMPLES liens,
        jamais de bouton ni de widget : un widget chargerait les traceurs de Meta
        dès l'ouverture de la fiche, ce qui demanderait un consentement et
        rendrait la page de confidentialité fausse. Un lien, lui, ne transmet
        rien tant qu'on ne clique pas. */
-    "Suivez Ma Tribu sur " +
+    "Suivez MaTribu sur " +
     '<a href="https://www.instagram.com/matribu.app/" target="_blank" rel="noopener">Instagram</a> et ' +
     '<a href="https://www.facebook.com/people/MaTribu/61593968081741/" target="_blank" rel="noopener">Facebook</a><br>' +
     /* Obligation légale dès lors que d autres familles que la sienne
@@ -2841,7 +2849,7 @@ Formulaires.menuProfil = function () {
 
    Cet appareil seul quitte la tribu : il est retiré comme depuis la liste des
    appareils (registre, listes d'accès, révoqués), puis il oublie tout ce que
-   Ma Tribu garde ici et reçoit une identité neuve. Le membre, ses points et
+   MaTribu garde ici et reçoit une identité neuve. Le membre, ses points et
    ses autres appareils ne changent pas. Jamais le dernier appareil
    administrateur : plus personne ne pourrait gérer la tribu (les règles le
    refusent aussi). */
@@ -3032,6 +3040,28 @@ Formulaires.monProfilSimple = function () {
    cuisine, une main occupée : de grandes lignes, et le bouton « Modifier »
    à la fin, pas au début. */
 
+/* LES MACRONUTRIMENTS D'UNE RECETTE (option, 18/09/2026). Par portion, et
+   marqués « estimation » : les valeurs viennent de la table Ciqual de l'Anses,
+   mais le poids d'une pièce ou d'une cuillère est une moyenne de cuisine. Un
+   ingrédient que la table ne connaît pas est nommé, jamais deviné. */
+function carteMacros(r) {
+  if (!macrosActives()) return "";
+  const m = macrosRecette(r, PORTIONS_BASE);
+  if (!m.comptes) return "";
+  const chiffre = (valeur, unite, nom) =>
+    "<div><b>" + valeur + (unite ? " " + unite : "") + "</b><small>" + nom + "</small></div>";
+  return '<div class="carte" style="margin-bottom:.75rem">' +
+    '<div class="carte-titre">Par portion · estimation</div>' +
+    '<div class="macros">' + chiffre(m.kcal, "", "kcal") + chiffre(m.proteines, "g", "protéines") +
+    chiffre(m.glucides, "g", "glucides") + chiffre(m.lipides, "g", "lipides") + "</div>" +
+    '<p class="aide" style="margin:.55rem 0 0">Pour 1 portion sur ' + m.portions +
+    (m.manquants.length
+      ? " · calculé sur " + m.comptes + " ingrédient" + (m.comptes > 1 ? "s" : "") + " sur " + m.total +
+        " (sans : " + esc(m.manquants.join(", ")) + ")"
+      : "") +
+    " · valeurs de la table Ciqual 2025 de l'Anses.</p></div>";
+}
+
 Formulaires.consulterRecette = function (rid) {
   const r = etat.recettes.find((x) => x.id === rid);
   if (!r) { toast("Recette introuvable"); return; }
@@ -3073,6 +3103,7 @@ Formulaires.consulterRecette = function (rid) {
       "</div>";
   }
 
+  html += carteMacros(r);          // rien si l'option est décochée
   html += '<div class="sous-titre" style="margin-top:.4rem"><h3>Ingrédients</h3>' +
     '<span class="etiquette">' + ings.length + "</span></div>";
   html += ings.length
@@ -3910,7 +3941,7 @@ Formulaires.effacerAppareil = function () {
 
   const html = '<form id="f-effacer">' + detail +
     '<p class="aide">' + cles.length + " élément" + (cles.length > 1 ? "s" : "") +
-    " enregistré" + (cles.length > 1 ? "s" : "") + " par Ma Tribu sur cet appareil. " +
+    " enregistré" + (cles.length > 1 ? "s" : "") + " par MaTribu sur cet appareil. " +
     "La session de connexion, elle, n'est pas retirée : cet appareil gardera son " +
     "accès à la famille et n'aura pas besoin d'une nouvelle invitation.</p>" +
     (partage
@@ -3949,7 +3980,7 @@ Formulaires.effacerAppareil = function () {
 
 /* ==================== RÉCUPÉRER LES DONNÉES DE LA FAMILLE ====================
 
-   Le droit à la portabilité : tout ce que Ma Tribu garde sur la famille, dans
+   Le droit à la portabilité : tout ce que MaTribu garde sur la famille, dans
    un fichier qu'une autre application peut relire. On dit ce qu'il contient,
    et — tout aussi important — ce qu'il ne contient volontairement pas. */
 

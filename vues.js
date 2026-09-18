@@ -106,10 +106,10 @@ function bandeauModeLocal() {
      sans rien dire. */
   if (Store.raison === "stockage") {
     return '<div class="bandeau">🔒<div><b>Le navigateur ne donne pas accès à sa mémoire.</b><br>' +
-      "Ma Tribu ne peut pas retrouver la session de cet appareil. " +
+      "MaTribu ne peut pas retrouver la session de cet appareil. " +
       "<b>Rien n'est perdu</b> : votre famille est intacte sur le serveur.<br><br>" +
-      "<b>À essayer :</b> fermez les autres onglets ou fenêtres de Ma Tribu, puis " +
-      "réessayez. En navigation privée, ouvrez plutôt Ma Tribu dans une fenêtre " +
+      "<b>À essayer :</b> fermez les autres onglets ou fenêtres de MaTribu, puis " +
+      "réessayez. En navigation privée, ouvrez plutôt MaTribu dans une fenêtre " +
       "normale. Si votre téléphone manque de place, libérez-en un peu.<br><br>" +
       "<b>Ne créez pas de famille maintenant</b> : elle serait séparée de la vôtre." +
       '<div class="rangee-btn" style="margin-top:.6rem">' +
@@ -198,7 +198,7 @@ function carteFondatrice() {
     return '<div class="carte"><div class="ligne ligne-maj" data-action="fondatrice">' +
       '<span style="font-size:1.5rem">' + emoji + "</span>" +
       '<div class="ligne-corps"><b>' + nom + " " + numeroFondatrice(p.numero) + "</b>" +
-      "<small>Une des " + PROGRAMME.places + " premières tribus de Ma Tribu. " +
+      "<small>Une des " + PROGRAMME.places + " premières tribus de MaTribu. " +
       "Appuyez pour voir.</small></div></div></div>";
   }
 
@@ -301,7 +301,7 @@ function resteAVoir(n) {
 function bandeauDemenagement() {
   if (!surAncienneAdresse()) return "";
   return '<div class="bandeau ligne-maj" data-action="demenagement">🚚<div>' +
-    "<b>Ma Tribu a une nouvelle adresse : matribu-app.fr</b><br>" +
+    "<b>MaTribu a une nouvelle adresse : matribu-app.fr</b><br>" +
     "Cette adresse-ci continue de fonctionner, rien ne presse. " +
     "Appuyez ici pour savoir comment déménager votre famille.</div></div>";
 }
@@ -331,7 +331,7 @@ Vues.accueil = function () {
      une pression. Se masque définitivement. */
   if (Store.mode === "nuage" && !ouvertDepuisIcone() &&
     !localStorage.getItem("tribu:conseilEcranAccueil")) {
-    h.push('<div class="bandeau info">📱<div><b>Vous comptez ajouter Ma Tribu à votre ' +
+    h.push('<div class="bandeau info">📱<div><b>Vous comptez ajouter MaTribu à votre ' +
       "écran d'accueil ?</b><br>L'icône est une application séparée : il lui faudra " +
       "son propre code d'invitation. Créez-le maintenant, pendant que vous êtes connecté." +
       '<div class="rangee-btn" style="margin-top:.6rem">' +
@@ -1604,6 +1604,9 @@ Vues.admin = function () {
     '<div class="ligne"><span style="font-size:1.3rem">♻️</span>' +
     '<div class="ligne-corps"><b>Anti-gaspillage ' + (g.antiGaspi !== false ? "activé" : "désactivé") +
     "</b><small>Priorité aux plats qui utilisent ce qui va périmer.</small></div></div>" +
+    '<div class="ligne"><span style="font-size:1.3rem">📊</span>' +
+    '<div class="ligne-corps"><b>Macronutriments ' + (g.macros === true ? "affichés" : "masqués") +
+    "</b><small>Calories, protéines, glucides et lipides par portion, sur la fiche des recettes.</small></div></div>" +
     '<button class="btn plein doux" data-action="admin-reglages" style="margin-top:.7rem">Modifier</button>'));
 
   const ob = objectifFamille();
@@ -1665,13 +1668,13 @@ Vues.admin = function () {
      page : récupérer ses données, et les faire effacer. */
   h.push(blocAncre("donnees", "🔒 Vos données",
     '<p class="aide">Ce que la loi vous garantit, à portée de main : récupérer tout ' +
-    "ce que Ma Tribu garde sur votre famille, ou tout effacer pour de bon.</p>" +
+    "ce que MaTribu garde sur votre famille, ou tout effacer pour de bon.</p>" +
     '<button class="btn plein doux" data-action="admin-exporter" style="margin-top:.7rem">' +
     "📦 Télécharger les données de la famille</button>" +
     '<button class="btn plein danger" data-action="admin-supprimer-famille" style="margin-top:.5rem">' +
     "🗑️ Supprimer la famille</button>" +
     '<p class="aide" style="margin-top:.6rem"><a href="confidentialite.html" target="_blank" rel="noopener">' +
-    "Ce que Ma Tribu enregistre, et pourquoi</a></p>" +
+    "Ce que MaTribu enregistre, et pourquoi</a></p>" +
     /* Le seul endroit où le repère se montre encore : c'est lui qu'on demande
        pour retrouver une famille, en cas d'aide ou d'effacement. */
     '<p class="aide" style="margin-top:.4rem">Repère technique de votre tribu : <code>' +
@@ -1717,7 +1720,7 @@ function avecFilet(action) {
    Les familles arrivent par les publications Instagram et Facebook : le lien
    s'ouvre alors dans le navigateur de l'application, qui a sa PROPRE mémoire,
    séparée de Safari. Une tribu créée là y reste enfermée — ouverte ensuite
-   dans Safari ou depuis une icône, Ma Tribu ne la connaît pas — et l'on ne
+   dans Safari ou depuis une icône, MaTribu ne la connaît pas — et l'on ne
    peut pas y ajouter l'application à l'écran d'accueil. Une ligne discrète le
    dit, sur iPhone et iPad seulement (choix d'Amandine). Rien sinon. */
 function conseilNavigateurIntegre() {
@@ -1728,7 +1731,7 @@ function conseilNavigateurIntegre() {
     : /FBAN|FBAV|FB_IAB/.test(ua) ? "de Facebook" : "";
   if (!appli) return "";
   return '<p class="aide centre" style="margin:0 0 1rem">📱 Vous êtes dans le navigateur ' + appli +
-    ". Pour installer Ma Tribu sur votre écran d'accueil et la retrouver ensuite, " +
+    ". Pour installer MaTribu sur votre écran d'accueil et la retrouver ensuite, " +
     "ouvrez-la dans Safari : « ⋯ » en haut à droite, puis « Ouvrir dans Safari » " +
     "ou « Ouvrir dans le navigateur ».</p>";
 }
@@ -1768,7 +1771,7 @@ const Connexion = {
 
   entete(sousTitre) {
     return '<div class="logo-tribu">🏡</div>' +
-      '<h1>Ma Tribu<span class="badge-beta">bêta</span></h1>' +
+      '<h1>MaTribu<span class="badge-beta">bêta</span></h1>' +
       '<p class="intro">' + sousTitre + "</p>";
   },
 
@@ -1787,7 +1790,7 @@ const Connexion = {
     const iconeMaison = !derniere && ouvertDepuisIcone();
     const avertissement = iconeMaison
       ? '<div class="bandeau" style="margin-bottom:1.2rem">📱<div>' +
-      "<b>Vous ouvrez Ma Tribu depuis l'icône de l'écran d'accueil.</b><br>" +
+      "<b>Vous ouvrez MaTribu depuis l'icône de l'écran d'accueil.</b><br>" +
       "Le téléphone la traite comme une application séparée : elle ne connaît pas " +
       "la famille déjà ouverte dans votre navigateur.<br><br>" +
       "<b>Ne créez pas une deuxième famille</b> — elle serait vide. " +
@@ -1801,7 +1804,7 @@ const Connexion = {
        qui arrive ici par un vieux favori doit savoir où est passée l'app. */
     const demenagement = surAncienneAdresse()
       ? '<div class="bandeau" style="margin-bottom:1.2rem">🚚<div>' +
-      "<b>Ma Tribu a une nouvelle adresse : matribu-app.fr</b><br>" +
+      "<b>MaTribu a une nouvelle adresse : matribu-app.fr</b><br>" +
       "Cette adresse-ci reste ouverte le temps que chacun déménage. " +
       "Si votre famille est déjà ici, <b>connectez-vous d'abord ici</b> : " +
       "c'est de cet écran que partent les codes pour la nouvelle adresse." +
@@ -1893,7 +1896,7 @@ const Connexion = {
   stockageRefuse(d) {
     return this.entete("Cet appareil ne peut pas garder votre tribu en mémoire.") +
       '<div class="bandeau" style="margin-bottom:1.2rem">🔒<div>' +
-      "<b>Le navigateur refuse que Ma Tribu enregistre quoi que ce soit ici.</b><br>" +
+      "<b>Le navigateur refuse que MaTribu enregistre quoi que ce soit ici.</b><br>" +
       "Sans cette mémoire, l'application ne vous reconnaîtrait pas à la prochaine " +
       "ouverture : votre tribu serait perdue pour vous. <b>Rien n'a été enregistré.</b>" +
       "</div></div>" +
@@ -1983,7 +1986,7 @@ const Connexion = {
       '<div class="bandeau info">💌<div><b>Un lien vient de partir vers ' + esc(d.email) + ".</b><br>" +
       "Ouvrez-le <b>dans ce même navigateur</b>, sur cet appareil. Ouvert ailleurs, " +
       "l’application vous redemandera votre adresse. Il n’est valable qu’une fois.</div></div>" +
-      '<div class="bandeau">📱<div><b>Vous utilisez l’icône Ma Tribu ?</b><br>' +
+      '<div class="bandeau">📱<div><b>Vous utilisez l’icône MaTribu ?</b><br>' +
       "Sur iPhone, le lien ouvrira <b>Safari</b>, pas l’icône : les deux ont des mémoires " +
       "séparées. Une fois connecté dans Safari, l’application vous proposera un code " +
       "court à recopier dans l’icône.</div></div>" +
@@ -2044,7 +2047,7 @@ const Connexion = {
          l'administrateur de la famille, que la personne n'a pas « demandé ». */
       ailleurs: "Ce navigateur ne connaît pas encore votre adresse : le lien vous a peut-être " +
         "été envoyé par votre famille, ou il s’est ouvert dans une autre application " +
-        "(messagerie, fenêtre privée, icône Ma Tribu)."
+        "(messagerie, fenêtre privée, icône MaTribu)."
     };
     return this.entete("Dernière étape : votre adresse e-mail") +
       err +
@@ -2208,7 +2211,7 @@ const Connexion = {
         location.href = adresseNette();
       };
       el.querySelector("#b-repartir").onclick = async () => {
-        const ok = await confirmer("Ma Tribu oubliera tout ce qu’elle garde sur cet appareil, qui " +
+        const ok = await confirmer("MaTribu oubliera tout ce qu’elle garde sur cet appareil, qui " +
           "recevra une nouvelle identité. Il pourra ensuite rejoindre la tribu avec une nouvelle " +
           "invitation, ou le lien e-mail si votre adresse est enregistrée.",
           { titre: "Repartir de zéro", ok: "Repartir de zéro", danger: true });

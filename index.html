@@ -21,7 +21,7 @@
      Pas de « upgrade-insecure-requests » : il casserait l'emulateur local.
      Verification : ouvrir la page avec ?csp=1 — un bandeau liste ce qui a ete bloque. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NB2+EMYdJJvnSWtyP9BOHFQdSebD/UyY124OGqwzYl8=' https://www.gstatic.com/firebasejs/ https://www.gstatic.com/recaptcha/ https://www.google.com/recaptcha/; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://content-firebaseappcheck.googleapis.com https://www.google.com/recaptcha/ http://127.0.0.1:9099 http://127.0.0.1:8085; frame-src https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
-<title>Ma Tribu</title>
+<title>MaTribu</title>
 <meta name="description" content="Organisation familiale : taches menageres, courses, menus de la semaine, pense-betes et points a echanger contre des cadeaux.">
 <meta name="theme-color" content="#4E7A6A">
 
@@ -31,25 +31,25 @@
      Les adresses doivent etre ABSOLUES : les reseaux lisent la page depuis
      leurs propres serveurs, un chemin relatif ne leur dit rien. -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Ma Tribu">
+<meta property="og:site_name" content="MaTribu">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:url" content="https://matribu-app.fr/">
-<meta property="og:title" content="Ma Tribu — La maison, c'est l'affaire de tous">
+<meta property="og:title" content="MaTribu — La maison, c'est l'affaire de tous">
 <meta property="og:description" content="Tâches, courses, menus de la semaine et 737 recettes, partagés entre tous. Chacun sait ce qu'il a à faire, et les enfants gagnent des points.">
-<meta property="og:image" content="https://matribu-app.fr/partage.png?v=2">
+<meta property="og:image" content="https://matribu-app.fr/partage.png?v=3">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Ma Tribu : tâches, courses, menus, 737 recettes et points, à partager en famille.">
+<meta property="og:image:alt" content="MaTribu : tâches, courses, menus, 737 recettes et points, à partager en famille.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Ma Tribu — La maison, c'est l'affaire de tous">
+<meta name="twitter:title" content="MaTribu — La maison, c'est l'affaire de tous">
 <meta name="twitter:description" content="Tâches, courses, menus de la semaine et 737 recettes, partagés entre tous.">
-<meta name="twitter:image" content="https://matribu-app.fr/partage.png?v=2">
+<meta name="twitter:image" content="https://matribu-app.fr/partage.png?v=3">
 
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="styles.css?v=13">
+<link rel="stylesheet" href="styles.css?v=15">
 
 <!-- Demarrage : les modules Firebase viennent de gstatic, et app.js ne les
      demande qu'une fois les 880 Ko de l'application analyses — soit environ
@@ -155,7 +155,7 @@ setTimeout(function () {
 <div class="connexion" id="ecran-connexion">
   <div id="chargement">
     <div class="logo-tribu">🏡</div>
-    <h1>Ma Tribu</h1>
+    <h1>MaTribu</h1>
     <p class="intro">Chargement…</p>
   </div>
 </div>
@@ -209,8 +209,9 @@ setTimeout(function () {
      recettes.js et ses 343 Ko retardaient a eux seuls l'arrivee de app.js,
      donc l'ouverture de l'application (mesure du 12/09/2026). -->
 <script src="recettes.js?v=5" defer></script>
-<script src="vues.js?v=17" defer></script>
-<script src="formulaires.js?v=12" defer></script>
-<script src="app.js?v=19" defer></script>
+<script src="nutrition.js?v=1" defer></script>
+<script src="vues.js?v=19" defer></script>
+<script src="formulaires.js?v=14" defer></script>
+<script src="app.js?v=21" defer></script>
 </body>
 </html>

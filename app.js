@@ -93,7 +93,7 @@ function estAbsence(c) { return !!(c && c.absent); }
 
 /* Réglages de la famille et leurs valeurs par défaut. Déclarés ici, avec les
    autres constantes : `etatVide()` s'en sert dès le chargement du fichier. */
-const REGLAGES_DEFAUT = { convives: 4, points: true, pointsRepas: 15, antiGaspi: true };
+const REGLAGES_DEFAUT = { convives: 4, points: true, pointsRepas: 15, antiGaspi: true, macros: false };
 
 /* Les palettes de couleurs (styles.css). Choisies PAR APPAREIL, comme le mode
    clair/sombre : chacun la sienne, sans droits particuliers — un réglage rangé
@@ -153,7 +153,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.52 bêta";
+const VERSION = "0.53 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -287,6 +287,15 @@ const CALENDRIER = {
    de ce que la famille peut voir et utiliser. */
 const ACTUS = [
   {
+    version: "0.53",
+    date: "2026-09-18",
+    titre: "Les macronutriments de vos recettes",
+    points: [
+      "Nouvelle option : sur la fiche de chaque recette, les <b>calories, protéines, glucides et lipides par portion</b>, estimés d'après la table officielle <b>Ciqual de l'Anses</b>.",
+      "Elle est désactivée par défaut : un administrateur l'active dans <i>Administration › Réglages de la famille</i>."
+    ]
+  },
+  {
     version: "0.52",
     date: "2026-09-16",
     titre: "Deux fois plus de plats, des menus moins répétitifs",
@@ -302,9 +311,9 @@ const ACTUS = [
   {
     version: "0.51",
     date: "2026-09-15",
-    titre: "Ma Tribu sur Instagram et Facebook",
+    titre: "MaTribu sur Instagram et Facebook",
     points: [
-      "Les liens vers l'<b>Instagram</b> et le <b>Facebook</b> de Ma Tribu, en bas de <i>Mon profil</i>."
+      "Les liens vers l'<b>Instagram</b> et le <b>Facebook</b> de MaTribu, en bas de <i>Mon profil</i>."
     ]
   }
 ];
@@ -1773,7 +1782,7 @@ const Store = {
       /* LA CONNEXION SANS LE MODULE « GOOGLE / FACEBOOK » (15/09/2026).
 
          getAuth() embarque de quoi se connecter avec un compte Google ou
-         Facebook, par fenetre ou redirection — ce que Ma Tribu ne fait pas :
+         Facebook, par fenetre ou redirection — ce que MaTribu ne fait pas :
          session anonyme de l'appareil et lien e-mail, rien d'autre. Sur TOUT
          telephone et sur Safari, ce module se charge pourtant d'office a
          chaque ouverture : deux scripts de apis.google.com et une fenetre
@@ -2910,7 +2919,7 @@ const Store = {
   },
 
   /* « Repartir de zéro » (étape 3) et « Quitter la tribu » (étape 4) : tout ce
-     que Ma Tribu garde dans ce navigateur est effacé, et la session de
+     que MaTribu garde dans ce navigateur est effacé, et la session de
      l'appareil est supprimée (à défaut, fermée). Au prochain démarrage
      l'appareil reçoit une identité NEUVE : c'est elle qu'une nouvelle
      invitation ou le lien e-mail pourront rattacher, l'ancienne étant
@@ -3816,7 +3825,7 @@ function donneesExportables() {
   const sortie = {
     format: "ma-tribu-export",
     versionFormat: 1,
-    application: "Ma Tribu " + VERSION,
+    application: "MaTribu " + VERSION,
     exporteLe: new Date().toISOString(),
     exportePar: moi ? moi.prenom : null,
     aSavoir: "Les codes à 4 chiffres, les identifiants d'appareils et les index " +
@@ -7068,7 +7077,7 @@ function rendre() {
     (maj.length ? '<span class="point-maj"></span>' : "");
   $("#btn-profil").title = maj.length
     ? pluriel(maj.length, "mise à jour disponible", "mises à jour disponibles") : "Mon profil";
-  $("#titre-vue").textContent = TITRES[v] ? TITRES[v][0] : "Ma Tribu";
+  $("#titre-vue").textContent = TITRES[v] ? TITRES[v][0] : "MaTribu";
   $("#sous-titre-vue").textContent = v === "accueil" ? etat.famille.nom : (TITRES[v] ? TITRES[v][1] : "");
   /* L'icône « Quoi de neuf » de l'en-tête : visible partout, avec sa pastille
      tant qu'il reste quelque chose à lire — une nouvelle version, ou une
@@ -7218,6 +7227,14 @@ function reglagesFamille() {
    à l'identique si on le rallume. */
 function pointsActifs() {
   return reglagesFamille().points !== false;
+}
+
+/* L'option « Macronutriments » (18/09/2026, demandée par Amandine) : les
+   calories, protéines, glucides et lipides par portion sur la fiche d'une
+   recette, estimés d'après la table Ciqual (nutrition.js). Décochée par
+   défaut ; sans nutrition.js (fichier absent du dépôt), elle ne montre rien. */
+function macrosActives() {
+  return reglagesFamille().macros === true && typeof macrosRecette === "function";
 }
 function nbConvives() {
   const n = Number(reglagesFamille().convives);

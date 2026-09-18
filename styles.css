@@ -1,4 +1,4 @@
-/* Ma Tribu — feuille de style unique.
+/* MaTribu — feuille de style unique.
    Palette chaleureuse : creme + sauge + terracotta, mode sombre inclus. */
 
 :root{
@@ -510,6 +510,11 @@ input[type=checkbox]{min-width:18px;min-height:18px;accent-color:var(--accent);}
    — la fiche d'une recette — les étiquettes se touchaient, et « centrer »
    n'avait aucun effet faute de rangée souple. */
 .etiquettes{display:flex;flex-wrap:wrap;gap:.3rem;}
+/* Les macronutriments d'une recette (option du 18/09/2026) : quatre chiffres
+   côte à côte, le nombre en gras, son nom dessous. */
+.macros{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.4rem;text-align:center;}
+.macros b{display:block;font-size:1.05rem;font-weight:700;color:var(--ink);}
+.macros small{display:block;font-size:.72rem;color:var(--ink-muted);}
 
 .etiquette{
   display:inline-flex;align-items:center;gap:.25rem;
