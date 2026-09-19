@@ -207,7 +207,9 @@ function carteFondatrice() {
     return '<div class="carte"><div class="ligne ligne-maj" data-action="fondatrice">' +
       '<span style="font-size:1.5rem">' + emoji + "</span>" +
       '<div class="ligne-corps"><b>' + nom + " " + numeroFondatrice(p.numero) + "</b>" +
-      "<small>Une des " + PROGRAMME.places + " premières tribus de MaTribu. " +
+      /* Les pionnières ne comptent pas dans les 100 (19/09/2026). */
+      "<small>" + (pionniere ? "Là avant le lancement : une des tribus pionnières de MaTribu. "
+        : "Une des " + PROGRAMME.places + " Familles Fondatrices de MaTribu. ") +
       "Appuyez pour voir.</small></div></div></div>";
   }
 

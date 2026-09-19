@@ -153,7 +153,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.58 bêta";
+const VERSION = "0.59 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -3042,7 +3042,7 @@ const Store = {
     if (this.mode !== "nuage") return null;
     try {
       const fs = this._fs;
-      const r = await fs.getDocs(fs.query(fs.collection(this._db, "fondateurs"), fs.limit(100)));
+      const r = await fs.getDocs(fs.query(fs.collection(this._db, "fondateurs"), fs.limit(PROGRAMME.numeros)));
       const places = [];
       r.forEach((s) => places.push(this._placeLue(s.id, s.data())));
       return places;
@@ -4639,7 +4639,8 @@ async function menageInvitations(code) {
    voler le numero d'une autre tribu, ni en prendre deux. La liste complete se
    relit dans la console Firebase. */
 const PROGRAMME = {
-  places: 100,
+  places: 100,           // places de Famille FONDATRICE : les pionnieres n'y comptent pas (19/09/2026)
+  numeros: 110,          // numeros possibles : 100 fondatrices + les pionnieres (7), avec une marge
   jours: 7,              // delai pour valider sa place
   membres: 2,            // au moins deux personnes dans la tribu
   validees: 5,           // au moins cinq taches ou repas valides
@@ -4726,6 +4727,12 @@ function avancementFondatrice() {
 function placePerimee(p) {
   return !!(p && p.statut !== "validee" && p.reserveeLe
     && Date.now() > p.reserveeLe + PROGRAMME.jours * 86400000);
+}
+/* Les places de Famille Fondatrice encore tenues : ni les pionnieres (hors des
+   100 depuis le 19/09/2026), ni une place oubliee depuis plus de 7 jours, qui
+   retourne au pot. */
+function fondatricesEnPlace(places) {
+  return (places || []).filter((p) => p.genre === "fondatrice" && !placePerimee(p)).length;
 }
 
 /* Inscrit la place dans la tribu : en memoire ET dans son document. */
@@ -4859,8 +4866,15 @@ async function reserverUnePlace(code) {
   const occupe = {};
   prises.forEach((p) => { occupe[String(p.numero)] = p; });
   const genre = genreDeLaTribu();
+  /* LES PIONNIERES HORS DES 100 (19/09/2026, demande d'Amandine) : les 100
+     places sont celles des Familles Fondatrices. Une pionniere recoit toujours
+     un numero ; une fondatrice, seulement s'il reste une des 100 places. */
+  if (genre === "fondatrice" && fondatricesEnPlace(prises) >= PROGRAMME.places) {
+    await oublierPlace();
+    return;
+  }
 
-  for (let n = 1; n <= PROGRAMME.places; n++) {
+  for (let n = 1; n <= PROGRAMME.numeros; n++) {
     const deja = occupe[String(n)];
     if (deja) {
       /* Le menage : une place oubliee depuis plus de 7 jours redevient
@@ -4883,7 +4897,7 @@ async function reserverUnePlace(code) {
     rendre();
     return;
   }
-  /* Les 100 places sont prises : on n'annonce rien chez soi. */
+  /* Tous les numeros sont pris : on n'annonce rien chez soi. */
   await oublierPlace();
 }
 

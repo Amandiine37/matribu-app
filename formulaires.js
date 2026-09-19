@@ -2738,10 +2738,13 @@ Formulaires.fondatrice = function (feter) {
     Store.placesFondatrices().then((places) => {
       const zone = f.querySelector("#places-restantes");
       if (!zone || !places) return;
-      const reste = Math.max(0, PROGRAMME.places - places.length);
+      /* Seules les Familles Fondatrices comptent : les pionnières sont hors
+         des 100 (19/09/2026). */
+      const reste = Math.max(0, PROGRAMME.places - fondatricesEnPlace(places));
       zone.textContent = reste
-        ? reste + (reste > 1 ? " places encore libres sur " : " place encore libre sur ") + PROGRAMME.places
-        : "Les " + PROGRAMME.places + " places sont prises.";
+        ? reste + (reste > 1 ? " places de Famille Fondatrice encore libres sur "
+          : " place de Famille Fondatrice encore libre sur ") + PROGRAMME.places
+        : "Les " + PROGRAMME.places + " places de Famille Fondatrice sont prises.";
     }).catch(() => { });
   });
 };

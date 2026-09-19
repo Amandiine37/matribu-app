@@ -283,7 +283,7 @@ Application pour téléphone (à installer sur l'écran d'accueil) qui rassemble
   profil.
 - **Familles Fondatrices** : les 100 premières tribus qui utilisent vraiment
   l'application reçoivent un badge et un numéro permanents ; celles qui étaient
-  là avant sont Pionnières.
+  là avant sont Pionnières, et ne comptent pas dans les 100.
 - **Beaucoup plus léger pour le serveur** : une copie de la tribu est gardée sur
   le téléphone (ouverture immédiate, utilisable hors ligne), et l'application ne
   redemande que ce qui a changé.
