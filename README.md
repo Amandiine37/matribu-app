@@ -341,6 +341,10 @@ et envoyez-lui une invitation : il garde ses points et son historique.
 ### Les tâches
 
 - Chaque tâche a une **fréquence** : chaque jour, chaque semaine ou chaque mois.
+  Le **rythme**, juste en dessous, l'espace : tous les 2 jours, toutes les
+  2 semaines, tous les 3 mois, une fois par an… et « À partir de » dit quand
+  elle commence. Les autres fois, elle n'apparaît pas ; l'onglet Tâches dit
+  quand elle revient, dans « ⏭️ Plus tard ».
 - On coche les personnes qui peuvent s'en occuper. Avec l'option **« Chacun son
   tour »**, la personne assignée **change automatiquement** à chaque période :
   la semaine 1 c'est Paul, la semaine 2 c'est Léa, etc. Rien à gérer à la main.
@@ -348,6 +352,12 @@ et envoyez-lui une invitation : il garde ses points et son historique.
 - La personne assignée appuie sur **« C'est fait »** → la tâche passe
   **« à valider »** → un administrateur valide → les **points sont crédités**.
 - Une tâche non validée ne rapporte rien : c'est le garde-fou.
+- **Pour le frigo** : le bouton « 🖨️ Post-it pour le frigo » de l'onglet
+  Tâches imprime la semaine, **un post-it par personne** avec une case à
+  cocher au crayon pour chaque passage (cette semaine : ce qui reste à faire ;
+  ou la semaine prochaine). Ce que personne n'a encore pris va sur « À se
+  partager ». Pour garder les couleurs, cochez « Graphiques d'arrière-plan »
+  dans les réglages d'impression.
 
 ### L'agenda partagé et les rappels
 
@@ -501,6 +511,73 @@ dans l'unité de la réserve :
 Vous tapez ce que vous avez réellement sorti, et c'est retiré. Laissé vide,
 rien n'est touché. Le même champ apparaît au retour du magasin, dans l'autre
 sens : *acheté 2 paquet(s) • en réserve : 1 kg* → vous indiquez **1 kg**.
+
+### 📅 Le mode planning (option)
+
+Par défaut, une tâche revient chaque jour, chaque semaine ou chaque mois. Le
+**mode planning** permet de choisir **les jours** : « les poubelles le mardi
+et le vendredi », « l'aspirateur le samedi ». Un administrateur l'active dans
+*Administration › ⚙️ Réglages de la famille*, case « Mode planning ».
+
+- Dans une tâche, « À refaire » propose alors **Certains jours**, avec les
+  sept jours à cocher. Le rythme permet aussi **une semaine sur 2** (les
+  poubelles de tri, par exemple).
+- **Chaque jour coché est une tâche à part** : elle apparaît ce jour-là,
+  se coche, se valide et rapporte ses points ce jour-là, comme une tâche
+  quotidienne.
+- Avec **Chacun son tour**, la personne change **à chaque passage** : mardi
+  Léo, vendredi Emma, mardi suivant la personne d'après.
+- L'onglet Tâches montre **la semaine jour par jour** (« 📅 La semaine ») :
+  qui fait quoi, et, pour les jours passés, ce qui a été fait.
+- Décocher le mode ne casse rien : les tâches déjà réglées sur des jours
+  les gardent ; on cesse seulement d'en proposer.
+
+#### 🏠 Qui est là, et quand
+
+En mode planning, la fiche de chaque membre propose le bouton
+**« 🏠 Présence de … »** : dans *Administration › Membres de la famille*,
+touchez ✏️ à côté du prénom ; le bouton est tout en bas de la fiche. Il
+n'apparaît que si le mode planning est coché. On y note :
+
+- **les jours où la personne est là** (rien de coché : tous les jours) ;
+- **la garde alternée** : une semaine sur deux à la maison, avec le jour où
+  l'enfant change de maison (le vendredi, par exemple) ;
+- **les absences** : colonie, stage, vacances chez les grands-parents.
+
+Quand la personne dont c'est le tour n'est pas là, la tâche reste
+**« à attribuer »** : elle apparaît dans « ✅ À valider » sur l'accueil des
+parents, avec un bouton **Attribuer**. On choisit qui s'en occupe, pour ce
+jour-là ou pour tous les passages à attribuer de la semaine. Décocher le
+mode planning met fin à ces absences : tout le monde est de nouveau là.
+
+#### ⚖️ La répartition automatique
+
+En mode planning, une tâche peut être **répartie automatiquement** : dans la
+fiche de la tâche (bouton ✏️), cochez « ⚖️ Répartir automatiquement », à la
+place de « Chacun son tour ». Chaque semaine, MaTribu confie alors chacun de
+ses passages à une personne présente. Entre plusieurs personnes, elle
+choisit, dans cet ordre :
+
+1. celle qui a **le moins de tâches ce jour-là** (rien d'empilé le même jour) ;
+2. celle qui a **le moins à faire dans la semaine**, toutes tâches comprises
+   (en points, ou en nombre de tâches quand les points sont désactivés) ;
+3. celle qui a eu **le moins souvent cette tâche** dans la semaine, pour varier ;
+4. celle qui a **gagné le moins de points les 4 semaines d'avant** ;
+5. à égalité parfaite, un ordre qui change chaque semaine.
+
+- **Chaque choix dit pourquoi**, sous la tâche et dans « 📅 La semaine », où
+  la ligne « ⚖️ Répartition de la semaine » montre la charge de chacun.
+- **Un parent change un passage d'un geste** : il touche le prénom dans
+  « 📅 La semaine » (ou « changer » sous la tâche). « ↺ Laisser l'appli
+  choisir » défait ce choix.
+- Une tâche **chaque semaine** reçoit un **jour conseillé** parmi les jours
+  à venir, le moins chargé pour la personne.
+- Si personne n'est là, le passage reste **« à attribuer »**, comme pour le tour.
+- Cochée en cours de semaine, la case ne réécrit pas les jours passés : ils
+  gardent le tour qu'ils avaient.
+- Le planning ne dépend que de ce que tous les téléphones partagent : tout
+  le monde voit le même, et il ne bouge pas quand les tâches se font. Les
+  tâches « chaque mois » gardent le tour habituel.
 
 ### Les points et les cadeaux
 

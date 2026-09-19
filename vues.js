@@ -15,6 +15,12 @@ function nomDe(idm) {
   const m = membre(idm);
   return m ? m.prenom : "quelqu'un";
 }
+/* Pourquoi un passage attend un parent (mode planning) : « Léo n'est pas
+   là », ou, pour une tâche répartie dont aucun participant n'est présent,
+   « personne n'est là ». */
+function pasLa(absent) {
+  return absent === PERSONNE_LA ? "personne n'est là" : nomDe(absent) + " n'est pas là";
+}
 /* Ancre facultative sur une carte : sert à sauter directement à une section
    de l'administration, qui compte maintenant dix cartes. */
 function blocAncre(ancre, titre, contenu, lienTexte, lienAction, lienVue) {
@@ -55,9 +61,12 @@ function carteAjoutSaisie(idForm, idChamp, titre, exemple, aide) {
 function rienDu(emoji, texte) {
   return '<div class="vide"><span class="emoji">' + emoji + "</span>" + texte + "</div>";
 }
-function etiquetteFrequence(f) {
-  const n = f === "jour" ? "Chaque jour" : f === "mois" ? "Chaque mois" : "Chaque semaine";
-  return '<span class="etiquette">' + n + "</span>";
+function etiquetteFrequence(f, t) {
+  /* Mode planning : les jours eux-mêmes, en abrégé (« mar. · ven. ») ; tous
+     les N : le rythme (« Toutes les 2 semaines »). */
+  const n = f === "jours" ? texteFrequence(t) : libelleRythme(f, rythmeDe(t));
+  return '<span class="etiquette">' + n + "</span>" +
+    (estRepartie(t) ? '<span class="etiquette">⚖️ répartie</span>' : "");
 }
 
 const Vues = {};
@@ -411,6 +420,18 @@ Vues.accueil = function () {
           '<button class="btn mini principal" data-action="tache-valider" data-id="' + x.t.id + '">Valider</button>' +
           "</div>");
       });
+      /* Mode planning, brique 2 : les passages dont la personne du tour n'est
+         pas là. Eux aussi attendent la réponse d'un parent. */
+      passagesAAttribuer().forEach((x) => {
+        const duJour = x.t.frequence === "jour" || x.t.frequence === "jours";
+        const quand = !duJour ? libellePeriode(x.t.frequence)
+          : isoDate(x.d) === isoDate(new Date()) ? "aujourd'hui" : JOURS[numJour(x.d) - 1] + " " + x.d.getDate();
+        attente.push('<div class="ligne"><span style="font-size:1.3rem">🏠</span>' +
+          '<div class="ligne-corps"><b>' + esc((x.t.emoji || "🧹") + " " + x.t.nom) + "</b><small>" +
+          esc("À attribuer · " + quand + " · " + pasLa(x.absent)) + "</small></div>" +
+          '<button class="btn mini principal" data-action="tache-attribuer" data-id="' + x.t.id +
+          '" data-date="' + isoDate(x.d) + '">Attribuer</button></div>');
+      });
     }
     /* Les repas cuisinés attendent la même validation que les tâches : sans
        ce rappel, les points de la cuisine ne tomberaient jamais. */
@@ -645,8 +666,17 @@ function ligneTache(x, compact) {
   const jeSuisAssigne = x.assigne === moi.id;
   const boutons = [];
 
+  /* Mode planning, brique 2 : la personne du tour n'est pas là et aucun parent
+     n'a encore choisi — la tâche attend qu'on l'attribue. Pas de « Fait » :
+     les points iraient à celui qui coche. */
+  const absent = et.statut === "afaire" ? absentDuTour(t, x.d || new Date()) : null;
   if (et.statut === "afaire") {
-    if (jeSuisAssigne || estAdmin()) {
+    if (absent) {
+      if (estAdmin()) {
+        boutons.push('<button class="btn mini principal" data-action="tache-attribuer" data-id="' + t.id +
+          '" data-date="' + isoDate(x.d || new Date()) + '">Attribuer</button>');
+      }
+    } else if (jeSuisAssigne || estAdmin()) {
       boutons.push('<button class="btn mini principal" data-action="tache-fait" data-id="' + t.id + '">Fait</button>');
     }
   } else if (et.statut === "fait") {
@@ -658,29 +688,148 @@ function ligneTache(x, compact) {
     }
   }
 
-  let statutHtml = "";
+  let statutHtml = absent ? '<span class="etiquette chaud">à attribuer</span>' : "";
   if (et.statut === "fait") statutHtml = '<span class="etiquette chaud">à valider</span>';
   else if (et.statut === "valide") statutHtml = '<span class="etiquette vert">✓ validée</span>';
 
-  const qui = membre(x.assigne);
+  /* Faite ou validée : on nomme qui l'a faite (18/09/2026). Après « Passer au
+     suivant », le tour recalculé n'est plus la personne qui a eu les points. */
+  const qui = membre((et.statut === "fait" || et.statut === "valide") && et.parQui ? et.parQui : x.assigne);
   /* Sans les points, une tâche n'annonce plus un gain : juste quand elle
      revient, et qui s'en occupe. */
   const gain = pointsActifs() ? "+" + t.points + " pts" : "";
   const sous = compact
     ? (gain ? gain + " • " : "") + libellePeriode(t.frequence)
-    : (qui ? qui.prenom : "personne d'assigné") + (gain ? " • " + gain : "");
+    : (qui ? qui.prenom : absent ? pasLa(absent) : "personne d'assigné") +
+      (gain ? " • " + gain : "");
+  /* Brique 3 : une tâche répartie dit pourquoi cette personne — et un parent
+     la change d'un geste. */
+  const rep = !compact && et.statut === "afaire" && !absent ? passageReparti(t, x.d || new Date()) : null;
+  const pourquoi = rep && rep.qui
+    ? "<small>" + esc("⚖️ " + raisonRepartition(rep.raison) + (rep.jour == null ? ""
+        : " · jour conseillé : " + (rep.jour === numJour(new Date()) - 1 ? "aujourd'hui" : JOURS[rep.jour]))) +
+      (estAdmin() ? ' · <button class="lien" style="font-size:inherit" data-action="tache-attribuer" data-id="' +
+        esc(t.id) + '" data-date="' + isoDate(x.d || new Date()) + '">changer</button>' : "") + "</small>"
+    : "";
 
   return '<div class="ligne' + (et.statut === "valide" ? " fait" : "") + '">' +
     (compact ? "" : avatarDe(qui)) +
     '<div class="ligne-corps"><b>' + esc((t.emoji || "🧹") + " " + t.nom) + "</b>" +
-    "<small>" + esc(sous) + "</small>" +
-    (statutHtml || (!compact ? etiquetteFrequence(t.frequence) : "")
-      ? '<span class="etiquettes">' + statutHtml + (!compact ? etiquetteFrequence(t.frequence) : "") + "</span>"
+    "<small>" + esc(sous) + "</small>" + pourquoi +
+    (statutHtml || (!compact ? etiquetteFrequence(t.frequence, t) : "")
+      ? '<span class="etiquettes">' + statutHtml + (!compact ? etiquetteFrequence(t.frequence, t) : "") + "</span>"
       : "") +
     "</div>" +
     (estAdmin() && !compact
       ? '<button class="btn mini icone" data-action="tache-editer" data-id="' + t.id + '">✏️</button>' : "") +
     boutons.join("") + "</div>";
+}
+
+/* LA SEMAINE, EN MODE PLANNING (18/09/2026). Les tâches « certains jours »
+   de la semaine en cours, jour par jour, avec qui s'en occupe ; les jours
+   passés disent ce qui a été fait. Rien s'il n'y a aucune tâche de ce genre
+   (mode coché ou non). « Les miennes » ne garde que ses propres passages. */
+/* Le planning d'une tâche ne remonte pas avant le jour où ses jours ont été
+   choisis : sinon lundi et mardi s'afficheraient « pas faite » pour une
+   tâche créée le mercredi. */
+function debutPlanning(t) {
+  return t.joursDepuis || String(t.creeLe || "").slice(0, 10);
+}
+/* LA CHARGE DE LA SEMAINE (brique 3) : ce que le planning donne à chacun,
+   toutes tâches comprises sauf « chaque mois » — ce qui est prévu, pas ce
+   qui a été coché. La preuve que personne n'est oublié ni surchargé. */
+function ligneCharges(lundi) {
+  const plan = planDeLaSemaine(lundi);
+  const pts = pointsActifs();
+  const gens = etat.membres.filter((m) => plan.charge[m.id] ||
+    etat.taches.some((t) => estRepartie(t) && participantsValides(t).indexOf(m.id) !== -1));
+  if (!gens.length) return "";
+  return '<div class="ligne"><span style="font-size:1.3rem">⚖️</span><div class="ligne-corps">' +
+    "<b>Répartition de la semaine</b><small>" +
+    esc(gens.map((m) => m.prenom + " " + (pts ? (plan.charge[m.id] || 0) + " pts"
+      : pluriel(plan.charge[m.id] || 0, "tâche", "tâches"))).join(" · ")) +
+    "</small></div></div>";
+}
+function blocSemaineTaches(seulementMoi) {
+  /* Brique 3 : les tâches réparties automatiquement y figurent aussi — la
+     semaine, c'est justement ce que l'appli a planifié. Une tâche « chaque
+     semaine » s'y montre le jour où elle a été faite, sinon le jour conseillé
+     (aujourd'hui, s'il n'y en a pas). */
+  const taches = etat.taches.filter((t) => t.actif !== false && (t.frequence === "jours" ||
+    (estRepartie(t) && (t.frequence === "jour" || t.frequence === "semaine"))));
+  if (!taches.length) return "";
+  const lundi = lundiDe(new Date());
+  const auj = isoDate(new Date());
+  const kAuj = numJour(new Date()) - 1;
+  const lignes = [];
+  const jourDeLaSemaine = (t) => {
+    const et = etat.etats[cleEtat(t, lundi)];
+    const faitLe = et && et.statut !== "afaire" && et.faitLe ? lundiDe(new Date(et.faitLe)) : null;
+    if (faitLe && isoDate(faitLe) === isoDate(lundi)) return numJour(new Date(et.faitLe)) - 1;
+    const p = passageReparti(t, lundi);
+    return p && p.jour != null ? p.jour : kAuj;
+  };
+  for (let k = 0; k < 7; k++) {
+    const d = new Date(lundi.getFullYear(), lundi.getMonth(), lundi.getDate() + k);
+    const iso = isoDate(d);
+    const passages = taches.filter((t) => t.frequence === "semaine" ? prevueLe(t, lundi) && jourDeLaSemaine(t) === k
+      : prevueLe(t, d) && iso >= debutPlanning(t))
+      .map((t) => ({ t: t, qui: assigneDe(t, d), et: etat.etats[cleEtat(t, d)] || { statut: "afaire" } }))
+      .filter((x) => !seulementMoi || x.qui === moi.id);
+    if (!passages.length && iso !== auj) continue;
+    const passe = iso < auj;
+    const texte = passages.length ? passages.map((x) => {
+      const semaine = x.t.frequence === "semaine";
+      const aFaire = x.et.statut === "afaire";
+      /* Un parent change un passage à venir en touchant le prénom (brique 3). */
+      const lien = (html) => estAdmin() && aFaire && (!passe || semaine)
+        ? '<button class="lien" style="font-size:inherit" data-action="tache-attribuer" data-id="' +
+          esc(x.t.id) + '" data-date="' + iso + '">' + html + "</button>"
+        : html;
+      const nom = esc((x.t.emoji || "🧹") + " " + x.t.nom);
+      /* Brique 2 : la personne prévue n'est pas là, et personne n'est choisi. */
+      const absent = aFaire ? absentDuTour(x.t, d) : null;
+      if (absent) return nom + " — " + lien("à attribuer") + esc(" (" + pasLa(absent) + ")");
+      /* Fait ou validé : on nomme qui l'a fait, pas le tour recalculé depuis. */
+      const m = membre(!aFaire && x.et.parQui ? x.et.parQui : x.qui);
+      /* Brique 3 : pourquoi l'appli a choisi cette personne, en bref. */
+      const rep = aFaire && !passe ? passageReparti(x.t, d) : null;
+      const marque = x.et.statut === "valide" ? " ✓" : x.et.statut === "fait" ? " · à valider"
+        : semaine ? (rep && rep.jour === k ? " · jour conseillé" : " · cette semaine")
+        : passe ? " · pas faite" : "";
+      return nom + (m ? " — " + lien(esc(m.prenom)) : "") +
+        esc((rep && rep.qui ? " · " + raisonRepartition(rep.raison, true) : "") + marque);
+    }).join("<br>") : "Rien de prévu";
+    const nomJour = JOURS[k].charAt(0).toUpperCase() + JOURS[k].slice(1);
+    lignes.push('<div class="ligne"><div class="ligne-corps">' +
+      "<b" + (iso === auj ? ' style="color:var(--accent-strong)"' : "") + ">" +
+      esc(nomJour + " " + d.getDate()) + (iso === auj ? " · aujourd'hui" : "") + "</b>" +
+      "<small>" + texte + "</small></div></div>");
+  }
+  /* Brique 3 : la charge de chacun, en tête de la semaine. */
+  return bloc("📅 La semaine", (taches.some(estRepartie) ? ligneCharges(lundi) : "") + lignes.join(""));
+}
+
+/* PLUS TARD (« tous les N », 19/09/2026) : une tâche qui ne tombe pas cette
+   fois-ci ne disparaît pas sans rien dire — on dit quand elle revient, et qui
+   s'en occupera. */
+function blocPlusTard(seulementMoi) {
+  const auj = new Date();
+  const lignes = etat.taches.filter((t) => t.actif !== false && rythmeDe(t) > 1 && !periodeActive(t, auj))
+    .map((t) => { const d = prochaineOccurrence(t, auj); return { t: t, d: d, qui: assigneDe(t, d) }; })
+    .filter((x) => !seulementMoi || x.qui === moi.id)
+    .sort((a, b) => a.d - b.d)
+    .map((x) => {
+      const m = membre(x.qui);
+      return '<div class="ligne">' + avatarDe(m) +
+        '<div class="ligne-corps"><b>' + esc((x.t.emoji || "🧹") + " " + x.t.nom) + "</b>" +
+        "<small>" + esc((m ? m.prenom + " · " : "") + quandReviendra(x.t)) + "</small>" +
+        '<span class="etiquettes">' + etiquetteFrequence(x.t.frequence, x.t) + "</span></div>" +
+        (estAdmin() ? '<button class="btn mini icone" data-action="tache-editer" data-id="' + esc(x.t.id) + '">✏️</button>' : "") +
+        "</div>";
+    });
+  if (!lignes.length) return "";
+  return '<div class="sous-titre"><h3>⏭️ Plus tard</h3></div><div class="carte">' + lignes.join("") + "</div>";
 }
 
 Vues.taches = function () {
@@ -696,9 +845,18 @@ Vues.taches = function () {
     h.push(carteAjout("tache-nouvelle", "Nouvelle tâche",
       "qui la fait, à quelle fréquence, combien de points"));
   }
+  /* Les post-it du frigo (19/09/2026) : la semaine sur papier, un par personne. */
+  if (etat.taches.some((t) => t.actif !== false)) {
+    h.push('<div class="rangee-btn" style="margin-bottom:1rem">' +
+      '<button class="btn doux" data-action="taches-afficher">🖨️ Post-it pour le frigo</button></div>');
+  }
 
   const toutes = tachesDuMoment();
-  if (!toutes.length) {
+  /* Mode planning : la semaine jour par jour. Elle reste affichée un jour
+     sans aucune tâche — c'est justement là qu'on veut voir ce qui vient. */
+  const semaine = blocSemaineTaches(ui.filtreTaches === "moi");
+  const plusTard = blocPlusTard(ui.filtreTaches === "moi");
+  if (!toutes.length && !semaine && !plusTard) {
     h.push(rienDu("🧹", estAdmin()
       ? "Aucune tâche pour l'instant.<br>Appuyez sur <b>Nouvelle tâche</b>, juste au-dessus."
       : "Aucune tâche pour l'instant."));
@@ -712,16 +870,23 @@ Vues.taches = function () {
     }
   }
 
+  if (semaine) h.push(semaine);
+
   const liste = ui.filtreTaches === "moi"
     ? toutes.filter((x) => x.assigne === moi.id)
     : toutes;
 
   if (!liste.length) {
-    h.push(rienDu("🎉", "Aucune tâche ne vous est attribuée en ce moment."));
+    h.push(rienDu("🎉", semaine ? "Rien d'autre à faire aujourd'hui."
+      : !toutes.length ? "Rien à faire en ce moment."     // tout est « plus tard »
+      : "Aucune tâche ne vous est attribuée en ce moment."));
+    h.push(plusTard);
     return h.join("");
   }
 
-  [["jour", "Chaque jour"], ["semaine", "Chaque semaine"], ["mois", "Chaque mois"]].forEach(([f, titre]) => {
+  const auj = JOURS[numJour(new Date()) - 1];
+  [["jour", "Chaque jour"], ["jours", "Ce " + auj], ["semaine", "Chaque semaine"],
+    ["mois", "Chaque mois"]].forEach(([f, titre]) => {
     const g = liste.filter((x) => x.t.frequence === f);
     if (!g.length) return;
     const faites = g.filter((x) => x.et.statut === "valide").length;
@@ -730,6 +895,7 @@ Vues.taches = function () {
     h.push('<div class="carte">' + g.map((x) => ligneTache(x, false)).join("") + "</div>");
   });
 
+  h.push(plusTard);
   return h.join("");
 };
 
@@ -1540,7 +1706,8 @@ Vues.admin = function () {
       ? etat.taches.map((t) =>
         '<div class="ligne"><span style="font-size:1.2rem">' + esc(t.emoji || "🧹") + "</span>" +
         '<div class="ligne-corps"><b>' + esc(t.nom) + "</b><small>" +
-        (t.frequence === "jour" ? "chaque jour" : t.frequence === "mois" ? "chaque mois" : "chaque semaine") +
+        texteFrequence(t) +
+        (rythmeDe(t) > 1 && !periodeActive(t, new Date()) ? " (revient " + quandReviendra(t) + ")" : "") +
         " • " + t.points + " pts • " +
         (participantsValides(t).length
           ? pluriel(participantsValides(t).length, "participant", "participants")
@@ -1607,6 +1774,9 @@ Vues.admin = function () {
     '<div class="ligne"><span style="font-size:1.3rem">📊</span>' +
     '<div class="ligne-corps"><b>Macronutriments ' + (g.macros === true ? "affichés" : "masqués") +
     "</b><small>Calories, protéines, glucides et lipides par portion, sur la fiche des recettes.</small></div></div>" +
+    '<div class="ligne"><span style="font-size:1.3rem">📅</span>' +
+    '<div class="ligne-corps"><b>Mode planning ' + (g.planning === true ? "activé" : "désactivé") +
+    "</b><small>Choisir les jours de chaque tâche, et voir la semaine jour par jour.</small></div></div>" +
     '<button class="btn plein doux" data-action="admin-reglages" style="margin-top:.7rem">Modifier</button>'));
 
   const ob = objectifFamille();

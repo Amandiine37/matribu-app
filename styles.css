@@ -420,6 +420,17 @@ input:focus,select:focus,textarea:focus{
   box-shadow:0 0 0 3px var(--accent-soft);
 }
 textarea{min-height:80px;resize:vertical;}
+/* Date et heure (19/09/2026) : sur iPhone, ces champs gardaient une largeur
+   « naturelle » qui ne rétrécit pas. Côte à côte dans un rappel, l'heure
+   débordait à droite de l'écran (383 px sur 375, mesuré) — et le sélecteur
+   d'heure, accroché à elle, avec. Apparence neutralisée : ils deviennent
+   souples ; min-height leur garde la hauteur des autres champs même vides. */
+input[type=date],input[type=time]{
+  -webkit-appearance:none;appearance:none;display:block;
+  min-width:0;max-width:100%;min-height:2.75rem;
+}
+input[type=date]::-webkit-date-and-time-value,
+input[type=time]::-webkit-date-and-time-value{text-align:left;}
 .duo{display:flex;gap:.6rem;}
 .duo > *{flex:1;min-width:0;}
 
@@ -973,6 +984,41 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
   #feuille .jour-affiche{border-color:#c9c9c9 !important;}
   #feuille .ligne-papier .case{border-color:#555 !important;}
   #feuille .jour-affiche.aujourdhui{background:#f1f1f1 !important;}
+}
+
+/* ---------- Les post-it du frigo (19/09/2026) ----------
+   De vrais post-it : des carrés de couleur au texte foncé, quel que soit le
+   thème de l'appli. Sur le papier, deux par ligne, sans ombre ni biais, et
+   leurs couleurs gardées (print-color-adjust) : sans cela, la règle
+   « encre noire sur papier blanc » plus haut les effacerait. */
+.postits{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+.postit{
+  background:var(--postit,#fff1a8);color:#33291c;
+  padding:12px 13px 14px;border-radius:3px;
+  box-shadow:0 10px 14px -10px rgba(0,0,0,.45);
+  transform:rotate(-.8deg);break-inside:avoid;page-break-inside:avoid;
+}
+.postit:nth-child(2n){transform:rotate(.7deg);}
+.postit:nth-child(3n){transform:rotate(-.3deg);}
+.postit-qui{font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:.4rem;}
+.postit-tache{padding:.32rem 0;border-top:1px dashed rgba(51,41,28,.28);}
+.postit-nom{font-weight:600;font-size:.9rem;line-height:1.3;}
+.postit-nom small{font-size:.72rem;opacity:.7;}
+.postit-cases{display:flex;flex-wrap:wrap;gap:.2rem .7rem;margin-top:.22rem;font-size:.8rem;}
+.postit .case{
+  display:inline-block;width:11px;height:11px;margin-right:4px;vertical-align:-1px;
+  border:1.5px solid rgba(51,41,28,.65);border-radius:2px;
+}
+.postit-total{margin-top:.5rem;font-size:.78rem;font-weight:700;opacity:.8;}
+@media print{
+  #feuille .postits{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+  #feuille .postit{
+    background:var(--postit,#fff1a8) !important;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+    transform:none;border:1px solid rgba(0,0,0,.2);
+  }
+  #feuille .postit, #feuille .postit *{color:#33291c !important;}
+  #feuille .postit .case{border-color:rgba(51,41,28,.7) !important;}
 }
 
 /* ---------- sauts vers une section (admin, index des recettes) ----------
