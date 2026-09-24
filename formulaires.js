@@ -102,6 +102,12 @@ Formulaires.tache = function (tid) {
       : "") +
     /* Tous les N (19/09/2026) : le rythme et le départ, remplis par majRythme(). */
     '<div id="zone-rythme"></div>' +
+    /* L'heure (24/09/2026), facultative. On dit tout de suite ce qu'elle fait
+       — et ce qu'elle ne fait pas —, pour ne pas laisser espérer une sonnerie. */
+    '<label class="champ"><span>À quelle heure ? (facultatif)</span>' +
+    '<input type="time" name="heure" value="' + esc(cour.heure || "") + '"></label>' +
+    '<p class="aide" style="margin:-.6rem 0 1rem">Elle s\'affiche à côté de la tâche et ' +
+    "range la journée dans l'ordre. MaTribu ne sonnera pas à cette heure-là.</p>" +
     (pointsActifs()
       ? '<label class="champ"><span>Points gagnés</span>' +
         '<input type="number" name="points" value="' + (cour.points || 10) + '" min="0" max="500" required></label>'
@@ -251,6 +257,9 @@ Formulaires.tache = function (tid) {
            existante, sinon modifier une tâche la remettrait à zéro et le
            réglage ne serait plus réversible sans perte. */
         if (pointsActifs()) t.points = Number(d.get("points")) || 0;
+        /* Heure effacée : on retire le champ plutôt que d'y laisser du vide. */
+        const heure = String(d.get("heure") || "").trim();
+        if (heure) t.heure = heure; else delete t.heure;
         t.participants = part;
         t.rotation = !!d.get("rotation");
         /* Brique 3 : la case n'existe qu'en mode planning ; sans elle, on garde. */
@@ -270,6 +279,8 @@ Formulaires.tache = function (tid) {
           decalage: 0, actif: !d.get("pause"), creeLe: new Date().toISOString()
         };
         // on cale la rotation pour que la 1re personne choisie commence maintenant
+        const heureNeuve = String(d.get("heure") || "").trim();
+        if (heureNeuve) nouvelle.heure = heureNeuve;
         if (freq === "jours") { nouvelle.jours = jours; nouvelle.joursDepuis = isoDate(new Date()); }
         if (d.get("repartition")) { nouvelle.repartition = true; nouvelle.repartieDepuis = isoDate(new Date()); }
         poserRythme(nouvelle, freq, tous, depart);
@@ -1040,6 +1051,13 @@ Formulaires.reglagesFamille = function () {
     "« ⚖️ Répartir automatiquement » dans la fiche d'une tâche. " +
     "Décoché, les tâches déjà réglées sur des jours les gardent.</small></span></label>" +
 
+    '<label class="champ" style="display:flex;gap:.6rem;align-items:flex-start">' +
+    '<input type="checkbox" name="motDuJour"' + (g.motDuJour === true ? " checked" : "") +
+    ' style="width:auto;margin-top:.25rem"><span style="margin:0">Le mot du jour' +
+    '<br><small style="font-weight:400">Un petit jeu sur l\'accueil : un mot de 5 lettres à ' +
+    "trouver en 6 essais, le même pour toute la tribu. Chacun voit qui a trouvé, jamais le " +
+    "mot des autres. Décoché, le jeu disparaît.</small></span></label>" +
+
     boutonsFormulaire("Enregistrer", false) + "</form>";
 
   ouvrirFeuille("Réglages de la famille", html, (f) => {
@@ -1054,7 +1072,8 @@ Formulaires.reglagesFamille = function () {
         pointsRepas: Math.max(0, Math.min(200, Number(d.get("pointsRepas")) || 0)),
         antiGaspi: !!d.get("antiGaspi"),
         macros: !!d.get("macros"),
-        planning: !!d.get("planning")
+        planning: !!d.get("planning"),
+        motDuJour: !!d.get("motDuJour")
       });
       fermerFeuille();
       sauver("reglages");
@@ -1152,13 +1171,44 @@ Formulaires.actu = function () {
 
   html += '<div class="sous-titre" style="margin-top:1.6rem"><h3>Les nouveautés</h3></div>';
 
-  html += ACTUS.map((a, i) => '<div class="actu' + (i === 0 ? " actu-neuve" : "") + '">' +
-    '<div class="actu-tete"><span class="etiquette' + (i === 0 ? " chaud" : "") + '">Version ' +
-    esc(a.version) + "</span><small>" + esc(jour(a.date)) + "</small></div>" +
-    "<h4>" + esc(a.titre) + "</h4><ul>" +
-    a.points.map((p) => "<li>" + p + "</li>").join("") + "</ul></div>").join("");
+  /* UNE NOUVEAUTÉ, UNE LIGNE (24/09/2026). Le détail ne s'ouvre que si on le
+     demande, et un bouton mène à l'écran concerné. Deux formes acceptées :
+     la simple chaîne des notes déjà écrites, et l'objet { quoi, court,
+     detail, ou } des nouvelles. */
+  const pointActu = (p) => {
+    if (typeof p === "string") return "<li>" + p + "</li>";
+    /* Un bouton réservé aux administrateurs ne s'affiche pas aux autres :
+       mieux vaut ne rien proposer que d'envoyer quelqu'un vers un refus. */
+    const ou = p.ou && (!p.ou.admin || estAdmin()) ? p.ou : null;
+    return '<li><details class="actu-point"><summary><b>' + esc(p.quoi) + "</b>" +
+      (p.court ? ' <span class="doux">— ' + esc(p.court) + "</span>" : "") + "</summary>" +
+      '<div class="actu-detail">' + p.detail +
+      (ou ? '<button class="btn mini principal" data-action="' + esc(ou.action) +
+        (ou.vue ? '" data-vue="' + esc(ou.vue) : "") + '">' + esc(ou.libelle) + "</button>" : "") +
+      "</div></details></li>";
+  };
 
-  ouvrirFeuille("✨ Quoi de neuf", html);
+  html += ACTUS.map((a, i) => {
+    const corps = "<ul>" + a.points.map(pointActu).join("") + "</ul>";
+    if (i === 0) {
+      return '<div class="actu actu-neuve">' +
+        '<div class="actu-tete"><span class="etiquette chaud">Version ' + esc(a.version) +
+        "</span><small>" + esc(jour(a.date)) + "</small></div>" +
+        "<h4>" + esc(a.titre) + "</h4>" + corps + "</div>";
+    }
+    /* Les versions passées se replient en entier : elles ont déjà été lues,
+       et dix notes dépliées décourageaient la lecture de la première. */
+    return '<div class="actu"><details class="actu-ancienne"><summary>' +
+      '<span class="etiquette">Version ' + esc(a.version) + "</span> " + esc(a.titre) +
+      "</summary>" + corps + "</details></div>";
+  }).join("");
+
+  ouvrirFeuille("✨ Quoi de neuf", html, (feuille) => {
+    /* Les boutons mènent ailleurs : on referme d'abord, sinon l'écran visé
+       resterait caché derrière cette page. */
+    feuille.querySelectorAll(".actu-detail [data-action]")
+      .forEach((b) => b.addEventListener("click", fermerFeuille));
+  });
   /* Lue : la pastille s'éteint, et la saison ne redira plus « bienvenue ».
      Le rendu qui suit est indispensable : sans lui, la pastille de l'en-tête
      et celle de la carte restaient allumées jusqu'au prochain changement
@@ -2490,6 +2540,9 @@ Formulaires.invitation = async function (pourId) {
       const inv = await Invitations.creer(jours, cible ? cible.id : null);
       bouton.disabled = false;
       if (!inv) { toast("Création impossible"); return; }
+      /* Pour pouvoir dire plus tard « envoyée il y a 3 jours, toujours pas
+         ouverte » : le serveur, lui, ne se relit pas. */
+      noterInvitationEnvoyee(inv.pour);
       const lien = Invitations.lien(inv.jeton);
       const fin = new Date(inv.expireLe).toLocaleDateString("fr-FR",
         { day: "numeric", month: "long", year: "numeric" });
@@ -2537,6 +2590,96 @@ Formulaires.invitation = async function (pourId) {
   });
 };
 
+/* ============== METTRE UN RAPPEL DANS SON AGENDA (24/09/2026) ==============
+
+   Trois chemins, parce qu'aucun ne marche partout — comme pour l'export des
+   données : la feuille de partage (iPhone, où un téléchargement lancé depuis
+   l'icône de l'écran d'accueil ne mène nulle part), le téléchargement
+   classique (Android, ordinateur), et Google Agenda, qui se passe de fichier.
+   L'écran montre d'abord ce qui partira : personne n'aime envoyer quelque
+   chose sans savoir quoi. */
+Formulaires.agenda = function (id) {
+  const n = (etat.notes || []).find((x) => x.id === id);
+  if (!n || !estRendezVous(n)) { toast("Ce rappel n'a pas de date"); return; }
+
+  const heure = heureJolie(n.heure);
+  const quand = dateJolie(n.date, true) + (heure ? " à " + heure : ", toute la journée");
+  const qui = (n.concernes || []).map((i) => membre(i)).filter(Boolean);
+
+  /* Téléphone ou ordinateur : ce n'est pas le même chemin le plus court.
+     Sur un téléphone, le fichier ouvre l'agenda tout seul ; sur un ordinateur,
+     il tombe dans les téléchargements sans rien montrer — Google Agenda, lui,
+     affiche aussitôt un rendez-vous rempli (24/09/2026). */
+  const surTelephone = /iPhone|iPad|iPod|Android/.test(navigator.userAgent || "");
+
+  /* Le partage de fichiers n'existe pas partout : on essaie avec CE
+     fichier-ci, pas avec un autre — le téléphone peut accepter une photo et
+     refuser un agenda. */
+  let partageOk = false;
+  try { partageOk = !!(navigator.canShare && navigator.canShare({ files: [fichierIcs(n)] })); }
+  catch (e) { partageOk = false; }
+
+  const html = '<div class="bandeau info">📅<div><b>' + esc(n.titre) + "</b><br>" + esc(quand) +
+    (n.lieu ? " · " + esc(n.lieu) : "") +
+    (qui.length ? "<br>Pour " + esc(qui.map((m) => m.prenom).join(", ")) : "") +
+    "</div></div>" +
+
+    '<p class="aide">Il ira dans <b>votre agenda</b>' +
+    (RYTHME_ICS[n.repetition] ? ", en se répétant comme ici" : "") +
+    ", avec une alerte <b>" + (n.heure ? "30 minutes avant" : "la veille au matin") +
+    "</b>. Vous pourrez tout changer avant d'enregistrer.</p>" +
+
+    (surTelephone
+      ? (partageOk
+        ? '<button class="btn principal plein" data-role="partager">📅 Ajouter à mon agenda</button>' +
+          '<button class="btn plein" data-role="fichier" style="margin-top:.5rem">Télécharger le fichier</button>'
+        : '<button class="btn principal plein" data-role="fichier">📅 Ajouter à mon agenda</button>') +
+        '<button class="btn plein" data-role="google" style="margin-top:.5rem">Ou passer par Google Agenda</button>'
+      /* Sur un ordinateur : Google d'abord, et l'on prévient que le fichier,
+         lui, ne fait qu'atterrir dans les téléchargements. */
+      : '<button class="btn principal plein" data-role="google">📅 Ouvrir dans Google Agenda</button>' +
+        '<button class="btn plein" data-role="fichier" style="margin-top:.5rem">Ou télécharger le fichier (.ics)</button>' +
+        '<p class="aide" style="margin-top:.6rem">Sur un ordinateur, le fichier va dans vos ' +
+        "téléchargements : il faut ensuite l'ouvrir pour que votre logiciel d'agenda le prenne.</p>") +
+
+    '<p class="aide" style="margin-top:.8rem">C\'est une <b>copie</b> : si vous modifiez ' +
+    "ce rappel dans MaTribu, l'agenda ne suivra pas. MaTribu, de son côté, ne lit " +
+    "jamais votre agenda.</p>" +
+    '<button class="btn plein" data-action="fermer" style="margin-top:1rem">Fermer</button>';
+
+  ouvrirFeuille("Dans mon agenda", html, (feuille) => {
+    const b = (role) => feuille.querySelector('[data-role="' + role + '"]');
+    /* Le téléchargement le dit : sur un ordinateur, rien ne s'ouvre, et on ne
+       devine pas qu'un fichier est parti quelque part. */
+    const enregistrer = () => {
+      telechargerIcs(n);
+      toast("Fichier d'agenda enregistré dans vos téléchargements");
+      fermerFeuille();
+    };
+    const partager = b("partager");
+    if (partager) {
+      partager.onclick = async () => {
+        try {
+          await navigator.share({ files: [fichierIcs(n)], title: n.titre });
+          fermerFeuille();
+        } catch (e) {
+          /* Annulé par la personne : elle est toujours devant l'écran, on ne
+             fait rien. Refusé par l'appareil — certains ne savent pas
+             partager un fichier d'agenda —, on bascule sur le téléchargement :
+             sans cela il ne se passait RIEN du tout (24/09/2026). */
+          if (e && e.name === "AbortError") return;
+          enregistrer();
+        }
+      };
+    }
+    b("fichier").onclick = enregistrer;
+    b("google").onclick = () => {
+      window.open(lienGoogleAgenda(n), "_blank", "noopener");
+      fermerFeuille();
+    };
+  });
+};
+
 /* ==================== PRÉSENTATION DE BIENVENUE ====================
 
    Un petit carrousel à la première ouverture sur un appareil : un volet par
@@ -2564,13 +2707,27 @@ Formulaires.bienvenue = function () {
   const volets = ongletsVisibles().filter((o) => textes[o.vue]).map((o) => textes[o.vue]);
   if (pointsActifs()) volets.push(["🌟", "Les points", "Les tâches validées rapportent des points, " +
     "à échanger contre de petits plaisirs en famille. Et un objectif commun, à atteindre tous ensemble."]);
+  /* LE DERNIER VOLET NE RACONTE PLUS, IL FAIT FAIRE (22/09/2026).
+     Deux tribus sur trois n'ont jamais rouvert l'application après le jour de
+     leur création. Ce qui distingue celles qui reviennent tient à ces deux
+     gestes-là : l'icône posée sur l'écran d'accueil (83 % reviennent, contre
+     21 %) et une deuxième personne qui rejoint (75 %, contre 9 %). Autant les
+     proposer là où tout le monde passe. */
   volets.push(["👋", "Bienvenue dans votre tribu, " + esc(moi ? moi.prenom : "") + " !",
-    "Tout est partagé en temps réel entre les appareils de la famille. " +
-    "Vous retrouverez cette présentation à tout moment depuis votre profil."]);
+    "Deux gestes, et elle est à vous : posez MaTribu sur votre écran d'accueil " +
+    "pour la retrouver demain, et faites entrer quelqu'un — tout se partage " +
+    "alors en temps réel entre vos appareils.",
+    '<div class="rangee-btn" style="margin-top:.9rem">' +
+    (ouvertDepuisIcone() ? "" :
+      '<button class="btn principal" data-role="icone">📲 Sur l\'écran d\'accueil</button>') +
+    (estAdmin()
+      ? '<button class="btn' + (ouvertDepuisIcone() ? " principal" : "") +
+        '" data-role="inviter">💌 Inviter quelqu\'un</button>'
+      : "") + "</div>"]);
 
   const html = '<div class="carrousel" id="carrousel">' +
     volets.map((v) => '<div class="volet"><div class="grand">' + v[0] + "</div><h4>" + v[1] +
-      "</h4><p>" + v[2] + "</p></div>").join("") + "</div>" +
+      "</h4><p>" + v[2] + "</p>" + (v[3] || "") + "</div>").join("") + "</div>" +
     '<div class="points-carrousel" id="points-carrousel">' +
     volets.map((v, i) => "<i" + (i === 0 ? ' class="on"' : "") + "></i>").join("") + "</div>" +
     '<div class="rangee-btn">' +
@@ -2615,6 +2772,13 @@ Formulaires.bienvenue = function () {
          Le balayage au doigt, lui, reste natif et fluide. */
       bande.scrollTo({ left: courant * bande.clientWidth, behavior: "auto" });
     };
+    /* Les deux gestes du dernier volet : on referme la présentation avant
+       d'ouvrir la feuille suivante, sinon elle se remplacerait elle-même. */
+    const bIcone = feuille.querySelector('[data-role="icone"]');
+    if (bIcone) bIcone.onclick = () => { terminer(); Formulaires.poserIcone(); };
+    const bInviter = feuille.querySelector('[data-role="inviter"]');
+    if (bInviter) bInviter.onclick = () => { terminer(); Formulaires.invitation(); };
+
     feuille.querySelector('[data-role="passer"]').onclick = terminer;
     /* Fermée autrement (voile, poignée) : c'est vu quand même. */
     const voile = document.getElementById("voile");
@@ -2823,6 +2987,117 @@ Formulaires.demenagement = function () {
        sinon la seconde remplacerait la première sans qu'on sache d'où on vient. */
     f.querySelectorAll('[data-action="inviter"], [data-action="mon-appareil"]')
       .forEach((b) => b.addEventListener("click", fermerFeuille));
+  });
+};
+
+/* ==================== SUR L'ÉCRAN D'ACCUEIL ====================
+
+   Mesuré sur les 73 tribus du lancement (22/09/2026) : celles dont l'appli
+   est posée sur l'écran d'accueil sont revenues un autre jour dans 83 % des
+   cas, contre 21 % pour celles restées dans le navigateur. Sept appareils
+   sur quatre-vingt-huit l'avaient posée. Une adresse se perd dans les
+   onglets ; une icône, non.
+
+   Le geste n'est pas le même sur iPhone et sur Android, et il n'existe pas du
+   tout dans le navigateur d'Instagram ou de Facebook. Cette feuille ne
+   décrit donc que le téléphone qu'on a dans la main. */
+Formulaires.poserIcone = function () {
+  const ua = navigator.userAgent || "";
+  const pomme = /iPhone|iPad|iPod/.test(ua);
+  const android = /Android/.test(ua);
+  const integre = navigateurIntegre();
+  const h = [];
+
+  if (ouvertDepuisIcone()) {
+    h.push('<div class="bandeau info">✅<div><b>C\'est déjà fait sur cet appareil.</b> ' +
+      "Vous ouvrez MaTribu depuis son icône.</div></div>" +
+      '<p class="aide">L\'icône se pose une fois par appareil : chaque personne de ' +
+      "la famille a le sien à équiper.</p>");
+
+  } else if (integre) {
+    /* Le navigateur d'une application sociale : aucun bouton n'y pose
+       d'icône, et ce qu'on y crée reste enfermé dans sa mémoire à lui. */
+    /* « d'Instagram », mais « de Facebook » : la petite apostrophe compte. */
+    const deQui = (integre === "Instagram" ? "d'" : "de ") + integre;
+    h.push('<div class="bandeau">📱<div><b>Vous êtes dans le navigateur ' + esc(deQui) +
+      ".</b> Il ne sait pas poser d'icône, et il a sa propre mémoire : " +
+      "ouvrez d'abord MaTribu dans votre vrai navigateur.</div></div>");
+    h.push('<div class="carte"><div class="carte-titre">Pour en sortir</div>' +
+      '<div class="ligne"><span class="etape">1</span><div class="ligne-corps">' +
+      "<b>Touchez « " + (pomme ? "⋯" : "⋮") + " »</b><small>En haut à droite de l'écran.</small></div></div>" +
+      '<div class="ligne"><span class="etape">2</span><div class="ligne-corps">' +
+      "<b>« Ouvrir dans " + (pomme ? "Safari" : "Chrome") + " »</b><small>Ou « Ouvrir dans le navigateur ».</small></div></div>" +
+      '<div class="ligne"><span class="etape">3</span><div class="ligne-corps">' +
+      "<b>Revenez ici</b><small>Vous retrouverez ce bouton dans « Premiers pas », sur l'accueil.</small></div></div></div>");
+    h.push('<button class="btn plein" data-action="copier" data-texte="' + esc(ADRESSE_NOUVELLE) +
+      '">Copier l\'adresse de MaTribu</button>');
+
+  } else {
+    /* Le cas normal. Sur iPhone, l'icône est une application séparée : elle
+       repart inconnue, et il lui faut son propre code. Sur Android, elle
+       partage la mémoire du navigateur — on ne fait donc pas créer un code
+       pour rien, on le dit seulement en cas de surprise. */
+    h.push('<div class="bandeau info">📲<div><b>Pour la retrouver demain.</b> ' +
+      "Dans un navigateur, l'adresse se perd entre les onglets. Sur l'écran " +
+      "d'accueil, MaTribu s'ouvre comme une application, d'une seule " +
+      "pression.</div></div>");
+
+    if (pomme) {
+      h.push('<div class="carte"><div class="carte-titre">Sur votre iPhone, en trois gestes</div>' +
+        '<div class="ligne"><span class="etape">1</span><div class="ligne-corps">' +
+        "<b>Touchez « Partager »</b><small>Le carré avec une flèche vers le haut, " +
+        "en bas de l'écran de Safari.</small></div></div>" +
+        '<div class="ligne"><span class="etape">2</span><div class="ligne-corps">' +
+        "<b>« Sur l'écran d'accueil »</b><small>Faites défiler la liste : c'est plus bas.</small></div></div>" +
+        '<div class="ligne"><span class="etape">3</span><div class="ligne-corps">' +
+        "<b>« Ajouter »</b><small>En haut à droite. L'icône apparaît avec vos applications.</small></div></div></div>");
+      h.push('<div class="bandeau">⚠️<div><b>Sur iPhone, l\'icône est une application ' +
+        "à part.</b> Elle s'ouvrira sans connaître votre famille et proposera d'en " +
+        "créer une — n'en créez surtout pas une deuxième. Créez plutôt votre code " +
+        "maintenant, pendant que vous êtes connectée, et donnez-le-lui.</div></div>");
+      h.push('<button class="btn principal plein" data-action="mon-appareil">' +
+        "📱 Créer mon code, puis poser l'icône</button>");
+    } else if (android) {
+      h.push('<div class="carte"><div class="carte-titre">Sur votre téléphone, en deux gestes</div>' +
+        '<div class="ligne"><span class="etape">1</span><div class="ligne-corps">' +
+        "<b>Touchez « ⋮ »</b><small>En haut à droite du navigateur.</small></div></div>" +
+        '<div class="ligne"><span class="etape">2</span><div class="ligne-corps">' +
+        "<b>« Installer l'application »</b><small>Ou « Ajouter à l'écran d'accueil ».</small></div></div></div>");
+      h.push('<button class="btn principal plein" data-role="installer">📲 Poser l\'icône</button>');
+      h.push('<p class="aide" style="margin-top:.6rem">Si ce bouton ne fait rien, votre ' +
+        "navigateur préfère passer par son menu « ⋮ » : le geste ci-dessus marche toujours. " +
+        "Normalement, l'icône retrouve votre famille toute seule ; si elle s'ouvre vide, " +
+        'revenez ici et touchez <b>« Connecter un appareil »</b> dans votre profil.</p>');
+    } else {
+      h.push('<p class="aide">Sur un ordinateur, cherchez l\'icône d\'installation ' +
+        "à droite de la barre d'adresse (un écran avec une flèche), ou le menu " +
+        "« ⋮ » puis « Installer MaTribu ». Mais c'est sur le téléphone que " +
+        "l'icône change tout : c'est là qu'on ouvre l'application le matin.</p>");
+    }
+  }
+
+  h.push('<button class="btn plein" data-action="fermer" style="margin-top:1rem">Fermer</button>');
+
+  ouvrirFeuille("Sur l'écran d'accueil", h.join(""), (feuille) => {
+    /* Les boutons qui ouvrent une autre feuille ferment celle-ci d'abord,
+       sinon la seconde remplacerait la première sans qu'on sache d'où on vient. */
+    feuille.querySelectorAll('[data-action="mon-appareil"]')
+      .forEach((b) => b.addEventListener("click", fermerFeuille));
+
+    const bi = feuille.querySelector('[data-role="installer"]');
+    if (!bi) return;
+    bi.onclick = async () => {
+      if (!inviteInstallation) {
+        toast("Passez par le menu « ⋮ » du navigateur");
+        return;
+      }
+      inviteInstallation.prompt();
+      try { await inviteInstallation.userChoice; } catch (e) { }
+      /* Une proposition ne sert qu'une fois : le navigateur en renverra une
+         plus tard s'il le juge utile. */
+      inviteInstallation = null;
+      fermerFeuille();
+    };
   });
 };
 
@@ -4192,13 +4467,15 @@ function postitsDeLaSemaine(k) {
   const postits = etat.membres.map((m) => m.id).concat([""]).filter((mid) => parQui.has(mid)).map((mid, n) => {
     const m = membre(mid);
     const liste = [...parQui.get(mid).values()].sort((a, b) => rang(a) - rang(b) ||
+      String(a.t.heure || "99:99").localeCompare(String(b.t.heure || "99:99")) ||
       etat.taches.indexOf(a.t) - etat.taches.indexOf(b.t));
     const aGagner = pointsActifs()
       ? liste.reduce((s, x) => s + (Number(x.t.points) || 0) * (x.jours.length || 1), 0) : 0;
     return '<div class="postit" style="--postit:' + COULEURS_POSTIT[n % COULEURS_POSTIT.length] + '">' +
       '<div class="postit-qui">' + esc(m ? (m.emoji || "🙂") + " " + m.prenom : "🤝 À se partager") + "</div>" +
       liste.map((x) => '<div class="postit-tache"><div class="postit-nom">' +
-        esc((x.t.emoji || "🧹") + " " + x.t.nom) +
+        esc((x.t.emoji || "🧹") + " " + x.t.nom +
+          (heureTache(x.t) ? " · " + heureTache(x.t) : "")) +
         (pointsActifs() && x.t.points ? " <small>+" + esc(String(x.t.points)) + "</small>" : "") + "</div>" +
         '<div class="postit-cases">' + (x.jours.length
           ? x.jours.map((j) => '<span><i class="case"></i>' + JOURS[j].slice(0, 3) + "</span>").join("")

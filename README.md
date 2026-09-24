@@ -1143,6 +1143,42 @@ portion** : calories, protéines, glucides et lipides. L'option est
   par exemple) n'est pas deviné : la fiche le nomme (« sans : … »).
 - Rien ne quitte le téléphone : la table est dans l'application.
 
+### 🔤 Le mot du jour (option)
+
+Un petit jeu quotidien, sur l'accueil : **un mot de 5 lettres à trouver en
+6 essais**, le même pour toute la tribu (et pour toutes les familles). Un
+nouveau mot arrive chaque jour à minuit. L'option est **désactivée par
+défaut** ; un administrateur l'active dans *Administration › ⚙️ Réglages de
+la famille*, case « Le mot du jour ».
+
+- **Les couleurs** : carré vert = la lettre est bien placée ; **rond** orange
+  = elle est dans le mot, mais ailleurs ; gris = elle n'y est pas. La forme
+  ronde aide les personnes daltoniennes, qui confondent souvent le vert et
+  l'orange.
+- **Le clavier** est en AZERTY, et les accents ne comptent pas (É = E,
+  Ç = C). Sur ordinateur, le clavier normal marche aussi.
+- **Les mots tapés** doivent exister : ils sont vérifiés dans un dictionnaire
+  de 5 037 mots (`mots5.js`). Un mot refusé ne coûte pas d'essai.
+- **Deux aides** pour les plus jeunes : une devinette (« un fruit
+  d'automne »), puis la première lettre. La tribu voit qui s'en est servi.
+- **La tribu** : sous la grille, chacun voit qui a trouvé et en combien
+  d'essais, avec une petite grille de couleurs — **jamais les lettres**, qui
+  restent sur le téléphone de celui qui joue.
+- **La série de la tribu** 🔥 compte les jours d'affilée où au moins une
+  personne de la famille a trouvé. Pas de points : on gagne ensemble.
+- **Les mots** (366, un par jour de l'année, dans `motdujour.js`) sont
+  écrits pour MaTribu : des mots que les enfants connaissent, sans gros mot,
+  rangés par saison. Le même mot revient à la même date chaque année — la
+  crêpe à la Chandeleur, la bûche à Noël.
+- **Crédit** : le dictionnaire vient de **Lexique 3.83** (Boris New et
+  Christophe Pallier, www.lexique.org), sous licence CC BY-SA 4.0. La liste
+  `mots5.js` qui en est tirée reste sous cette licence (voir `LICENSE`).
+- **Ce qui part en ligne** : pour chaque membre, sa partie du jour et celle
+  de la veille (couleurs, aide utilisée, série), dans
+  `familles/{repère}/motsDuJour/{membre}`. Les règles Firebase vérifient
+  chaque champ : aucune lettre ne peut y être glissée.
+  ⚠️ **Règles nouvelles : les republier AVANT de déposer la 0.60.**
+
 ### Partager vos recettes avec d'autres familles
 
 Les familles qui utilisent MaTribu disposent d'un **catalogue commun**, accessible
@@ -1277,6 +1313,9 @@ bandeau orange le rappelle sur l'accueil.
 | `vues.js` | Le dessin de chaque écran. |
 | `formulaires.js` | Les fenêtres qui remontent du bas (ajouter, modifier…). |
 | `recettes.js` | Les 737 recettes fournies au démarrage. Modifiables dans l'app. |
+| `nutrition.js` | Les valeurs de la table Ciqual (Anses) pour l'option « Macronutriments ». |
+| `motdujour.js` | Le mot du jour : les 366 mots de l'année, le jeu et sa carte d'accueil. |
+| `mots5.js` | Le dictionnaire du mot du jour (Lexique 3.83, licence CC BY-SA 4.0). |
 | `firebase-config.js` | **Le seul fichier à remplir** pour activer le partage. |
 | `firestore.rules` | Les règles de sécurité, **à copier dans Firebase**. Sans elles, rien n'est protégé. |
 | `manifest.webmanifest` | Permet d'installer l'app sur l'écran d'accueil. |

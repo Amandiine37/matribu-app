@@ -284,6 +284,22 @@ h2.titre-section{
 .actu h4{margin:0 0 .5rem}
 .actu ul{margin:0;padding-left:1.1rem}
 .actu li{margin:.45rem 0;line-height:1.55}
+/* « Quoi de neuf » se lisait comme un pavé (24/09/2026) : une nouveauté tient
+   maintenant sur une ligne, son détail s'ouvre d'une pression, et les versions
+   passées se replient. Le petit chevron remplace le triangle du navigateur,
+   qui n'a pas la même tête d'un téléphone à l'autre. */
+.actu-point > summary,
+details.actu-ancienne > summary{cursor:pointer;list-style:none;padding:.2rem 0}
+.actu-point > summary::-webkit-details-marker,
+details.actu-ancienne > summary::-webkit-details-marker{display:none}
+.actu-point > summary::after,
+details.actu-ancienne > summary::after{content:" ›";color:var(--accent-strong);font-weight:700}
+.actu-point[open] > summary::after,
+details.actu-ancienne[open] > summary::after{content:" ⌄"}
+.actu-detail{margin:.2rem 0 .7rem;color:var(--ink-muted)}
+.actu-detail p{margin:.4rem 0}
+.actu-detail .btn{margin-top:.5rem}
+details.actu-ancienne > summary{font-weight:600}
 
 /* Les blocs repliables. .legende-sante est la légende des icônes santé du
    cahier de recettes : sans cette ligne elle s'affichait en texte ordinaire,
@@ -1053,3 +1069,68 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
 /* ---------- une recette se consulte d'un simple appui ---------- */
 .ligne-recette{cursor:pointer;}
 .ligne-recette:active{background:var(--surface-2);}
+
+/* ---------- Le mot du jour (0.60) ----------
+   Des couleurs FIXES, les mêmes pour toutes les palettes : elles ont un sens
+   (bien placée, ailleurs, absente) qui ne doit pas changer avec le thème. Le
+   ROND de « ailleurs » double l'orange pour les daltoniens. La taille des
+   cases suit aussi la hauteur de l'écran : sur un petit téléphone, la grille
+   ET le clavier tiennent sans faire défiler. */
+:root{--mj-bien:#3F7A55;--mj-ailleurs:#B8642F;--mj-absent:#6E6A60;}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--mj-absent:#4B504C;}
+}
+:root[data-theme="dark"]{--mj-absent:#4B504C;}
+.mj{--mj-case:min(3.2rem,12.5vw,6vh);}
+@supports (height:1dvh){ .mj{--mj-case:min(3.2rem,12.5vw,6dvh);} }
+.mj-tete{display:flex;align-items:center;justify-content:space-between;gap:.5rem;min-height:2.1rem;margin:-.5rem 0 .2rem;}
+.mj-indice{min-height:1.2em;margin:0 0 .45rem;text-align:center;font-size:.84rem;color:var(--ink-muted);}
+.mj-indice b{color:var(--ink);}
+.mj-grille{display:grid;gap:.3rem;justify-content:center;}
+.mj-rangee{display:grid;grid-template-columns:repeat(5,var(--mj-case));gap:.3rem;}
+.mj-case{
+  width:var(--mj-case);height:var(--mj-case);box-sizing:border-box;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--border);border-radius:8px;background:var(--surface);
+  font-weight:700;font-size:calc(var(--mj-case) * .48);line-height:1;color:var(--ink);
+}
+.mj-case.pleine{border-color:var(--ink-muted);}
+.mj-case.v,.mj-case.o,.mj-case.g{border-color:transparent;color:#fff;}
+.mj-case.v{background:var(--mj-bien);}
+.mj-case.o{background:var(--mj-ailleurs);border-radius:50%;}
+.mj-case.g{background:var(--mj-absent);}
+.mj-case.revele{animation:mj-retourne .38s ease both;animation-delay:calc(var(--i,0) * 110ms);}
+@keyframes mj-retourne{from{transform:rotateX(90deg);}to{transform:none;}}
+.mj-rangee.secoue{animation:mj-secoue .35s ease;}
+@keyframes mj-secoue{20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
+@media (prefers-reduced-motion: reduce){ .mj-case.revele,.mj-rangee.secoue{animation:none;} }
+.mj-message{min-height:1.25em;margin:.35rem 0;text-align:center;font-size:.84rem;font-weight:600;color:var(--danger);}
+.mj-clavier{display:flex;flex-direction:column;gap:.32rem;margin-bottom:.5rem;}
+.mj-rang{display:flex;justify-content:center;gap:.24rem;}
+.mj-touche{
+  flex:1 1 0;min-width:0;max-width:2.7rem;height:2.9rem;height:min(3rem,6.4dvh);padding:0;
+  -webkit-appearance:none;appearance:none;border:none;border-radius:8px;
+  background:var(--surface-2);color:var(--ink);font-weight:700;font-size:.95rem;
+  display:flex;align-items:center;justify-content:center;touch-action:manipulation;
+}
+.mj-touche.large{flex:1.6 1 0;max-width:4.4rem;font-size:.76rem;}
+.mj-touche:active{transform:scale(.94);}
+.mj-touche.v,.mj-touche.o,.mj-touche.g{color:#fff;}
+.mj-touche.v{background:var(--mj-bien);}
+.mj-touche.o{background:var(--mj-ailleurs);}
+.mj-touche.g{background:var(--mj-absent);}
+.mj-fin{text-align:center;}
+.mj-fin p{margin:.2rem 0 .5rem;line-height:1.45;}
+.mj-legende{text-align:center;margin:.1rem 0 .8rem;}
+.mj-legende i{display:inline-block;width:.75em;height:.75em;margin:0 .25em 0 .7em;vertical-align:-.05em;border-radius:2px;}
+.mj-legende i:first-child{margin-left:0;}
+.mj-legende i.v{background:var(--mj-bien);}
+.mj-legende i.o{background:var(--mj-ailleurs);border-radius:50%;}
+.mj-legende i.g{background:var(--mj-absent);}
+.mj-tribu{border-top:1px solid var(--border);padding-top:.7rem;}
+.mj-tribu-titre{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.2rem .6rem;font-weight:700;font-size:.9rem;}
+.mj-mini{display:grid;gap:2px;flex:none;}
+.mj-mini span{display:grid;grid-template-columns:repeat(5,7px);gap:2px;}
+.mj-mini i{width:7px;height:7px;border-radius:1.5px;background:var(--mj-absent);}
+.mj-mini i.v{background:var(--mj-bien);}
+.mj-mini i.o{background:var(--mj-ailleurs);border-radius:50%;}

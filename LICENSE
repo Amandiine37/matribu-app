@@ -25,6 +25,19 @@ Le fait que GitHub propose techniquement de « forker » ce dépôt ne confère
 aucun de ces droits : cette possibilité découle des conditions d'utilisation
 de la plateforme, non d'une licence accordée par l'autrice.
 
+Exception : données de tiers. Deux fichiers contiennent des données qui
+n'appartiennent pas à l'autrice. Les interdictions ci-dessus ne s'appliquent
+pas à ces données, qui restent sous leur licence d'origine :
+
+  - mots5.js : la liste des mots de 5 lettres, extraite de Lexique 3.83
+    (Boris New et Christophe Pallier, www.lexique.org), sous licence
+    Creative Commons Attribution - Partage dans les mêmes conditions 4.0
+    (CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0/deed.fr).
+    Cette liste dérivée est elle-même diffusée sous cette licence ;
+  - nutrition.js : les valeurs nutritionnelles, issues de la table Ciqual
+    de l'Anses, sous Licence Ouverte Etalab 2.0 (« Anses. 2025. Table de
+    composition nutritionnelle des aliments Ciqual 2025 »).
+
 Aucune garantie n'est fournie. Le logiciel est mis à disposition en l'état,
 sans garantie d'aucune sorte, expresse ou implicite. L'autrice ne saurait
 être tenue responsable d'un dommage résultant de son utilisation.

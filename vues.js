@@ -358,6 +358,10 @@ Vues.accueil = function () {
      La carte disparaît d'elle-même une fois tout coché. */
   if (estAdmin() && !localStorage.getItem("tribu:conseilsMasques")) {
     const aInviter = etat.membres.filter((m) => !m.sansAppareil && !aUnAppareil(m));
+    /* Ce que CET appareil se rappelle avoir envoyé. Au lancement, 99
+       invitations avaient été créées et 19 utilisées, sans que personne ne
+       puisse s'en apercevoir. */
+    const relances = aInviter.map((m) => ({ m: m, txt: inviteDepuis(m.id) })).filter((x) => x.txt);
     const partagees = etat.taches.filter((t) => participantsValides(t).length > 1).length;
     const etapes = [
       {
@@ -370,10 +374,28 @@ Vues.accueil = function () {
         fait: etat.membres.length > 1 && !aInviter.length,
         titre: "Envoyer une invitation à chacun",
         detail: aInviter.length
-          ? "En attente : " + aInviter.map((m) => m.prenom).join(", ") +
-          ". Un lien par personne, et un par téléphone."
+          ? (relances.length
+            ? relances.map((x) => x.m.prenom + " : " + x.txt + ", toujours pas ouverte.").join(" ") +
+              " Touchez un prénom pour lui renvoyer son lien."
+            : "Touchez un prénom : un lien par personne, et un par téléphone.")
           : "C'est le lien d'invitation qui donne l'accès — pas le repère de la tribu.",
+        /* Un prénom, une pression : l'invitation s'ouvre déjà réglée sur la
+           bonne personne. */
+        extra: aInviter.length
+          ? '<div class="puces" style="margin:-.2rem 0 .6rem">' + aInviter.map((m) =>
+            '<button class="puce" data-action="inviter" data-membre="' + esc(m.id) + '">' +
+            esc((m.emoji || "🙂") + " " + m.prenom) + "</button>").join("") + "</div>"
+          : "",
         action: "inviter", bouton: "Inviter"
+      },
+      {
+        /* L'étape qui fait revenir : 83 % des tribus qui ont posé l'icône ont
+           rouvert l'appli un autre jour, contre 21 % des autres. */
+        fait: iconePosee(),
+        titre: "Poser MaTribu sur l'écran d'accueil",
+        detail: "Dans un navigateur, l'adresse se perd entre les onglets. " +
+          "Une icône, non : c'est ce qui fait qu'on la rouvre demain.",
+        action: "poser-icone", bouton: "Poser"
       },
       {
         fait: partagees > 0,
@@ -394,7 +416,7 @@ Vues.accueil = function () {
           (e.fait ? "" : "<small>" + esc(e.detail) + "</small>") + "</div>" +
           (e.fait ? "" : '<button class="btn mini principal" data-action="' + e.action +
             (e.vue ? '" data-vue="' + e.vue : "") + '">' + esc(e.bouton) + "</button>") +
-          "</div>").join("") +
+          "</div>" + (!e.fait && e.extra ? e.extra : "")).join("") +
         '<button class="lien" data-action="masquer-conseils" style="margin-top:.7rem">' +
         "Masquer ces conseils</button>"));
     }
@@ -514,6 +536,11 @@ Vues.accueil = function () {
       '<div class="ligne"><div class="ligne-corps"><small>Soir</small><b>' + esc(ns || "— non prévu") + "</b></div></div>"
       : rienDu("🤷", "Aucun repas prévu aujourd'hui."),
     "Voir la semaine", "aller", "menus"));
+
+  /* Le mot du jour (0.60), s'il est activé : juste après le menu, avec ce
+     qui fait la journée. Une fois la partie finie, il tient en une ligne.
+     Le test protège d'une page en cache sans motdujour.js. */
+  if (typeof carteMotDuJour === "function") h.push(carteMotDuJour());
 
   /* Tâches des enfants sans téléphone : c'est le parent qui coche.
      Même limite que « Mes tâches » : ce bloc souffrait du même défaut. */
@@ -700,10 +727,12 @@ function ligneTache(x, compact) {
   /* Sans les points, une tâche n'annonce plus un gain : juste quand elle
      revient, et qui s'en occupe. */
   const gain = pointsActifs() ? "+" + t.points + " pts" : "";
+  /* L'heure d'abord, comme dans l'agenda : c'est ce qu'on cherche du regard. */
+  const quand = heureTache(t);
   const sous = compact
-    ? (gain ? gain + " • " : "") + libellePeriode(t.frequence)
-    : (qui ? qui.prenom : absent ? pasLa(absent) : "personne d'assigné") +
-      (gain ? " • " + gain : "");
+    ? [quand, gain, libellePeriode(t.frequence)].filter(Boolean).join(" • ")
+    : [quand, qui ? qui.prenom : absent ? pasLa(absent) : "personne d'assigné", gain]
+      .filter(Boolean).join(" • ");
   /* Brique 3 : une tâche répartie dit pourquoi cette personne — et un parent
      la change d'un geste. */
   const rep = !compact && et.statut === "afaire" && !absent ? passageReparti(t, x.d || new Date()) : null;
@@ -777,7 +806,9 @@ function blocSemaineTaches(seulementMoi) {
     const passages = taches.filter((t) => t.frequence === "semaine" ? prevueLe(t, lundi) && jourDeLaSemaine(t) === k
       : prevueLe(t, d) && iso >= debutPlanning(t))
       .map((t) => ({ t: t, qui: assigneDe(t, d), et: etat.etats[cleEtat(t, d)] || { statut: "afaire" } }))
-      .filter((x) => !seulementMoi || x.qui === moi.id);
+      .filter((x) => !seulementMoi || x.qui === moi.id)
+      /* Une journée se lit dans l'ordre des heures ; ce qui n'en a pas suit. */
+      .sort((a, b) => String(a.t.heure || "99:99").localeCompare(String(b.t.heure || "99:99")));
     if (!passages.length && iso !== auj) continue;
     const passe = iso < auj;
     const texte = passages.length ? passages.map((x) => {
@@ -788,7 +819,8 @@ function blocSemaineTaches(seulementMoi) {
         ? '<button class="lien" style="font-size:inherit" data-action="tache-attribuer" data-id="' +
           esc(x.t.id) + '" data-date="' + iso + '">' + html + "</button>"
         : html;
-      const nom = esc((x.t.emoji || "🧹") + " " + x.t.nom);
+      const nom = esc((heureTache(x.t) ? heureTache(x.t) + " · " : "") +
+        (x.t.emoji || "🧹") + " " + x.t.nom);
       /* Brique 2 : la personne prévue n'est pas là, et personne n'est choisi. */
       const absent = aFaire ? absentDuTour(x.t, d) : null;
       if (absent) return nom + " — " + lien("à attribuer") + esc(" (" + pasLa(absent) + ")");
@@ -825,7 +857,8 @@ function blocPlusTard(seulementMoi) {
       const m = membre(x.qui);
       return '<div class="ligne">' + avatarDe(m) +
         '<div class="ligne-corps"><b>' + esc((x.t.emoji || "🧹") + " " + x.t.nom) + "</b>" +
-        "<small>" + esc((m ? m.prenom + " · " : "") + quandReviendra(x.t)) + "</small>" +
+        "<small>" + esc((heureTache(x.t) ? heureTache(x.t) + " · " : "") +
+          (m ? m.prenom + " · " : "") + quandReviendra(x.t)) + "</small>" +
         '<span class="etiquettes">' + etiquetteFrequence(x.t.frequence, x.t) + "</span></div>" +
         (estAdmin() ? '<button class="btn mini icone" data-action="tache-editer" data-id="' + esc(x.t.id) + '">✏️</button>' : "") +
         "</div>";
@@ -1346,6 +1379,22 @@ Vues.recettes = function () {
   h.push(carteAjout("recette-nouvelle", "Ajouter une recette",
     "la vôtre, ou une trouvée ailleurs"));
 
+  /* LA LISTE À PART (22/09/2026). Taper dans la recherche ne refabrique que
+     ce morceau : le champ de saisie n'est pas remplacé, il garde son curseur
+     et son clavier, et les centaines de lignes ne sont pas toutes redessinées
+     à chaque lettre. */
+  h.push('<div id="liste-recettes">' + listeRecettes() + "</div>");
+  return h.join("");
+};
+
+/* Le nombre de plats dessinés pendant une recherche. Une lettre seule peut en
+   ramener six cents : personne ne les fait défiler en tapant, et sur un
+   téléphone la page devenait lente. Sans recherche, le cahier s'affiche en
+   entier — l'index des lettres est là pour ça. */
+const PLATS_MONTRES = 150;
+
+function listeRecettes() {
+  const h = [];
   const liste = recettesFiltrees();
   const actif = ui.filtresRecettes.length || ui.rechercheRecette.trim();
 
@@ -1409,8 +1458,17 @@ Vues.recettes = function () {
     '<button class="btn mini icone" data-action="recette-editer" data-id="' + r.id +
     '" aria-label="Modifier">✏️</button></div>';
 
+  /* Pendant une recherche, on s'arrête à PLATS_MONTRES et on le dit. */
+  const deTrop = ui.rechercheRecette.trim() && liste.length > PLATS_MONTRES
+    ? liste.length - PLATS_MONTRES : 0;
+  const montres = deTrop ? liste.slice(0, PLATS_MONTRES) : liste;
+  const reste = () => (deTrop
+    ? '<p class="aide centre" style="margin-top:.7rem">… et ' + deTrop + " autre" + (deTrop > 1 ? "s" : "") +
+      " plat" + (deTrop > 1 ? "s" : "") + ". Précisez votre recherche pour les voir.</p>"
+    : "");
+
   if (ui.triRecettes !== "alpha") {
-    h.push('<div class="carte">' + liste.map(ligneRecette).join("") + "</div>");
+    h.push('<div class="carte">' + montres.map(ligneRecette).join("") + "</div>" + reste());
     return h.join("");
   }
 
@@ -1428,7 +1486,7 @@ Vues.recettes = function () {
     bloc = [];
   };
   const lettres = [];
-  liste.forEach((r) => {
+  montres.forEach((r) => {
     const l = lettreRecette(r);
     if (l !== lettre) { vider(); lettre = l; lettres.push(l); }
     bloc.push(ligneRecette(r));
@@ -1442,9 +1500,9 @@ Vues.recettes = function () {
       '<button data-action="recettes-lettre" data-valeur="' + l + '">' + l + "</button>").join("") +
       "</div>");
   }
-  h.push(sections.join(""));
+  h.push(sections.join("") + reste());
   return h.join("");
-};
+}
 
 /* ================================ RAPPELS ================================ */
 
@@ -1480,6 +1538,13 @@ function ligneNote(n, sansQuand) {
     (badge || n.note ? '<span class="etiquettes">' + badge +
       (n.repetition && n.repetition !== "aucune" ? '<span class="etiquette">↻</span>' : "") + "</span>" : "") +
     "</div>" +
+    /* 📅 : le rendez-vous part dans l'agenda du téléphone, qui sonnera même
+       MaTribu fermée. Rien sur un pense-bête (pas de date) ni sur un rappel
+       déjà fait : il n'y a plus rien à retenir. */
+    (estRendezVous(n) && !n.fait
+      ? '<button class="btn mini icone" data-action="note-agenda" data-id="' + n.id +
+        '" aria-label="Ajouter à mon agenda">📅</button>'
+      : "") +
     '<button class="btn mini icone" data-action="note-editer" data-id="' + n.id + '">✏️</button></div>';
 }
 
@@ -1779,6 +1844,9 @@ Vues.admin = function () {
     '<div class="ligne"><span style="font-size:1.3rem">📅</span>' +
     '<div class="ligne-corps"><b>Mode planning ' + (g.planning === true ? "activé" : "désactivé") +
     "</b><small>Choisir les jours de chaque tâche, et voir la semaine jour par jour.</small></div></div>" +
+    '<div class="ligne"><span style="font-size:1.3rem">🔤</span>' +
+    '<div class="ligne-corps"><b>Le mot du jour ' + (g.motDuJour === true ? "activé" : "désactivé") +
+    "</b><small>Un mot à deviner chaque jour, le même pour toute la tribu.</small></div></div>" +
     '<button class="btn plein doux" data-action="admin-reglages" style="margin-top:.7rem">Modifier</button>'));
 
   const ob = objectifFamille();
