@@ -551,6 +551,13 @@ input[type=checkbox]{min-width:18px;min-height:18px;accent-color:var(--accent);}
   border:1px solid var(--border);
   white-space:nowrap;
 }
+/* Une étiquette qui se touche (28/09/2026) : même allure, mais elle réagit
+   au doigt et se distingue par son trait plus marqué. */
+button.etiquette{
+  font-family:inherit;cursor:pointer;
+  border-style:dashed;border-color:var(--ink-muted);
+}
+button.etiquette:active{transform:scale(.96);}
 .etiquette.vert{background:var(--accent-soft);color:var(--accent-strong);border-color:transparent;}
 .etiquette.or{background:var(--gold-soft);color:var(--gold);border-color:transparent;}
 .etiquette.chaud{background:var(--warm-soft);color:var(--warm);border-color:transparent;}

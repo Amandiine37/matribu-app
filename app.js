@@ -40,6 +40,25 @@ const RAYONS = ["À catégoriser", "Fruits & légumes", "Boucherie", "Poissonner
    s'affichent des DEUX côtés, justement pour qu'on les range. */
 const RAYONS_MAISON = ["Entretien", "Hygiène", "Maison", "Animaux"];
 const RAYONS_NEUTRES = ["À catégoriser", "Autre"];
+
+/* L'ÉMOJI DE CHAQUE RAYON (28/09/2026, demandé par Amandine). Jusqu'ici tous
+   les rayons alimentaires portaient le même 🥫 — celui de leur CÔTÉ — ce qui
+   donnait « Fruits & légumes 🥫 ». Le côté est déjà écrit en toutes lettres
+   au-dessus de la liste ; l'émoji, lui, sert à reconnaître le rayon. Un rayon
+   ajouté par la famille n'est pas dans cette table : il garde celui de son
+   côté, faute de mieux. */
+const EMOJI_RAYONS = {
+  "À catégoriser": "🗂️", "Fruits & légumes": "🥬", "Boucherie": "🥩",
+  "Poissonnerie": "🐟", "Crèmerie": "🧀", "Boulangerie": "🥖",
+  "Épicerie": "🥫", "Surgelés": "🧊", "Boissons": "🥤",
+  "Entretien": "🧽", "Hygiène": "🧴", "Maison": "🏠",
+  "Animaux": "🐾", "Autre": "🗂️"
+};
+function emojiRayon(r) {
+  if (EMOJI_RAYONS[r]) return EMOJI_RAYONS[r];
+  const c = coteDuRayon(r);
+  return c === "maison" ? "🧴" : c === "neutre" ? "🗂️" : "🥫";
+}
 /* Rayons ajoutés par la famille (Administration ▸ Rayons). Rangés dans les
    réglages, donc écrits par un administrateur seulement, et valables pour
    toute la maison. Chacun déclare son côté : alimentaire ou maison. */
@@ -1485,18 +1504,35 @@ function objectifActif() {
   const o = objectifFamille();
   return o.actif && o.cible > 0 ? o : null;
 }
+/* Cette ligne du journal compte-t-elle dans le total de la tribu ?
+
+   UN SEUL ENDROIT POUR CETTE RÈGLE (28/09/2026). Le total commun et la part
+   de chacun (contributionDe) doivent compter exactement la même chose : sinon
+   les parts ne font pas le total, et c'est reparti pour deux compteurs qui se
+   contredisent — voir juste en dessous. */
+function comptePourLeCommun(e, o) {
+  if (e.delta <= 0) return false;                     // un cadeau ne défait rien
+  /* Une ligne SANS date compte quand même. Sans cette précaution, une date
+     absente passait pour la plus ancienne du monde : la ligne disparaissait
+     du compteur commun tout en restant dans le total personnel, qui ne
+     regarde pas la date. Deux compteurs qui se contredisent, c'est le
+     meilleur moyen de ne plus croire ni l'un ni l'autre. */
+  if (o.depuis && e.date && String(e.date) < o.depuis) return false;
+  return true;
+}
 function pointsCollectifs() {
   const o = objectifFamille();
-  return etat.journal.reduce((s, e) => {
-    if (e.delta <= 0) return s;                       // un cadeau ne défait rien
-    /* Une ligne SANS date compte quand même. Sans cette précaution, une date
-       absente passait pour la plus ancienne du monde : la ligne disparaissait
-       du compteur commun tout en restant dans le total personnel, qui ne
-       regarde pas la date. Deux compteurs qui se contredisent, c'est le
-       meilleur moyen de ne plus croire ni l'un ni l'autre. */
-    if (o.depuis && e.date && String(e.date) < o.depuis) return s;
-    return s + e.delta;
-  }, 0);
+  return etat.journal.reduce((s, e) => (comptePourLeCommun(e, o) ? s + e.delta : s), 0);
+}
+/* CE QUE QUELQU'UN A APPORTÉ À LA TRIBU (28/09/2026, demandé par Amandine).
+
+   À ne pas confondre avec pointsDe() : celui-là est une bourse — ce qu'on
+   possède, cadeaux déduits. Celui-ci est un apport — ce qu'on a mis dans le
+   pot commun depuis le lancement de l'objectif, et que rien ne reprend. */
+function contributionDe(idm) {
+  const o = objectifFamille();
+  return etat.journal.reduce((s, e) =>
+    (e.membreId === idm && comptePourLeCommun(e, o) ? s + e.delta : s), 0);
 }
 /* « depuis le 5 septembre » — la phrase qui manquait sous la jauge.
    Le compteur commun ne compte que ce qui a été gagné APRÈS le lancement de
@@ -1708,6 +1744,36 @@ function indexRotation(t, d) {
 }
 /* Le décalage qui fait commencer la PREMIÈRE personne choisie au prochain
    passage (aujourd'hui pour une tâche ordinaire, comme avant). */
+/* CHANGER « À REFAIRE » — LA RÈGLE, UNE SEULE FOIS (28/09/2026).
+
+   Elle vivait dans le formulaire de la tâche ; l'étiquette de la liste sait
+   maintenant la changer elle aussi, et deux copies d'une règle finissent
+   toujours par diverger. Ce qu'elle décide :
+     - les jours choisis n'ont de sens qu'en « certains jours » ;
+     - le rythme espacé (« toutes les 2 semaines ») est reposé, ou retiré ;
+     - « chacun son tour » se recale pour que la PREMIÈRE personne choisie
+       reprenne au prochain passage — sinon le tour saute quelqu'un ;
+     - le planning ne remonte pas avant le jour où les jours ont été choisis,
+       sinon les jours déjà passés de la semaine s'affichent « pas faite ».
+   Rend « vrai » si quelque chose a changé. */
+function appliquerFrequence(t, freq, jours, tous, depart) {
+  const parts = participantsValides(t);
+  const joursAvant = JSON.stringify(joursDeTache(t));
+  const freqChange = t.frequence !== freq;
+  const rythmeAvant = rythmeDe(t) + "|" + (t.tousDepuis || "");
+  t.frequence = freq;
+  if (freq === "jours") t.jours = jours; else delete t.jours;
+  poserRythme(t, freq, tous, depart);
+  const rythmeChange = rythmeDe(t) + "|" + (t.tousDepuis || "") !== rythmeAvant;
+  if (freq === "jours" && (freqChange || JSON.stringify(jours) !== joursAvant)) {
+    t.decalage = calageRotation(t, parts.length);
+    t.joursDepuis = isoDate(new Date());
+  } else if (rythmeChange) t.decalage = calageRotation(t, parts.length);
+  else if (freqChange) t.decalage = 0;
+  if (freq !== "jours") delete t.joursDepuis;
+  return freqChange || rythmeChange || JSON.stringify(joursDeTache(t)) !== joursAvant;
+}
+
 function calageRotation(t, n) {
   if (!n) return 0;
   return ((-indexRotation(t, prochaineOccurrence(t, new Date())) % n) + n) % n;
@@ -2025,6 +2091,27 @@ function passageReparti(t, d) {
   return planDeLaSemaine(d).passages[t.id + "|" + clePeriode(t.frequence, d)] || null;
 }
 function cleEtat(t, d) { return t.id + "|" + clePeriode(t.frequence, d); }
+/* Le jour visé par une action : celui qu'on lui passe, sinon aujourd'hui. À
+   midi, pour ne jamais glisser d'un jour au changement d'heure. */
+function jourVise(iso) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return new Date();
+  const [a, m, j] = iso.split("-").map(Number);
+  return new Date(a, m - 1, j, 12);
+}
+
+/* QUAND une tâche en attente a-t-elle été faite ? Rien si c'est la période en
+   cours. Sinon, on parle comme la tâche : un jour pour celles du jour, une
+   semaine pour celles de la semaine, un mois pour celles du mois — annoncer
+   « dimanche 27 » pour une tâche hebdomadaire serait faux (28/09/2026). */
+function quandFaite(t, d) {
+  if (clePeriode(t.frequence, d) === clePeriode(t.frequence, new Date())) return "";
+  if (t.frequence === "jour" || t.frequence === "jours") return dateJolie(isoDate(d));
+  if (t.frequence === "mois") {
+    return "en " + d.toLocaleDateString("fr-FR", { month: "long" });
+  }
+  const l = lundiDe(d);
+  return "semaine du " + l.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
 function etatTache(t, d) {
   return etat.etats[cleEtat(t, d)] || { statut: "afaire" };
 }
@@ -2051,8 +2138,34 @@ function tachesDuMoment() {
 function mesTachesAFaire() {
   return tachesDuMoment().filter((x) => x.assigne === (moi && moi.id) && x.et.statut === "afaire");
 }
+/* CE QUI ATTEND UNE VALIDATION, Y COMPRIS LES JOURS PASSÉS (28/09/2026).
+
+   On ne regardait que la période en cours : une tâche du jour cochée mercredi
+   et non validée avant minuit disparaissait jeudi, alors que son état restait
+   « fait » dans la base. Personne ne pouvait plus la valider, et les points
+   étaient perdus. On remonte donc quinze jours.
+
+   Chaque élément porte le JOUR de la période trouvée « d » : c'est lui qui
+   sert ensuite à valider la bonne case, et à l'annoncer à l'écran. Une tâche
+   « chaque semaine » a la même clé sept jours de suite — « vues » évite de la
+   proposer sept fois. */
+const JOURS_VALIDATION = 15;
 function tachesAValider() {
-  return tachesDuMoment().filter((x) => x.et.statut === "fait");
+  const vues = new Set();
+  const liste = [];
+  const auj = new Date();
+  for (let k = 0; k < JOURS_VALIDATION; k++) {
+    const d = new Date(auj.getFullYear(), auj.getMonth(), auj.getDate() - k, 12);
+    etat.taches.forEach((t) => {
+      const cle = cleEtat(t, d);
+      if (vues.has(cle)) return;
+      const et = etat.etats[cle];
+      if (!et || et.statut !== "fait") return;
+      vues.add(cle);
+      liste.push({ t: t, d: d, assigne: assigneDe(t, d), et: et });
+    });
+  }
+  return liste;
 }
 function echangesEnAttente() {
   return etat.echanges.filter((e) => e.statut === "demande");
@@ -4901,7 +5014,7 @@ async function menageInvitations(code) {
 
    Les 100 premieres tribus qui utilisent VRAIMENT l'application recoivent un
    numero permanent. Le deroule voulu : place reservee -> utilisation reelle
-   -> validation. Sans validation dans les 7 jours, la place retourne au pot.
+   -> validation. Sans validation dans le delai, la place retourne au pot.
 
    CE QUE LE SERVEUR GARANTIT (firestore.rules, match /fondateurs) : le numero
    est unique — c'est l'IDENTIFIANT du document, et Firestore refuse d'en
@@ -4917,7 +5030,14 @@ async function menageInvitations(code) {
 const PROGRAMME = {
   places: 100,           // places de Famille FONDATRICE : les pionnieres n'y comptent pas (19/09/2026)
   numeros: 110,          // numeros possibles : 100 fondatrices + les pionnieres (7), avec une marge
-  jours: 7,              // delai pour valider sa place
+  /* 30 JOURS, ET NON 7 (28/09/2026). Au bout d'une semaine, 51 des
+     56 places réservées étaient périmées et 2 familles seulement avaient
+     validé : le délai ne triait pas les familles motivées, il les éliminait
+     toutes. Trente jours laissent le temps de revenir, d'inviter quelqu'un et
+     de cocher cinq tâches. Ce chiffre est aussi écrit dans firestore.rules :
+     les deux doivent bouger ENSEMBLE, sinon le serveur refuse une validation
+     que l'application croit possible. */
+  jours: 30,             // delai pour valider sa place
   membres: 2,            // au moins deux personnes dans la tribu
   validees: 5,           // au moins cinq taches ou repas valides
   joursUtiles: 2,        // sur au moins deux jours differents
@@ -4999,13 +5119,13 @@ function avancementFondatrice() {
   };
 }
 
-/* Une place reservee puis oubliee retourne au pot au bout de 7 jours. */
+/* Une place reservee puis oubliee retourne au pot au bout de PROGRAMME.jours. */
 function placePerimee(p) {
   return !!(p && p.statut !== "validee" && p.reserveeLe
     && Date.now() > p.reserveeLe + PROGRAMME.jours * 86400000);
 }
 /* Les places de Famille Fondatrice encore tenues : ni les pionnieres (hors des
-   100 depuis le 19/09/2026), ni une place oubliee depuis plus de 7 jours, qui
+   100 depuis le 19/09/2026), ni une place oubliee depuis trop longtemps, qui
    retourne au pot. */
 function fondatricesEnPlace(places) {
   return (places || []).filter((p) => p.genre === "fondatrice" && !placePerimee(p)).length;
@@ -5092,7 +5212,7 @@ async function suivreProgrammeFondatrices(code) {
       }
       /* Pas encore validee. Le serveur refuse toute validation dans les 24 h
          qui suivent la reservation, sauf pour une vraie pionniere (15/09/2026) :
-         on reessaiera a la prochaine ouverture. Passe 7 jours, en revanche, la
+         on reessaiera a la prochaine ouverture. Passe le delai, en revanche, la
          place repart au pot, criteres atteints ou non — sinon une tribu absente
          pile a ce moment-la gardait pour toujours une place figee. */
       if (av.expiree) { await Store.libererPlaceFondatrice(p.numero); await oublierPlace(); }
@@ -5153,7 +5273,7 @@ async function reserverUnePlace(code) {
   for (let n = 1; n <= PROGRAMME.numeros; n++) {
     const deja = occupe[String(n)];
     if (deja) {
-      /* Le menage : une place oubliee depuis plus de 7 jours redevient
+      /* Le menage : une place oubliee depuis plus de PROGRAMME.jours redevient
          disponible. Les regles autorisent n'importe quelle tribu a la
          liberer — c'est ainsi que le pot se remplit, sans serveur. */
       if (!placePerimee(deja)) continue;
@@ -5297,23 +5417,28 @@ const Actions = {
     toast(estAdmin() ? "Fait ! Il ne reste qu'à le valider." : "Fait ! En attente de validation.");
   },
 
-  annulerFaite(tacheId) {
+  /* « quand » (aaaa-mm-jj) : le jour de la case visée. Sans lui, on travaille
+     sur aujourd'hui — et valider une tâche de mercredi en créait une de
+     jeudi, en laissant l'autre en plan (28/09/2026). Midi : jamais de
+     mauvaise surprise au changement d'heure. */
+  annulerFaite(tacheId, quand) {
     const t = etat.taches.find((x) => x.id === tacheId);
     if (!t) return;
-    const cle = cleEtat(t, new Date());
+    const cle = cleEtat(t, jourVise(quand));
     if ((etat.etats[cle] || {}).statut !== "fait") return;
     etat.etats[cle] = { statut: "afaire", parQui: null, faitLe: null, valideLe: null, valideePar: null };
     sauverEtat(cle);
   },
 
-  async valider(tacheId) {
+  async valider(tacheId, quand) {
     const t = etat.taches.find((x) => x.id === tacheId);
     if (!t || !estAdmin()) return;
-    const cle = cleEtat(t, new Date());
+    const d = jourVise(quand);
+    const cle = cleEtat(t, d);
     const e = etat.etats[cle];
     if (!e || e.statut !== "fait") return;
 
-    const gagnant = e.parQui || assigneDe(t, new Date());
+    const gagnant = e.parQui || assigneDe(t, d);
     e.statut = "valide";
     e.valideLe = new Date().toISOString();
     e.valideePar = moi.id;
@@ -5329,13 +5454,13 @@ const Actions = {
           : "Validé");
   },
 
-  async refuser(tacheId) {
+  async refuser(tacheId, quand) {
     const t = etat.taches.find((x) => x.id === tacheId);
     if (!t || !estAdmin()) return;
     const ok = await confirmer("Renvoyer « " + t.nom + " » en « à faire » ? Aucun point ne sera donné.",
       { titre: "Refuser la tâche", ok: "Renvoyer", danger: true });
     if (!ok) return;
-    const cle = cleEtat(t, new Date());
+    const cle = cleEtat(t, jourVise(quand));
     etat.etats[cle] = { statut: "afaire", parQui: null, faitLe: null, valideLe: null, valideePar: null };
     sauverEtat(cle);
   },
@@ -5878,6 +6003,37 @@ const Actions = {
       membreId: membreId, delta: delta, motif: motif || "Ajustement"
     });
     if (ok) { rendre(); toast((delta > 0 ? "+" : "") + delta + " points"); }
+  },
+
+  /* REMETTRE LE COMPTEUR DE QUELQU'UN À ZÉRO (28/09/2026).
+
+     On n'efface pas le journal — le serveur l'interdit, et c'est tant mieux :
+     on y écrit le mouvement inverse, comme pour un cadeau. L'historique reste
+     entier, et le compteur repart de zéro.
+
+     Le serveur borne un ajustement à ±1000 : au-delà, on écrit plusieurs
+     lignes plutôt que d'ouvrir la borne. Et le défi commun n'est pas touché :
+     il ne compte que les points GAGNÉS, jamais les retraits. */
+  async remettreAZero(membreId, motif) {
+    if (!estAdmin()) return false;
+    const m = membre(membreId);
+    if (!m) return false;
+    let reste = pointsDe(membreId);
+    if (!reste) return true;                    // déjà à zéro : rien à écrire
+    const signe = reste > 0 ? -1 : 1;
+    let lignes = 0;
+    while (reste !== 0 && lignes < 60) {        // garde-fou : jamais de boucle folle
+      const pas = Math.min(1000, Math.abs(reste)) * signe;
+      const ok = await ajouterAuJournal({
+        id: "a|" + id(), type: "ajustement", refId: null,
+        membreId: membreId, delta: pas, motif: motif || "Remise à zéro"
+      });
+      if (!ok) { rendre(); toast("Remise à zéro refusée par le serveur"); return false; }
+      lignes++;
+      reste += pas;
+    }
+    rendre();
+    return true;
   }
 };
 
@@ -7829,8 +7985,22 @@ function rendre() {
     bActu.innerHTML = "✨" + (aLire ? '<span class="point-maj"></span>' : "");
     bActu.title = aLire ? "Quoi de neuf — du nouveau" : "Quoi de neuf";
   }
-  $("#btn-points").hidden = !pointsActifs();
-  $("#mes-points").textContent = pointsActifs() ? pointsDe(moi.id) : "0";
+  /* LA PASTILLE DE L'EN-TÊTE (28/09/2026).
+
+     Avec les compteurs personnels : ma bourse, et elle ouvre « Points &
+     cadeaux ». Sans eux : le total de la TRIBU et un 🤝, et elle ouvre
+     l'objectif commun — l'écran des points n'existe pas dans ce mode. Il
+     manquait sinon tout chiffre sous les yeux, et l'objectif n'existait que
+     sur l'accueil. Points éteints : rien du tout. */
+  const pastille = $("#btn-points");
+  const perso = pointsPersoActifs();
+  pastille.hidden = !pointsActifs();
+  pastille.title = perso ? "Mes points" : "Objectif commun";
+  pastille.dataset.action = perso ? "aller" : "objectif-commun";
+  if (perso) pastille.dataset.vue = "points"; else delete pastille.dataset.vue;
+  $("#icone-points").textContent = perso ? "🌟" : "🤝";
+  $("#mes-points").textContent = perso ? pointsDe(moi.id)
+    : pointsActifs() ? pointsCollectifs() : "0";
 
   document.querySelectorAll(".vue").forEach((s) => s.classList.remove("active"));
   const cible = $("#vue-" + v);
@@ -7875,6 +8045,8 @@ const NOMS_ICONES = {
   "cadeau-pour": "Offrir un cadeau",
   "echange-refuser": "Refuser la demande",
   "points-ajuster": "Ajuster les points",
+  "points-zero-tous": "Remettre les compteurs à zéro",
+  "objectif-commun": "Objectif commun",
   "semaine-prec": "Semaine précédente",
   "semaine-suiv": "Semaine suivante",
   /* les rôles du bouton flottant ＋ (voir majFab) */
@@ -7966,6 +8138,17 @@ function reglagesFamille() {
    à l'identique si on le rallume. */
 function pointsActifs() {
   return reglagesFamille().points !== false;
+}
+
+/* Les compteurs PERSONNELS sont-ils de la partie ? (28/09/2026, demandé par
+   Amandine.) Gagner et posséder sont deux choses : une tâche vaut toujours
+   ses points — c'est ce qui remplit la jauge de la famille —, mais on peut
+   vouloir qu'ils ne servent qu'au commun. Décoché, on retire le compteur de
+   l'en-tête, le classement, les cadeaux et l'écran « Points & cadeaux » ;
+   chacun voit ce qu'il a apporté à la tribu, et rien sur les autres.
+   Coché par défaut : les familles existantes ne changent pas. */
+function pointsPersoActifs() {
+  return pointsActifs() && reglagesFamille().pointsPerso !== false;
 }
 
 /* L'option « Macronutriments » (18/09/2026, demandée par Amandine) : les
@@ -8172,7 +8355,7 @@ function aller(vue) {
   if (vue !== "accueil" && vue !== "admin" && ongletMasque(vue)) vue = "accueil";
   /* Points éteints : l'écran Points & cadeaux n'est plus atteignable, même
      par un vieux raccourci ou par la vue mémorisée. */
-  if (vue === "points" && !pointsActifs()) vue = "accueil";
+  if (vue === "points" && !pointsPersoActifs()) vue = "accueil";
   ui.vue = vue;
   memoriserVue();
   window.scrollTo({ top: 0 });
@@ -8228,9 +8411,10 @@ document.addEventListener("click", (e) => {
 
     case "tache-fait": Actions.marquerFaite(v); break;
     case "tache-annuler": Actions.annulerFaite(v); break;
-    case "tache-valider": Actions.valider(v); break;
-    case "tache-refuser": Actions.refuser(v); break;
+    case "tache-valider": Actions.valider(v, b.dataset.date || null); break;
+    case "tache-refuser": Actions.refuser(v, b.dataset.date || null); break;
     case "tache-attribuer": Formulaires.attribuer(v, b.dataset.date); break;
+    case "tache-frequence": Formulaires.frequence(v); break;
     case "tache-nouvelle": Formulaires.tache(null); break;
     case "tache-editer": Formulaires.tache(v); break;
     case "taches-filtre": ui.filtreTaches = b.dataset.valeur; rendre(); break;
@@ -8395,6 +8579,8 @@ document.addEventListener("click", (e) => {
     case "echange-accorder": Actions.accorderEchange(v); break;
     case "echange-refuser": Actions.refuserEchange(v); break;
     case "points-ajuster": Formulaires.ajustementPoints(v); break;
+    case "points-zero-tous": Formulaires.remiseAZeroTous(); break;
+    case "objectif-commun": Formulaires.objectifCommun(); break;
     case "points-historique": Formulaires.historique(v); break;
     case "cadeau-pour": Formulaires.cadeauPour(v); break;
 

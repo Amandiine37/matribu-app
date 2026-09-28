@@ -117,6 +117,11 @@ Formulaires.tache = function (tid) {
       ? puceMultiple("part", etat.membres.map((m) => ({ val: m.id, html: esc(m.emoji + " " + m.prenom) })),
         cour.participants || [])
       : '<p class="aide">Ajoutez d\'abord des membres.</p>') +
+    /* On distingue les deux gestes, sinon on vient ici pour un échange d'un
+       soir et l'on change la tâche pour toujours (28/09/2026). */
+    '<p class="aide" style="margin:-.5rem 0 1rem">Ceci vaut pour <b>toutes les fois</b>. ' +
+    "Pour changer <b>juste pour cette fois</b> — un échange, quelqu'un qui n'est pas là —, " +
+    "touchez le <b>prénom</b> sous la tâche, dans la liste.</p>" +
     /* Mode planning, brique 3 : l'appli répartit elle-même, à la place du
        tour. Pas pour une tâche « chaque mois ». */
     (planningActif()
@@ -238,21 +243,11 @@ Formulaires.tache = function (tid) {
         /* Mode planning : quand la fréquence ou les jours changent, la
            rotation repart de la première personne choisie (avant : de zéro,
            ce qui reste le cas pour les autres fréquences). */
-        const joursAvant = JSON.stringify(joursDeTache(t));
-        const freqChange = t.frequence !== freq;
-        const rythmeAvant = rythmeDe(t) + "|" + (t.tousDepuis || "");
-        t.frequence = freq;
-        if (freq === "jours") t.jours = jours; else delete t.jours;
-        /* Tous les N : un nouveau rythme fait, lui aussi, commencer la première
-           personne choisie au prochain passage. */
-        poserRythme(t, freq, tous, depart);
-        const rythmeChange = rythmeDe(t) + "|" + (t.tousDepuis || "") !== rythmeAvant;
-        if (freq === "jours" && (freqChange || JSON.stringify(jours) !== joursAvant)) {
-          t.decalage = calageRotation(t, part.length);
-          t.joursDepuis = isoDate(new Date());   // la semaine ne remonte pas avant
-        } else if (rythmeChange) t.decalage = calageRotation(t, part.length);
-        else if (freqChange) t.decalage = 0;
-        if (freq !== "jours") delete t.joursDepuis;
+        /* La règle vit dans appliquerFrequence() : la fiche et l'étiquette
+           de la liste la partagent depuis le 28/09/2026. Les participants
+           sont posés AVANT, car le recalage du tour compte sur eux. */
+        t.participants = part;
+        appliquerFrequence(t, freq, jours, tous, depart);
         /* Points éteints : le champ n'est pas affiché. On GARDE la valeur
            existante, sinon modifier une tâche la remettrait à zéro et le
            réglage ne serait plus réversible sans perte. */
@@ -260,7 +255,6 @@ Formulaires.tache = function (tid) {
         /* Heure effacée : on retire le champ plutôt que d'y laisser du vide. */
         const heure = String(d.get("heure") || "").trim();
         if (heure) t.heure = heure; else delete t.heure;
-        t.participants = part;
         t.rotation = !!d.get("rotation");
         /* Brique 3 : la case n'existe qu'en mode planning ; sans elle, on garde. */
         if (f.querySelector('[name="repartition"]')) {
@@ -1029,6 +1023,22 @@ Formulaires.reglagesFamille = function () {
     "« c'est fait » et la validation. Rien n'est effacé, et tout revient si vous le " +
     "réactivez.</small></span></label>" +
 
+    /* LE MODE COLLECTIF (28/09/2026, demandé par Amandine). Sous le système
+       de points, car il n'a de sens que si celui-ci est allumé — le formulaire
+       le grise tout seul sinon. */
+    '<label class="champ" style="display:flex;gap:.6rem;align-items:flex-start;' +
+    'margin-left:1.6rem" data-role="bloc-perso">' +
+    '<input type="checkbox" name="pointsPerso"' + (g.pointsPerso !== false ? " checked" : "") +
+    ' style="width:auto;margin-top:.25rem"><span style="margin:0">Compteurs personnels' +
+    '<br><small style="font-weight:400">Chacun voit ses points, le classement et les ' +
+    "cadeaux. Décoché, il ne reste que l'objectif commun : les tâches rapportent " +
+    "toujours, la jauge de la tribu se remplit, et chacun voit <b>ce qu'il a " +
+    "apporté</b> — sans classement, sans cadeaux et sans rien savoir des autres. " +
+    "Les cadeaux ne sont pas effacés : ils reviennent si vous recochez.</small></span></label>" +
+    '<p class="aide" data-role="sans-objectif" style="margin:-.4rem 0 1rem;display:none">' +
+    "⚠️ Sans objectif commun lancé, ce mode n'affiche presque rien : pensez à en " +
+    "lancer un depuis l'administration.</p>" +
+
     '<label class="champ" style="display:flex;gap:.6rem;align-items:flex-start">' +
     '<input type="checkbox" name="antiGaspi"' + (g.antiGaspi !== false ? " checked" : "") +
     ' style="width:auto;margin-top:.25rem"><span style="margin:0">Anti-gaspillage' +
@@ -1061,6 +1071,22 @@ Formulaires.reglagesFamille = function () {
     boutonsFormulaire("Enregistrer", false) + "</form>";
 
   ouvrirFeuille("Réglages de la famille", html, (f) => {
+    /* Les deux cases vont ensemble : sans système de points, « compteurs
+       personnels » ne veut plus rien dire. On le montre au lieu de le
+       laisser deviner. */
+    const cPoints = f.querySelector('[name="points"]');
+    const cPerso = f.querySelector('[name="pointsPerso"]');
+    const blocPerso = f.querySelector('[data-role="bloc-perso"]');
+    const avert = f.querySelector('[data-role="sans-objectif"]');
+    const suivre = () => {
+      cPerso.disabled = !cPoints.checked;
+      blocPerso.style.opacity = cPoints.checked ? "" : ".45";
+      avert.style.display = cPoints.checked && !cPerso.checked && !objectifActif() ? "" : "none";
+    };
+    cPoints.onchange = suivre;
+    cPerso.onchange = suivre;
+    suivre();
+
     f.onsubmit = (ev) => {
       ev.preventDefault();
       const d = new FormData(ev.target);   // ev.target = le <form>, pas la feuille
@@ -1069,6 +1095,9 @@ Formulaires.reglagesFamille = function () {
       etat.reglages = Object.assign({}, etat.reglages, {
         convives: n,
         points: !!d.get("points"),
+        /* Une case grisée n'est pas envoyée : on garde alors la valeur d'avant,
+           pour ne pas effacer un choix qu'on n'a pas pu faire. */
+        pointsPerso: cPoints.checked ? !!d.get("pointsPerso") : g.pointsPerso !== false,
         pointsRepas: Math.max(0, Math.min(200, Number(d.get("pointsRepas")) || 0)),
         antiGaspi: !!d.get("antiGaspi"),
         macros: !!d.get("macros"),
@@ -2044,6 +2073,85 @@ Formulaires.presence = function (mid) {
    choisit parmi ceux qui sont là — toute la famille, pas seulement les
    participants, lui compris. Le choix est rangé dans la tâche
    (t.attributions), écrite par les seuls administrateurs. */
+/* ================= À QUELLE FRÉQUENCE ? (28/09/2026) =================
+
+   On touche l'étiquette d'une tâche (« Chaque semaine », « mar. · ven. »…) et
+   on change sa fréquence sans ouvrir la fiche. Contrairement au prénom, qui
+   ne vaut que pour un passage, ceci vaut POUR TOUTES LES FOIS : la feuille le
+   dit en toutes lettres.
+
+   Les rythmes espacés restent à la fiche : ils demandent deux choix de plus,
+   et les entasser ici ferait de ce raccourci un second formulaire. */
+Formulaires.frequence = function (tid) {
+  if (!estAdmin()) return;
+  const t = etat.taches.find((x) => x.id === tid);
+  if (!t) return;
+  const avecJours = planningActif() || t.frequence === "jours";
+  const espace = rythmeDe(t) > 1;
+
+  const choix = [["jour", "Chaque jour"]]
+    .concat(avecJours ? [["jours", "Certains jours"]] : [])
+    .concat([["semaine", "Chaque semaine"], ["mois", "Chaque mois"]]);
+
+  const html = '<p class="aide" style="margin:0 0 .8rem"><b>' + esc((t.emoji || "🧹") + " " + t.nom) +
+    "</b> — à refaire quand ? Ce choix vaut <b>pour toutes les fois</b>.</p>" +
+    '<div class="puces" id="choix-freq" style="margin-bottom:1rem">' +
+    choix.map(([v, l]) => '<button type="button" class="puce' + (t.frequence === v ? " on" : "") +
+      '" data-freq="' + v + '">' + esc(l) + "</button>").join("") + "</div>" +
+    '<div id="choix-jours-court"' + (t.frequence === "jours" ? "" : " hidden") + ">" +
+    '<p class="aide" style="margin:0 0 .5rem">Quels jours ?</p>' +
+    '<div class="puces" id="jours-court" style="margin-bottom:1rem">' +
+    JOURS.map((nom, k) => '<button type="button" class="puce' +
+      (joursDeTache(t).indexOf(k + 1) !== -1 ? " on" : "") + '" data-jour="' + (k + 1) + '">' +
+      esc(nom.slice(0, 3)) + "</button>").join("") + "</div></div>" +
+    (espace
+      ? '<p class="aide">⚠️ Cette tâche revient <b>' + esc(libelleRythme(t.frequence, rythmeDe(t)).toLowerCase()) +
+        "</b>. En changeant ici, elle reviendra <b>chaque fois</b> ; le rythme espacé se règle dans la fiche ✏️.</p>"
+      : '<p class="aide">Pour un rythme plus espacé (toutes les 2 semaines, une fois par an…), ' +
+        "passez par la fiche ✏️.</p>") +
+    '<button type="button" class="btn plein" data-action="fermer" style="margin-top:.6rem">Fermer</button>';
+
+  ouvrirFeuille("À refaire", html, (feuille) => {
+    /* Les jours se cochent librement ; la fréquence, elle, ferme la feuille —
+       sauf « certains jours », qui attend justement qu'on choisisse les jours. */
+    const zoneJours = feuille.querySelector("#choix-jours-court");
+    const joursChoisis = () => [...feuille.querySelectorAll("#jours-court .on")]
+      .map((b) => Number(b.dataset.jour)).sort((a, b) => a - b);
+    const poser = (freq) => {
+      const jours = freq === "jours" ? joursChoisis() : [];
+      if (freq === "jours" && !jours.length) return;      // au moins un jour
+      if (appliquerFrequence(t, freq, jours, 1, 0)) sauver("taches");
+      rendre();
+    };
+    feuille.querySelector("#choix-freq").onclick = (ev) => {
+      const b = ev.target.closest("[data-freq]");
+      if (!b) return;
+      feuille.querySelectorAll("#choix-freq .puce").forEach((p) => p.classList.remove("on"));
+      b.classList.add("on");
+      const freq = b.dataset.freq;
+      zoneJours.hidden = freq !== "jours";
+      if (freq === "jours") {
+        /* Aucun jour encore coché : on propose celui d'aujourd'hui, pour que
+           le choix veuille déjà dire quelque chose. */
+        if (!joursChoisis().length) {
+          const auj = feuille.querySelector('[data-jour="' + numJour(new Date()) + '"]');
+          if (auj) auj.classList.add("on");
+        }
+        poser("jours");
+        return;
+      }
+      poser(freq);
+      fermerFeuille();
+    };
+    feuille.querySelector("#jours-court").onclick = (ev) => {
+      const b = ev.target.closest("[data-jour]");
+      if (!b) return;
+      b.classList.toggle("on");
+      poser("jours");
+    };
+  });
+};
+
 Formulaires.attribuer = function (tid, iso) {
   if (!estAdmin()) return;
   const t = etat.taches.find((x) => x.id === tid);
@@ -2705,8 +2813,14 @@ Formulaires.bienvenue = function () {
       "une seule personne. Ils remontent sur l'accueil le jour venu."]
   };
   const volets = ongletsVisibles().filter((o) => textes[o.vue]).map((o) => textes[o.vue]);
-  if (pointsActifs()) volets.push(["🌟", "Les points", "Les tâches validées rapportent des points, " +
-    "à échanger contre de petits plaisirs en famille. Et un objectif commun, à atteindre tous ensemble."]);
+  if (pointsPersoActifs()) {
+    volets.push(["🌟", "Les points", "Les tâches validées rapportent des points, " +
+      "à échanger contre de petits plaisirs en famille. Et un objectif commun, à atteindre tous ensemble."]);
+  } else if (pointsActifs()) {
+    volets.push(["🤝", "Les points", "Les tâches validées rapportent des points à toute la tribu, " +
+      "pour atteindre ensemble un objectif commun. Chacun voit ce qu'il a apporté ; il n'y a " +
+      "ni classement ni compteur personnel."]);
+  }
   /* LE DERNIER VOLET NE RACONTE PLUS, IL FAIT FAIRE (22/09/2026).
      Deux tribus sur trois n'ont jamais rouvert l'application après le jour de
      leur création. Ce qui distingue celles qui reviennent tient à ces deux
@@ -3224,12 +3338,32 @@ Formulaires.ajustementPoints = function (mid) {
     '<input type="text" name="motif" maxlength="60" placeholder="Coup de main exceptionnel"></label>' +
     '<div class="rangee-btn" style="margin-top:1.2rem">' +
     '<button type="button" class="btn" data-action="fermer">Annuler</button>' +
-    '<button type="submit" class="btn principal">Appliquer</button></div></form>';
+    '<button type="submit" class="btn principal">Appliquer</button></div>' +
+    /* REMETTRE À ZÉRO (28/09/2026) : il fallait calculer soi-même le nombre
+       exact à retirer. C'est le geste d'un nouveau départ — celui qu'on fait
+       quand le défi commun repart de zéro. */
+    (pointsDe(m.id)
+      ? '<hr class="sep"><button type="button" class="btn doux plein" data-role="zero">' +
+        "🔄 Remettre le compteur à zéro</button>" +
+        '<p class="aide">L\'historique n\'est <b>pas effacé</b> : une ligne ' +
+        "« Remise à zéro » s'y ajoute. Le <b>défi commun</b> n'est pas touché."
+        + "</p>"
+      : "") + "</form>";
 
   ouvrirFeuille("Ajuster les points de " + m.prenom, html, (f) => {
     f.querySelector('[data-role="rapide"]').onclick = (ev) => {
       const b = ev.target.closest("[data-n]");
       if (b) f.querySelector('[name="delta"]').value = b.dataset.n;
+    };
+    const bz = f.querySelector('[data-role="zero"]');
+    if (bz) bz.onclick = async () => {
+      const avant = pointsDe(m.id);
+      const ok = await confirmer(m.prenom + " a " + avant + " points. Son compteur repart " +
+        "de zéro. Son historique et ses cadeaux déjà obtenus ne bougent pas.",
+        { titre: "Remettre à zéro", ok: "Remettre à zéro", danger: true });
+      if (!ok) return;
+      fermerFeuille();
+      if (await Actions.remettreAZero(m.id)) toast(m.prenom + " repart de zéro 🔄");
     };
     f.onsubmit = (ev) => {
       ev.preventDefault();
@@ -3238,6 +3372,90 @@ Formulaires.ajustementPoints = function (mid) {
       if (!delta) { fermerFeuille(); return; }
       fermerFeuille();
       Actions.ajusterPoints(m.id, delta, String(d.get("motif") || "").trim() || "Ajustement");
+    };
+  });
+};
+
+/* L'OBJECTIF COMMUN, VU DE N'IMPORTE OÙ (28/09/2026).
+
+   Ce que la pastille ouvre en mode collectif. On y met ce qu'on veut savoir
+   en un coup d'œil : où en est la tribu, et ce qu'on y a mis soi-même. Rien
+   sur les autres : c'est la règle de ce mode. */
+Formulaires.objectifCommun = function () {
+  const o = objectifActif();
+  const total = pointsCollectifs();
+  const part = contributionDe(moi.id);
+
+  const jauge = o
+    ? '<div class="carte" style="text-align:center">' +
+      '<div style="font-size:2rem;line-height:1">' + esc(o.emoji || "🎯") + "</div>" +
+      '<div style="font-family:var(--font-display);font-size:1.15rem;margin:.25rem 0 .1rem">' +
+      esc(o.nom) + "</div>" +
+      '<div class="barre-progression" style="margin-top:.6rem"><i style="width:' +
+      Math.min(100, Math.round(total / o.cible * 100)) + '%"></i></div>' +
+      '<div style="margin-top:.5rem;font-weight:700">' + total + " / " + o.cible + " points</div>" +
+      '<div class="aide">Points gagnés ' + depuisQuandObjectif() + "</div>" +
+      (total >= o.cible
+        ? '<div class="bandeau info" style="margin:.7rem 0 0;text-align:left">🎉<div>' +
+          "<b>Objectif atteint !</b> À vous de fêter ça.</div></div>"
+        : '<div class="aide" style="margin-top:.35rem">Encore ' + (o.cible - total) +
+          " points, tous ensemble</div>") + "</div>"
+    : '<div class="carte" style="text-align:center">' +
+      '<div style="font-size:2rem;line-height:1">🤝</div>' +
+      '<div style="font-family:var(--font-display);font-size:1.15rem;margin:.25rem 0 .1rem">' +
+      total + " points, tous ensemble</div>" +
+      '<div class="aide">Points gagnés ' + depuisQuandObjectif() + "</div>" +
+      (estAdmin()
+        ? '<p class="aide" style="margin-top:.6rem">Aucun objectif n\'est lancé. ' +
+          "Vous pouvez en poser un depuis l'administration.</p>"
+        : "") + "</div>";
+
+  const moiDedans = '<div class="carte"><div class="ligne">' + avatarDe(moi) +
+    '<div class="ligne-corps"><b>Vous y avez mis ' + part + " point" + (part > 1 ? "s" : "") +
+    "</b><small>" + (part
+      ? "sur les " + total + " de toute la tribu"
+      : "Validez une tâche ou un repas pour y contribuer.") + "</small></div></div></div>";
+
+  ouvrirFeuille("Objectif commun", jauge + moiDedans +
+    '<button class="btn plein" data-action="points-historique" style="margin-top:.8rem">' +
+    "🧾 Le détail de ce que j'ai gagné</button>" +
+    '<button class="btn plein" data-action="fermer" style="margin-top:.5rem">Fermer</button>');
+};
+
+/* REMETTRE TOUT LE MONDE À ZÉRO (28/09/2026).
+
+   C'est le geste qui accompagne un nouveau défi commun : on repart à zéro
+   ensemble. On annonce qui perd quoi AVANT de le faire — un compteur remis à
+   zéro sans prévenir, c'est une dispute assurée. */
+Formulaires.remiseAZeroTous = function () {
+  if (!estAdmin()) return;
+  const gens = classement().filter((x) => x.pts);
+  if (!gens.length) { toast("Tous les compteurs sont déjà à zéro"); return; }
+
+  const html = '<p class="aide" style="margin:0 0 .9rem">Les compteurs repartent de zéro. ' +
+    "<b>L'historique n'est pas effacé</b> : chacun garde le détail de ce qu'il a gagné, " +
+    "et les cadeaux déjà obtenus restent acquis.</p>" +
+    '<div class="carte">' + gens.map((x) =>
+      '<div class="ligne">' + avatarDe(x.m) + '<div class="ligne-corps"><b>' + esc(x.m.prenom) +
+      "</b><small>" + x.pts + " points → 0</small></div></div>").join("") + "</div>" +
+    '<div class="bandeau info">🤝<div>Le <b>défi commun</b> n\'est pas touché : il compte les ' +
+    "points gagnés, jamais les retraits. Pour le relancer, c'est dans " +
+    "<b>Administration → Objectif commun</b>.</div></div>" +
+    '<button type="button" class="btn danger plein" data-role="zero">🔄 Tout remettre à zéro</button>' +
+    '<button type="button" class="btn plein" data-action="fermer" style="margin-top:.6rem">Annuler</button>';
+
+  ouvrirFeuille("Remettre les compteurs à zéro", html, (f) => {
+    f.querySelector('[data-role="zero"]').onclick = async () => {
+      const ok = await confirmer("Les compteurs de " + gens.length + " personne" +
+        (gens.length > 1 ? "s repartent" : " repart") + " de zéro. " +
+        "Les historiques et les cadeaux déjà obtenus ne bougent pas.",
+        { titre: "Tout remettre à zéro", ok: "Remettre à zéro", danger: true });
+      if (!ok) return;
+      fermerFeuille();
+      let faits = 0;
+      for (const x of gens) { if (await Actions.remettreAZero(x.m.id)) faits++; }
+      toast(faits === gens.length ? "Tout le monde repart de zéro 🔄"
+        : faits + " compteur" + (faits > 1 ? "s remis" : " remis") + " à zéro sur " + gens.length);
     };
   });
 };
@@ -3266,7 +3484,11 @@ Formulaires.historique = function (mid) {
     tous.length + " mouvement" + (tous.length > 1 ? "s" : "") +
     (tous.length > sien.length ? " • les " + sien.length + " derniers" : "") +
     "</small></div>" +
-    '<span class="etiquette or">' + solde + " pts</span></div>";
+    /* En mode collectif, le solde n'a plus cours : ce qui reste vrai, c'est
+       ce qu'on a apporté (28/09/2026). */
+    '<span class="etiquette or">' +
+    (pointsPersoActifs() ? solde + " pts" : contributionDe(cible.id) + " apportés") +
+    "</span></div>";
 
   const html = entete + (sien.length
     ? sien.map((e) =>
@@ -3376,11 +3598,19 @@ Formulaires.menuProfil = function () {
     '<span class="avatar">' + esc(moi.emoji || "🙂") + "</span>" +
     '<div class="ligne-corps"><b>' + esc(moi.prenom) + "</b><small>" +
     (estAdmin() ? "Administrateur" : "Membre") + " • " + esc(etat.famille.nom) + "</small></div>" +
-    (pointsActifs() ? '<span class="etiquette or">' + pointsDe(moi.id) + " pts</span>" : "") + "</div>" +
+    /* Ma bourse, ou ce que j'ai apporté quand il n'y a plus de bourse. */
+    (pointsPersoActifs() ? '<span class="etiquette or">' + pointsDe(moi.id) + " pts</span>"
+      : pointsActifs() ? '<span class="etiquette or">' + contributionDe(moi.id) + " apportés</span>"
+        : "") + "</div>" +
     '<p style="margin:.6rem 0 1rem">' + etatTexte + "</p>" + alerteCrypto +
-    (pointsActifs()
+    (pointsPersoActifs()
       ? '<button class="btn plein" data-action="aller" data-vue="points" style="margin-bottom:.5rem">🌟 Points & cadeaux</button>'
-      : "") +
+      : pointsActifs()
+        /* L'écran « Points & cadeaux » n'existe plus dans ce mode, mais le
+           détail de ce qu'on a gagné, si : c'est la réponse à « pourquoi
+           j'ai ce chiffre-là ? ». */
+        ? '<button class="btn plein" data-action="points-historique" style="margin-bottom:.5rem">🧾 Mon historique de points</button>'
+        : "") +
     '<button class="btn plein" data-action="aller" data-vue="recettes" style="margin-bottom:.5rem">📖 Mes recettes</button>' +
     (estAdmin()
       ? '<button class="btn plein" data-action="aller" data-vue="admin" style="margin-bottom:.5rem">⚙️ Administration</button>'
@@ -4535,6 +4765,11 @@ Formulaires.bilanSemaine = function (cleSem) {
   const dim = new Date(lundi); dim.setDate(dim.getDate() + 6);
   const fmt = { day: "numeric", month: "long" };
   const o = objectifActif();
+  /* « Qui a fait quoi » est un classement de la semaine : en mode collectif,
+     chacun ne voit que sa propre part, sinon on remet par la petite porte ce
+     qu'on vient de retirer par la grande (28/09/2026). */
+  const parts = pointsPersoActifs() ? b.classement
+    : b.classement.filter((x) => x.membre.id === moi.id);
 
   const chiffre = (n, mot, emoji) =>
     '<div style="flex:1;text-align:center">' +
@@ -4556,9 +4791,10 @@ Formulaires.bilanSemaine = function (cleSem) {
         chiffre(b.pointsGagnes, "points gagnés", "🌟") +
         "</div>" +
 
-        (b.classement.length
-          ? '<div class="sous-titre"><h3>Qui a fait quoi</h3></div>' +
-            '<div class="carte">' + b.classement.map((x) =>
+        (parts.length
+          ? '<div class="sous-titre"><h3>' +
+            (pointsPersoActifs() ? "Qui a fait quoi" : "Ce que vous avez apporté") + "</h3></div>" +
+            '<div class="carte">' + parts.map((x) =>
               '<div class="ligne">' + avatarDe(x.membre) +
               '<div class="ligne-corps"><b>' + esc(x.membre.prenom) + "</b></div>" +
               '<span class="etiquette or">+' + x.pts + " pts</span></div>").join("") +

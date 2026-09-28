@@ -61,12 +61,18 @@ function carteAjoutSaisie(idForm, idChamp, titre, exemple, aide) {
 function rienDu(emoji, texte) {
   return '<div class="vide"><span class="emoji">' + emoji + "</span>" + texte + "</div>";
 }
-function etiquetteFrequence(f, t) {
+function etiquetteFrequence(f, t, touchable) {
   /* Mode planning : les jours eux-mêmes, en abrégé (« mar. · ven. ») ; tous
      les N : le rythme (« Toutes les 2 semaines »). */
   const n = f === "jours" ? texteFrequence(t) : libelleRythme(f, rythmeDe(t));
-  return '<span class="etiquette">' + n + "</span>" +
-    (estRepartie(t) ? '<span class="etiquette">⚖️ répartie</span>' : "");
+  /* Pour un administrateur, dans la liste, l'étiquette ouvre « À refaire »
+     (28/09/2026) : c'est le chemin le plus court pour passer une tâche du
+     jour à la semaine, ou l'inverse. */
+  const corps = touchable && estAdmin()
+    ? '<button class="etiquette bouton" data-action="tache-frequence" data-id="' + esc(t.id) +
+      '" aria-label="Changer quand la tâche revient">' + n + " ✎</button>"
+    : '<span class="etiquette">' + n + "</span>";
+  return corps + (estRepartie(t) ? '<span class="etiquette">⚖️ répartie</span>' : "");
 }
 
 const Vues = {};
@@ -181,7 +187,43 @@ function carteObjectif() {
         (estAdmin() ? " Puis relancez-en un depuis l'administration." : "") + "</div></div>"
       : '<div class="aide" style="margin-top:.35rem">Encore ' + (o.cible - pts) +
         " points, tous ensemble</div>") +
+    /* MA PART, quand il n'y a plus de compteur personnel (28/09/2026). Chacun
+       ne voit que la sienne : les afficher côte à côte referait un classement,
+       ce que ce mode cherche précisément à retirer. */
+    (!pointsPersoActifs() ? maPartDuCommun(pts) : "") +
     "</div>";
+}
+
+/* « Vous y avez mis 320 points » — la ligne qui remplace le compteur personnel
+   quand la famille joue en collectif seulement. */
+function maPartDuCommun(total) {
+  const part = contributionDe(moi.id);
+  if (!part) {
+    return '<div class="aide" style="margin-top:.5rem;border-top:1px solid var(--border);' +
+      'padding-top:.5rem">Vous n\'y avez pas encore contribué.</div>';
+  }
+  return '<div style="margin-top:.5rem;border-top:1px solid var(--border);padding-top:.5rem">' +
+    '<b>Vous y avez mis ' + part + " point" + (part > 1 ? "s" : "") + "</b>" +
+    (total ? '<div class="aide">sur les ' + total + " de toute la tribu</div>" : "") + "</div>";
+}
+
+/* Le même apport, sans jauge : la famille joue en collectif mais aucun
+   objectif n'est lancé. Sans cette carte, l'accueil n'aurait plus rien à dire
+   des points, et le mode paraîtrait cassé. */
+function carteMaContribution() {
+  if (pointsPersoActifs() || objectifActif()) return "";
+  const total = pointsCollectifs();
+  if (!total) return "";
+  return '<div class="carte" style="text-align:center">' +
+    '<div style="font-size:2rem;line-height:1">🤝</div>' +
+    '<div style="font-family:var(--font-display);font-size:1.15rem;margin:.25rem 0 .1rem">' +
+    total + " points, tous ensemble</div>" +
+    '<div class="aide">Points gagnés ' + depuisQuandObjectif() + "</div>" +
+    maPartDuCommun(total) +
+    (estAdmin()
+      ? '<div class="aide" style="margin-top:.5rem">Un objectif commun donnerait un ' +
+        "but à ces points : c'est dans l'administration.</div>"
+      : "") + "</div>";
 }
 
 /* La place dans le programme « Familles Fondatrices ».
@@ -230,6 +272,18 @@ function carteFondatrice() {
   }
 
   const av = avancementFondatrice();
+
+  /* PASSÉ LE DÉLAI, LA CARTE MENTAIT (28/09/2026) : elle annonçait « plus que
+     quelques heures » alors que la place était déjà perdue — le serveur refuse
+     la validation, et la place repart au pot à la prochaine ouverture. On le
+     dit, et on n'affiche plus des conditions qui ne servent plus à rien. */
+  if (av.expiree) {
+    return '<div class="carte">' + entete +
+      '<p class="aide" style="margin:0">Le délai est passé sans confirmation : la place ' +
+      numeroFondatrice(p.numero) + " va repartir aux familles suivantes. " +
+      "Il n'y a plus rien à faire ici.</p></div>";
+  }
+
   const faits = [av.membres >= PROGRAMME.membres,
     av.validees >= PROGRAMME.validees,
     av.jours >= PROGRAMME.joursUtiles].filter(Boolean).length;
@@ -249,9 +303,17 @@ function carteFondatrice() {
             : "Plus que quelques heures.")) + "</p>" +
     '<div class="barre-progression"><i style="width:' + Math.round(faits / 3 * 100) + '%"></i></div>' +
     '<div style="margin-top:.5rem">' +
+    /* CE QUI MANQUAIT LE PLUS (28/09/2026) : 35 familles sur 75 sont seules
+       et se croyaient hors course, alors qu'un profil d'enfant SANS téléphone
+       compte (avancementFondatrice compte les membres, pas les appareils). On
+       le dit, et on met le bouton juste là plutôt que de laisser chercher. */
     ligne(av.membres >= PROGRAMME.membres,
       "Être au moins " + PROGRAMME.membres + " dans la tribu",
-      av.membres + " pour l'instant") +
+      av.membres + " pour l'instant — un profil d'enfant sans téléphone compte") +
+    (av.membres < PROGRAMME.membres && estAdmin()
+      ? '<button class="btn plein doux" data-action="membre-nouveau" style="margin:.1rem 0 .5rem">' +
+        "👶 Ajouter quelqu'un à la tribu</button>"
+      : "") +
     ligne(av.validees >= PROGRAMME.validees,
       PROGRAMME.validees + " tâches ou repas validés",
       av.validees + " sur " + PROGRAMME.validees) +
@@ -436,12 +498,17 @@ Vues.accueil = function () {
     const attente = [];
     if (!ongletMasque("taches")) {
       tachesAValider().forEach((x) => {
+        /* « faite mardi » plutôt qu'un simple « faite » : depuis le 28/09/2026,
+           ce bloc montre aussi ce qui attend depuis les jours passés. */
+        const fait = quandFaite(x.t, x.d);
+        const jour = fait ? " " + fait : "";
+        const quand = ' data-date="' + isoDate(x.d) + '"';
         attente.push('<div class="ligne">' + avatarDe(membre(x.et.parQui)) +
           '<div class="ligne-corps"><b>' + esc(x.t.emoji + " " + x.t.nom) + "</b><small>" +
-          esc(nomDe(x.et.parQui)) + " dit l'avoir faite" +
+          esc(nomDe(x.et.parQui)) + " dit l'avoir faite" + esc(jour) +
           (pointsActifs() ? " • +" + x.t.points + " pts" : "") + "</small></div>" +
-          '<button class="btn mini danger" data-action="tache-refuser" data-id="' + x.t.id + '">✕</button>' +
-          '<button class="btn mini principal" data-action="tache-valider" data-id="' + x.t.id + '">Valider</button>' +
+          '<button class="btn mini danger" data-action="tache-refuser" data-id="' + x.t.id + '"' + quand + ">✕</button>" +
+          '<button class="btn mini principal" data-action="tache-valider" data-id="' + x.t.id + '"' + quand + ">Valider</button>" +
           "</div>");
       });
       /* Mode planning, brique 2 : les passages dont la personne du tour n'est
@@ -660,6 +727,7 @@ Vues.accueil = function () {
   const cl = classement();
   if (pointsActifs() && cl.length > 1) {
     h.push(carteObjectif());
+    h.push(carteMaContribution());
     /* Le bilan se propose quand la semaine se termine — samedi, dimanche et
        lundi. Le reste du temps il reste accessible depuis Points & cadeaux :
        une carte de plus tous les jours serait du bruit. */
@@ -675,7 +743,8 @@ Vues.accueil = function () {
           "<small>Appuyez pour voir le détail</small></div></div>"));
       }
     }
-    h.push(bloc("🌟 Classement de la tribu",
+    /* Le classement ne va qu'avec les compteurs personnels (28/09/2026). */
+    if (pointsPersoActifs()) h.push(bloc("🌟 Classement de la tribu",
       cl.map((x, i) =>
         '<div class="ligne"><span class="rang' + (i === 0 ? " or" : "") + '">' + (i + 1) + "</span>" +
         avatarDe(x.m) + '<div class="ligne-corps"><b>' + esc(x.m.prenom) + "</b></div>" +
@@ -709,11 +778,15 @@ function ligneTache(x, compact) {
       boutons.push('<button class="btn mini principal" data-action="tache-fait" data-id="' + t.id + '">Fait</button>');
     }
   } else if (et.statut === "fait") {
+    /* Le jour de la case, transmis aux boutons : une tâche faite mercredi se
+       valide dans la case de mercredi, pas dans celle du jour où l'on clique
+       (28/09/2026). */
+    const jour = ' data-date="' + isoDate(x.d || new Date()) + '"';
     if (estAdmin()) {
-      boutons.push('<button class="btn mini danger" data-action="tache-refuser" data-id="' + t.id + '">✕</button>');
-      boutons.push('<button class="btn mini principal" data-action="tache-valider" data-id="' + t.id + '">Valider</button>');
+      boutons.push('<button class="btn mini danger" data-action="tache-refuser" data-id="' + t.id + '"' + jour + ">✕</button>");
+      boutons.push('<button class="btn mini principal" data-action="tache-valider" data-id="' + t.id + '"' + jour + ">Valider</button>");
     } else if (et.parQui === moi.id) {
-      boutons.push('<button class="btn mini" data-action="tache-annuler" data-id="' + t.id + '">Annuler</button>');
+      boutons.push('<button class="btn mini" data-action="tache-annuler" data-id="' + t.id + '"' + jour + ">Annuler</button>");
     }
   }
 
@@ -729,10 +802,22 @@ function ligneTache(x, compact) {
   const gain = pointsActifs() ? "+" + t.points + " pts" : "";
   /* L'heure d'abord, comme dans l'agenda : c'est ce qu'on cherche du regard. */
   const quand = heureTache(t);
+  /* Une tâche en retard de validation vient d'un autre jour : on le dit, sinon
+     on valide sans savoir de quand il s'agit (28/09/2026). */
+  const autreJour = x.d && et.statut === "fait" ? quandFaite(t, x.d) : "";
+  /* LE PRÉNOM SE TOUCHE (28/09/2026). Pour un administrateur, c'est le chemin
+     le plus court vers « Qui s'en occupe ? » : un geste, et la tâche change de
+     main pour CE passage — sans toucher à la tâche elle-même. Rien quand la
+     personne est absente : la ligne porte déjà son bouton « Attribuer ». */
+  const nomQui = qui ? qui.prenom : absent ? pasLa(absent) : "personne d'assigné";
+  const changeable = estAdmin() && !compact && et.statut === "afaire" && !absent;
+  const quiHtml = changeable
+    ? '<button class="lien" style="font-size:inherit" data-action="tache-attribuer" data-id="' +
+      esc(t.id) + '" data-date="' + isoDate(x.d || new Date()) + '">' + esc(nomQui) + "</button>"
+    : esc(nomQui);
   const sous = compact
-    ? [quand, gain, libellePeriode(t.frequence)].filter(Boolean).join(" • ")
-    : [quand, qui ? qui.prenom : absent ? pasLa(absent) : "personne d'assigné", gain]
-      .filter(Boolean).join(" • ");
+    ? esc([quand, gain, libellePeriode(t.frequence)].filter(Boolean).join(" • "))
+    : [esc(autreJour), esc(quand), quiHtml, esc(gain)].filter(Boolean).join(" • ");
   /* Brique 3 : une tâche répartie dit pourquoi cette personne — et un parent
      la change d'un geste. */
   const rep = !compact && et.statut === "afaire" && !absent ? passageReparti(t, x.d || new Date()) : null;
@@ -746,9 +831,12 @@ function ligneTache(x, compact) {
   return '<div class="ligne' + (et.statut === "valide" ? " fait" : "") + '">' +
     (compact ? "" : avatarDe(qui)) +
     '<div class="ligne-corps"><b>' + esc((t.emoji || "🧹") + " " + t.nom) + "</b>" +
-    "<small>" + esc(sous) + "</small>" + pourquoi +
-    (statutHtml || (!compact ? etiquetteFrequence(t.frequence, t) : "")
-      ? '<span class="etiquettes">' + statutHtml + (!compact ? etiquetteFrequence(t.frequence, t) : "") + "</span>"
+    /* « sous » est déjà échappé morceau par morceau : il porte le bouton du
+       prénom, donc on ne l'échappe pas une seconde fois. */
+    "<small>" + sous + "</small>" + pourquoi +
+    (statutHtml || !compact
+      ? '<span class="etiquettes">' + statutHtml +
+        (!compact ? etiquetteFrequence(t.frequence, t, true) : "") + "</span>"
       : "") +
     "</div>" +
     (estAdmin() && !compact
@@ -1683,7 +1771,12 @@ Vues.points = function () {
   }
 
   /* Classement */
-  h.push('<div class="sous-titre"><h3>Classement</h3></div>');
+  h.push('<div class="sous-titre"><h3>Classement</h3>' +
+    /* Le nouveau départ se pose là où l'on regarde les compteurs, pas au fond
+       des réglages (28/09/2026). Rien à proposer si tout est déjà à zéro. */
+    (estAdmin() && etat.membres.some((m) => pointsDe(m.id))
+      ? '<button class="lien" data-action="points-zero-tous">Tout remettre à zéro</button>'
+      : "") + "</div>");
   h.push('<div class="carte">' + classement().map((x, i) =>
     '<div class="ligne"><span class="rang' + (i === 0 ? " or" : "") + '">' + (i + 1) + "</span>" +
     avatarDe(x.m) + '<div class="ligne-corps"><b>' + esc(x.m.prenom) + "</b>" +
@@ -1719,8 +1812,10 @@ Vues.admin = function () {
     [["membres", "👨‍👩‍👧 Membres"], ["inviter", "✉️ Inviter"], ["taches", "🧹 Tâches"],
      ["cadeaux", "🎁 Cadeaux"], ["recettes", "📖 Recettes"], ["reglages", "⚙️ Réglages"],
      ["objectif", "🤝 Objectif"], ["onglets", "📱 Onglets"], ["donnees", "🔒 Données"]]
-      /* Points éteints : ces deux raccourcis mèneraient à des blocs absents. */
-      .filter(([a2]) => pointsActifs() || (a2 !== "cadeaux" && a2 !== "objectif"))
+      /* Un raccourci vers un bloc absent ne mène nulle part : les cadeaux
+         suivent les compteurs personnels, l'objectif le système de points. */
+      .filter(([a2]) => a2 === "cadeaux" ? pointsPersoActifs()
+        : a2 === "objectif" ? pointsActifs() : true)
       .map(([a2, l]) => '<button class="puce" data-action="admin-aller" data-valeur="' + a2 + '">' +
         l + "</button>").join("") + "</div>");
 
@@ -1729,7 +1824,10 @@ Vues.admin = function () {
       '<div class="ligne">' + avatarDe(m) +
       '<div class="ligne-corps"><b>' + esc(m.prenom) + "</b><small>" +
       (m.sansAppareil ? "Géré par les parents" : m.role === "admin" ? "Administrateur" : "Membre") +
-      (pointsActifs() ? " • " + pointsDe(m.id) + " pts" : "") +
+      /* La bourse de chacun n'a plus cours en mode collectif : on montre ce
+         qu'il a apporté, qui est la seule mesure qui reste. */
+      (pointsPersoActifs() ? " • " + pointsDe(m.id) + " pts"
+        : pointsActifs() ? " • " + contributionDe(m.id) + " apportés" : "") +
       (!m.sansAppareil && !aUnAppareil(m) ? " • en attente d'invitation" : "") + "</small>" +
       (m.sansAppareil ? '<span class="etiquettes"><span class="etiquette">🧒 sans téléphone</span></span>' : "") +
       "</div>" +
@@ -1787,7 +1885,7 @@ Vues.admin = function () {
   /* Renouveler la liste proposée par l'application : le bouton n'apparaît que
      s'il y a vraiment quelque chose à changer. */
   const majCadeaux = cadeauxAremplacer();
-  if (pointsActifs()) h.push(blocAncre("cadeaux", "🎁 Cadeaux (" + etat.cadeaux.length + ")",
+  if (pointsPersoActifs()) h.push(blocAncre("cadeaux", "🎁 Cadeaux (" + etat.cadeaux.length + ")",
     (etat.cadeaux.length
       ? etat.cadeaux.map((c) =>
         '<div class="ligne"><span style="font-size:1.2rem">' + esc(c.emoji || "🎁") + "</span>" +
@@ -1826,10 +1924,21 @@ Vues.admin = function () {
     " à table</b><small>Les quantités des recettes sont ajustées à ce nombre.</small></div></div>" +
     '<div class="ligne"><span style="font-size:1.3rem">🌟</span>' +
     '<div class="ligne-corps"><b>Système de points ' + (pointsActifs() ? "activé" : "désactivé") +
-    "</b><small>" + (pointsActifs()
-      ? "Points, classement, cadeaux et objectif commun."
-      : "Les tâches restent, sans points ni récompenses. L’historique est conservé.") +
+    "</b><small>" + (!pointsActifs()
+      ? "Les tâches restent, sans points ni récompenses. L’historique est conservé."
+      : pointsPersoActifs()
+        ? "Points, classement, cadeaux et objectif commun."
+        : "Objectif commun seulement : chacun voit ce qu’il a apporté, " +
+          "sans classement ni cadeaux.") +
     "</small></div></div>" +
+    (pointsActifs()
+      ? '<div class="ligne"><span style="font-size:1.3rem">🌟</span>' +
+        '<div class="ligne-corps"><b>Compteurs personnels ' +
+        (pointsPersoActifs() ? "affichés" : "masqués") + "</b><small>" +
+        (pointsPersoActifs()
+          ? "Chacun voit ses points, le classement et les cadeaux."
+          : "Chacun ne voit que sa contribution à la tribu.") + "</small></div></div>"
+      : "") +
     (pointsActifs()
       ? '<div class="ligne"><span style="font-size:1.3rem">🍽️</span>' +
         '<div class="ligne-corps"><b>' + g.pointsRepas + " points par repas cuisiné</b><small>" +
@@ -1861,7 +1970,11 @@ Vues.admin = function () {
         (ob.faits ? " • " + ob.faits + " déjà atteint" + (ob.faits > 1 ? "s" : "") : "") +
         "</small></div>" +
         (objectifAtteint() ? '<span class="etiquette vert">atteint 🎉</span>' : "") + "</div>"
-      : '<p class="aide" style="margin-top:.5rem">Désactivé — seul le classement individuel est affiché.</p>') +
+      : '<p class="aide" style="margin-top:.5rem">Désactivé — ' +
+        (pointsPersoActifs()
+          ? "seul le classement individuel est affiché."
+          : "et les compteurs personnels sont masqués : il ne reste rien à voir " +
+            "sur les points. Lancez un objectif, ou réaffichez les compteurs.") + "</p>") +
     '<button class="btn plein doux" data-action="admin-objectif" style="margin-top:.7rem">' +
     (ob.actif ? "Modifier l’objectif" : "Définir un objectif") + "</button>"));
 
@@ -1874,16 +1987,13 @@ Vues.admin = function () {
     "à un côté : 🥫 alimentaire ou 🧴 maison. Seuls « À catégoriser » et « Autre » 🗂️ " +
     "apparaissent des deux côtés.</p>" +
     '<div class="puces" style="margin-top:.7rem">' +
-    ordreRayons(RAYONS).map((r) => {
-      const c = coteDuRayon(r);
-      return '<span class="puce">' + (c === "maison" ? "🧴 " : c === "neutre" ? "🗂️ " : "🥫 ") +
-        esc(r) + "</span>";
-    }).join("") + "</div>" +
+    ordreRayons(RAYONS).map((r) =>
+      '<span class="puce">' + emojiRayon(r) + " " + esc(r) + "</span>").join("") + "</div>" +
     (perso.length
       ? '<div class="sous-titre" style="margin-top:.9rem"><h3>Vos rayons</h3>' +
         '<span class="etiquette">' + perso.length + "</span></div>" +
         perso.map((r) => '<div class="ligne"><span style="font-size:1.2rem">' +
-          (r.cote === "maison" ? "🧴" : "🥫") + "</span>" +
+          emojiRayon(r.nom) + "</span>" +
           '<div class="ligne-corps"><b>' + esc(r.nom) + "</b><small>" +
           (r.cote === "maison" ? "côté maison" : "côté alimentaire") + " • " +
           etat.stock.filter((s) => s.rayon === r.nom).length + " en réserve</small></div>" +
