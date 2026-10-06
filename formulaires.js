@@ -1249,6 +1249,14 @@ Formulaires.actu = function () {
 
 Formulaires.generateur = function () {
   const g = reglagesGenerateur();
+  /* « REMPLACER » NE SE RETIENT PLUS (05/10/2026). Gardé d'une fois sur
+     l'autre, il refaisait en silence une semaine qu'on venait de composer à la
+     main ; décoché, il laissait « Générer » sans rien faire sur une semaine
+     complète. C'est une décision du moment, pas une préférence : on la pose
+     d'après la semaine ouverte — cochée quand il ne reste plus une seule case
+     libre, puisque alors « compléter les cases vides » ne peut rien faire. */
+  const etatCases = casesDeLaSemaine(ui.semaine, g.midi, g.soir);
+  g.remplacer = etatCases.prevus.length > 0 && etatCases.libres.length === 0;
   const co = (n) => (g[n] ? " checked" : "");
   const ligneCase = (nom, texte, aide) =>
     '<label class="champ" style="display:flex;gap:.6rem;align-items:flex-start">' +
@@ -1278,6 +1286,7 @@ Formulaires.generateur = function () {
     ligneCase("soir", "Les soirs") +
     ligneCase("remplacer", "Remplacer les repas déjà prévus",
       "Sinon, seules les cases vides sont complétées.") +
+    '<p class="aide" id="note-remplacer" style="margin:-.3rem 0 .7rem" hidden></p>' +
 
     '<div class="sous-titre"><h3>Ce qu\'on mange</h3></div>' +
     '<label class="champ"><span>Régime de la semaine</span><select name="regime">' +
@@ -1401,12 +1410,30 @@ Formulaires.generateur = function () {
           "poisson ou végétarien.";
       }
     };
+    /* Ce que la semaine ouverte contient déjà, dit en clair sous la case :
+       sans cela, « Générer » semblait ne rien faire (05/10/2026). */
+    const noteRemp = f.querySelector("#note-remplacer");
+    const majRemplacer = () => {
+      const c = casesDeLaSemaine(ui.semaine, coche("midi"), coche("soir"));
+      if (!c.prevus.length) { noteRemp.hidden = true; return; }
+      noteRemp.hidden = false;
+      noteRemp.textContent = coche("remplacer")
+        ? "Les " + pluriel(c.prevus.length, "repas déjà prévu sera refait",
+          "repas déjà prévus seront refaits") + "."
+        : !c.libres.length
+          ? "Toute la semaine est déjà prévue : sans cocher, il n'y aura rien à remplir."
+          : pluriel(c.prevus.length, "repas est déjà prévu : il sera gardé",
+            "repas sont déjà prévus : ils seront gardés") + ", et " +
+            (c.libres.length === 1 ? "la case libre sera remplie"
+              : "les " + c.libres.length + " cases libres seront remplies") + ".";
+    };
+    const majTout = () => { majNombres(); majRemplacer(); };
     f.querySelectorAll('[name="poisson"], [name="viande"], [name="vege"], ' +
       '[name="midi"], [name="soir"], [name="remplacer"]')
-      .forEach((el) => el.addEventListener("change", majNombres));
-    regime.onchange = () => { majRegime(); majNombres(); };
+      .forEach((el) => el.addEventListener("change", majTout));
+    regime.onchange = () => { majRegime(); majTout(); };
     majRegime();
-    majNombres();
+    majTout();
 
     f.onsubmit = (ev) => {
       ev.preventDefault();
@@ -1424,7 +1451,9 @@ Formulaires.generateur = function () {
         thermomix: !!d.get("thermomix"),
         semaines: Number(d.get("semaines")) || 3
       };
-      try { localStorage.setItem("tribu:generateur", JSON.stringify(o)); } catch (e) { /* tant pis */ }
+      /* « Remplacer » n'est pas gardé : voir le commentaire en tête. */
+      try { localStorage.setItem("tribu:generateur",
+        JSON.stringify(Object.assign({}, o, { remplacer: false }))); } catch (e) { /* tant pis */ }
       fermerFeuille();
 
       const res = genererMenus(ui.semaine, Object.assign({}, o, { rapideSemaine: o.rapide }));
@@ -4680,7 +4709,8 @@ function postitsDeLaSemaine(k) {
   etat.taches.filter((t) => t.actif !== false && participantsValides(t).length).forEach((t) => {
     if (t.frequence === "jour" || t.frequence === "jours") {
       jours.forEach((d, j) => {
-        if (!prevueLe(t, d) || isoDate(d) < aujIso || fait(t, d)) return;
+        /* Reportée : elle figure sur le post-it du jour où elle se fera. */
+        if (!prevueLe(t, d) || reporteLe(t, d) || isoDate(d) < aujIso || fait(t, d)) return;
         noter(assigneDe(t, d), t, j);
       });
       return;

@@ -172,7 +172,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.63 bêta";
+const VERSION = "0.65 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -305,6 +305,49 @@ const CALENDRIER = {
    Ni correctif, ni sécurité, ni « sous le capot » : cette page ne parle que
    de ce que la famille peut voir et utiliser. */
 const ACTUS = [
+  {
+    version: "0.65",
+    date: "2026-10-05",
+    titre: "Repartir de zéro pour les menus",
+    points: [
+      {
+        quoi: "🗑️ Vider la semaine",
+        court: "effacer tous les repas prévus d'un geste, et refaire un menu",
+        detail: "<p>Dans <i>Menus</i>, un bouton <b>🗑️ Vider la semaine</b> efface d'un coup " +
+          "tous les repas prévus. Il n'apparaît que s'il y a quelque chose à effacer.</p>" +
+          "<p>Sont gardés : les <b>absences</b> (cantine, resto — c'est votre décision, pas " +
+          "une case oubliée) et les repas <b>déjà cuisinés</b>, qui ont eu lieu et qui " +
+          "rapportent des points.</p>" +
+          "<p>Et si le menu proposé ne vous convient pas, <b>🎲 Générer</b> le dit maintenant " +
+          "clairement : sur une semaine déjà complète, la case <b>« Remplacer les repas déjà " +
+          "prévus »</b> est cochée d'avance, et une phrase sous la case annonce à chaque fois " +
+          "ce qui va être gardé et ce qui va être refait.</p>",
+        ou: { libelle: "Ouvrir les menus", action: "aller", vue: "menus" }
+      }
+    ]
+  },
+  {
+    version: "0.64",
+    date: "2026-10-01",
+    titre: "Reporter une tâche à demain",
+    points: [
+      {
+        quoi: "⏭️ Reporter à demain",
+        court: "la tâche n'a pas pu être faite aujourd'hui : elle revient demain",
+        detail: "<p>Sur la ligne d'une tâche, le bouton <b>⏭️</b> la reporte au lendemain. " +
+          "Elle reste affichée aujourd'hui, marquée <b>« reportée à demain »</b>, avec un bouton " +
+          "<b>Annuler</b> si c'était une fausse manœuvre.</p>" +
+          "<p>C'est surtout utile pour les tâches qui ne reviennent pas chaque jour : celle du " +
+          "mardi ne se perd plus jusqu'au mardi suivant, et une tâche <b>« tous les 3 jours »</b> " +
+          "ne disparaît plus trois jours.</p>" +
+          "<p>La personne qui devait s'en occuper <b>suit la tâche</b> : « chacun son tour » ne " +
+          "passe pas au suivant parce qu'on a reporté. Si ce n'est toujours pas fait demain, " +
+          "on reporte encore.</p>" +
+          "<p>Réservé aux administrateurs.</p>",
+        ou: { libelle: "Ouvrir les tâches", action: "aller", vue: "taches" }
+      }
+    ]
+  },
   {
     /* 0.60 → 0.63 réunies (24/09/2026) : elles arrivent ensemble chez les
        familles. Une ligne par nouveauté, le détail replié dessous, et un
@@ -1481,7 +1524,8 @@ function appareilsRetiresDe(membreId) {
 
 /* Les tâches en attente des enfants gérés, pour que le parent les coche. */
 function tachesDesEnfants() {
-  return tachesDuMoment().filter((x) => x.assigne && estGere(x.assigne) && x.et.statut === "afaire");
+  return tachesDuMoment().filter((x) =>
+    x.assigne && estGere(x.assigne) && x.et.statut === "afaire" && !x.reporte);
 }
 function pointsDe(idm) {
   return etat.journal.reduce((s, e) => s + (e.membreId === idm ? e.delta : 0), 0);
@@ -1711,12 +1755,78 @@ function quandReviendra(t) {
     : "la semaine du " + dateJolie(isoDate(lundiDe(x))).replace(/^\S+\s/, "");
 }
 
-/* La tâche tombe-t-elle ce jour-là ? Ses jours pour une tâche « certains
-   jours » ; pour toutes, seulement une période sur N (« tous les N »). */
-function prevueLe(t, d) {
+/* ===================== REPORTER À DEMAIN (01/10/2026) =====================
+
+   Demandé par Amandine : « des fois elles ne sont pas faites le jour pour x
+   raisons mais on en a besoin le lendemain ». Avant, une tâche oubliée était
+   perdue sans un mot — celle du mardi jusqu'au mardi suivant.
+
+   t.reports = { "<jour prévu>": { a: "<jour reporté>", qui: "<membre>" } }
+   Le passage d'un jour se joue un autre jour, et il emmène la personne qui
+   devait s'en occuper : sinon « chacun son tour » en désignerait une autre le
+   lendemain. Deux lectures suffisent partout :
+     - le jour d'ARRIVÉE, la tâche tombe même si son rythme dit non ;
+     - le jour de DÉPART, elle reste affichée, marquée « reportée à demain »,
+       avec un bouton pour annuler. Elle ne disparaît pas sans rien dire.
+   Reporter deux fois marche : le second report part du jour d'arrivée du
+   premier, et la personne suit toujours.
+
+   AUCUNE RÈGLE FIREBASE À CHANGER : les tâches vivent dans la fiche de la
+   famille, qu'un administrateur modifie déjà librement. C'est aussi la raison
+   pour laquelle REPORTER EST RÉSERVÉ AUX ADMINISTRATEURS — un membre ordinaire
+   n'a pas le droit d'écrire les tâches, le serveur refuserait. */
+function reportsDe(t) { return (t && t.reports) || {}; }
+/* Ce passage a-t-il été reporté ? Le jour d'arrivée, ou "" si non. */
+function reporteLe(t, d) {
+  const r = reportsDe(t)[isoDate(d)];
+  return (r && r.a) || "";
+}
+/* Le report qui amène un passage ce jour-là : { de, qui }. Rien si la tâche y
+   tombe de toute façon — ce jour-là, c'est son tour habituel qui désigne la
+   personne, et non celle de la veille. */
+function reportArrivant(t, d) {
+  if (prevuParLeRythme(t, d)) return null;
+  const iso = isoDate(d), r = reportsDe(t);
+  for (const k in r) if (r[k] && r[k].a === iso) return { de: k, qui: r[k].qui };
+  return null;
+}
+/* La personne emmenée par le report — seulement si elle est là ce jour-là ;
+   sinon le passage redevient « à attribuer », comme n'importe quel autre. */
+function porteParUnReport(t, d) {
+  const r = reportArrivant(t, d);
+  return r && membre(r.qui) && presentPendant(r.qui, t, d) ? r.qui : null;
+}
+/* « à demain », « au jeu. 2 oct. » : la destination, telle qu'on la dit. */
+function motDuReport(cible) {
+  const auj = isoDate(new Date());
+  return cible === decalerIso(auj, 1) ? "à demain"
+    : cible === auj ? "à aujourd'hui" : "au " + dateJolie(cible);
+}
+/* « d'hier », « du mar. 30 sept. » : d'où vient un passage reporté. */
+function motDOrigine(de) {
+  return de === decalerIso(isoDate(new Date()), -1) ? "d'hier" : "du " + dateJolie(de);
+}
+/* Les reports ne s'accumulent pas sans fin : on oublie ceux de plus de deux
+   mois, comme les choix des parents (elaguerAttributions). */
+function elaguerReports(r) {
+  const limite = isoDate(new Date(Date.now() - 60 * 86400000));
+  const res = {};
+  Object.keys(r || {}).forEach((k) => { if (r[k] && r[k].a >= limite) res[k] = r[k]; });
+  return res;
+}
+
+/* La tâche tombe-t-elle ce jour-là, d'elle-même ? Ses jours pour une tâche
+   « certains jours » ; pour toutes, seulement une période sur N (« tous les
+   N »). Les reports ne comptent pas ici : c'est ce qui permet de savoir si un
+   passage qui arrive est un report, ou le rythme normal de la tâche. */
+function prevuParLeRythme(t, d) {
   if (!t) return true;
   if (t.frequence === "jours" && joursDeTache(t).indexOf(numJour(d)) === -1) return false;
   return periodeActive(t, d);
+}
+/* … et un passage reporté tombe le jour où on l'a reporté. */
+function prevueLe(t, d) {
+  return prevuParLeRythme(t, d) || !!reportArrivant(t, d);
 }
 /* Le prochain jour où elle tombe, à partir de d (d compris) — jusqu'à un an
    pour « une fois par an ». */
@@ -1798,6 +1908,9 @@ function assigneDe(t, d) {
   if (!participantsValides(t).length) return null;
   const choix = attributionDe(t, d);
   if (choix) return choix;
+  /* Un passage reporté garde la personne du jour prévu (01/10/2026). */
+  const porte = porteParUnReport(t, d);
+  if (porte) return porte;
   /* Brique 3 : une tâche répartie suit le planning de la semaine. */
   if (repartieLe(t, d)) { const p = passageReparti(t, d); return p ? p.qui : null; }
   const qui = tourDe(t, d);
@@ -1853,6 +1966,8 @@ function attributionDe(t, d) {
    n'est là. */
 function absentDuTour(t, d) {
   if (!participantsValides(t).length || attributionDe(t, d)) return null;
+  /* Un passage reporté arrive avec sa personne : rien à attribuer. */
+  if (porteParUnReport(t, d)) return null;
   if (repartieLe(t, d)) { const p = passageReparti(t, d); return p && !p.qui ? PERSONNE_LA : null; }
   const qui = tourDe(t, d);
   return qui && !presentPendant(qui, t, d) ? qui : null;
@@ -1868,11 +1983,12 @@ function passagesAAttribuer() {
     if (t.frequence === "jour" || t.frequence === "jours") {
       for (let k = 0; k < 7; k++) {
         const d = new Date(lundi.getFullYear(), lundi.getMonth(), lundi.getDate() + k);
-        if (isoDate(d) < isoDate(auj) || !prevueLe(t, d)) continue;
+        /* Reporté : il n'y a plus rien à attribuer ce jour-là. */
+        if (isoDate(d) < isoDate(auj) || !prevueLe(t, d) || reporteLe(t, d)) continue;
         const absent = absentDuTour(t, d);
         if (absent) res.push({ t: t, d: d, absent: absent });
       }
-    } else if (prevueLe(t, auj)) {        // tous les N : pas cette période
+    } else if (prevueLe(t, auj) && !reporteLe(t, auj)) {   // tous les N : pas cette période
       const absent = absentDuTour(t, auj);
       if (absent) res.push({ t: t, d: auj, absent: absent });
     }
@@ -2132,11 +2248,15 @@ const cleHeure = (t) => String((t && t.heure) || "99:99");
 function tachesDuMoment() {
   const d = new Date();
   return etat.taches.filter((t) => t.actif !== false && prevueLe(t, d)).map((t) => ({
-    t, d, assigne: assigneDe(t, d), et: etatTache(t, d)
+    t, d, assigne: assigneDe(t, d), et: etatTache(t, d), reporte: reporteLe(t, d)
   })).sort((a, b) => cleHeure(a.t).localeCompare(cleHeure(b.t)));
 }
+/* CE QU'IL RESTE À FAIRE. Une tâche reportée à demain n'en fait plus partie :
+   ni dans « Mes tâches », ni dans la pastille de la barre du bas, ni dans les
+   tâches des enfants que le parent coche (01/10/2026). */
 function mesTachesAFaire() {
-  return tachesDuMoment().filter((x) => x.assigne === (moi && moi.id) && x.et.statut === "afaire");
+  return tachesDuMoment().filter((x) =>
+    x.assigne === (moi && moi.id) && x.et.statut === "afaire" && !x.reporte);
 }
 /* CE QUI ATTEND UNE VALIDATION, Y COMPRIS LES JOURS PASSÉS (28/09/2026).
 
@@ -5119,6 +5239,27 @@ function avancementFondatrice() {
   };
 }
 
+/* LE POT ÉTAIT-IL VIDE À LA DERNIÈRE TENTATIVE ? (29/09/2026)
+
+   Gardé sur l'appareil, par famille. On ne le RECALCULE pas à l'affichage :
+   il faudrait relire les cent places au serveur à chaque rendu. C'est
+   « reserverUnePlace » qui le sait, une fois par jour — il le note, l'accueil
+   le lit. Et la note s'efface dès qu'une place est obtenue, pour que le
+   message ne survive jamais à la situation qui l'a causé. */
+function clePlacesPleines(code) { return "tribu:placesPleines:" + code; }
+function noterPlacesPleines(code, pleines) {
+  try {
+    if (pleines) localStorage.setItem(clePlacesPleines(code), "1");
+    else localStorage.removeItem(clePlacesPleines(code));
+  } catch (e) { /* mémoire du navigateur indisponible : sans importance */ }
+}
+function placesToutesPrises() {
+  const code = (etat.famille || {}).code;
+  if (!code) return false;
+  try { return localStorage.getItem(clePlacesPleines(code)) === "1"; }
+  catch (e) { return false; }
+}
+
 /* Une place reservee puis oubliee retourne au pot au bout de PROGRAMME.jours. */
 function placePerimee(p) {
   return !!(p && p.statut !== "validee" && p.reserveeLe
@@ -5266,6 +5407,7 @@ async function reserverUnePlace(code) {
      places sont celles des Familles Fondatrices. Une pionniere recoit toujours
      un numero ; une fondatrice, seulement s'il reste une des 100 places. */
   if (genre === "fondatrice" && fondatricesEnPlace(prises) >= PROGRAMME.places) {
+    noterPlacesPleines(code, true);          // l'accueil pourra le dire
     await oublierPlace();
     return;
   }
@@ -5283,6 +5425,7 @@ async function reserverUnePlace(code) {
        regles verifient, et c'est ce qui empeche d'en viser deux. */
     if (!(await inscrirePlace(n, genre, "reservee"))) return;
     if (!(await Store.reserverPlaceFondatrice(n, genre, code))) continue;
+    noterPlacesPleines(code, false);         // on en a une : plus rien à annoncer
     /* Une pionniere a deja fait ses preuves : validee dans la foulee. */
     if (genre === "pionniere" && await Store.validerPlaceFondatrice(n)) {
       await inscrirePlace(n, genre, "validee");
@@ -5293,7 +5436,9 @@ async function reserverUnePlace(code) {
     rendre();
     return;
   }
-  /* Tous les numeros sont pris : on n'annonce rien chez soi. */
+  /* Tous les numeros sont pris : on n'annonce rien chez soi — mais on s'en
+     souvient, pour que l'accueil l'explique au lieu de rester muet. */
+  noterPlacesPleines(code, true);
   await oublierPlace();
 }
 
@@ -5428,6 +5573,35 @@ const Actions = {
     if ((etat.etats[cle] || {}).statut !== "fait") return;
     etat.etats[cle] = { statut: "afaire", parQui: null, faitLe: null, valideLe: null, valideePar: null };
     sauverEtat(cle);
+  },
+
+  /* REPORTER À DEMAIN (01/10/2026). Réservé aux administrateurs : un membre
+     ordinaire n'a pas le droit d'écrire les tâches (règles Firestore). Aucune
+     confirmation : le geste s'annule d'un bouton, sur la ligne elle-même. */
+  reporter(tacheId, quand) {
+    if (!estAdmin()) return;
+    const t = etat.taches.find((x) => x.id === tacheId);
+    if (!t) return;
+    const d = jourVise(quand);
+    if (etatTache(t, d).statut !== "afaire") return;      // faite : rien à reporter
+    const demain = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 12);
+    /* La personne du jour part avec la tâche — sauf si demain la tâche tombe
+       d'elle-même : ce jour-là, son tour habituel a raison. */
+    const qui = prevuParLeRythme(t, demain) ? null : assigneDe(t, d);
+    t.reports = elaguerReports(t.reports);
+    t.reports[isoDate(d)] = { a: isoDate(demain), qui: qui || null };
+    sauver("taches");
+    toast("⏭️ Reportée " + motDuReport(isoDate(demain)));
+  },
+  annulerReport(tacheId, quand) {
+    if (!estAdmin()) return;
+    const t = etat.taches.find((x) => x.id === tacheId);
+    if (!t || !reporteLe(t, jourVise(quand))) return;
+    t.reports = elaguerReports(t.reports);
+    delete t.reports[isoDate(jourVise(quand))];
+    if (!Object.keys(t.reports).length) delete t.reports;
+    sauver("taches");
+    toast("Report annulé");
   },
 
   async valider(tacheId, quand) {
@@ -5899,6 +6073,51 @@ const Actions = {
     if (valeur && avant && avant.absents && !valeur.absents) valeur.absents = avant.absents.slice();
     etat.repas[cleSem][jour + "-" + moment] = valeur;
     sauver("repas");
+  },
+
+  /* VIDER LA SEMAINE (05/10/2026, demandé par Amandine). Effacer sept jours
+     un repas à la fois, pour repartir de zéro, n'était pas une manœuvre : on
+     le fait d'un geste, avec une question avant.
+
+     On pose « null » plutôt que d'enlever la case : en ligne, l'écriture se
+     fait en fusion (setDoc merge), et une case simplement retirée du tableau
+     reviendrait au prochain chargement. C'est déjà ce que fait le « Vider »
+     d'un repas seul. Partout, une case nulle se lit comme une case vide.
+
+     Le cuisinier et les absents du repas partent avec le plat : une case qui
+     garderait quelque chose resterait « prévue » aux yeux du générateur, et
+     « Générer » ne la remplirait plus — ce qui viderait la semaine sans
+     pouvoir la refaire. */
+  async viderSemaine(cleSem) {
+    const c = casesDeLaSemaine(cleSem);
+    const sem = etat.repas[cleSem] || {};
+    let cuisines = 0, absences = 0;
+    JOURS.forEach((j) => ["midi", "soir"].forEach((m) => {
+      const v = sem[j + "-" + m];
+      if (!v) return;
+      if (estAbsence(v)) absences++;
+      else if (etatRepas(cleSem, j, m).statut !== "afaire") cuisines++;
+    }));
+    if (!c.prevus.length) {
+      toast(cuisines ? "Rien à effacer : ces repas ont déjà été cuisinés"
+        : "Il n'y a pas encore de repas prévus cette semaine");
+      return;
+    }
+    /* On ne promet de garder que ce qu'il y a vraiment à garder : annoncer
+       « les absences aussi » quand il n'y en a aucune laisse chercher. */
+    const gardes = [];
+    if (cuisines) gardes.push(pluriel(cuisines, "repas déjà cuisiné", "repas déjà cuisinés"));
+    if (absences) gardes.push(pluriel(absences, "absence", "absences"));
+    const ok = await confirmer("Effacer les " + c.prevus.length +
+      " repas prévus de cette semaine ?" +
+      (gardes.length ? " On garde " + gardes.join(" et ") + "." : ""),
+      { titre: "Vider la semaine", ok: "Vider", danger: true });
+    if (!ok) return;
+    if (!etat.repas[cleSem]) etat.repas[cleSem] = {};
+    c.prevus.forEach((x) => { etat.repas[cleSem][x.cle] = null; });
+    sauver("repas");
+    toast(pluriel(c.prevus.length, "repas effacé", "repas effacés") +
+      " — 🎲 Générer pour une nouvelle semaine");
   },
 
   /* --- Notes --- */
@@ -7209,18 +7428,22 @@ function genererMenus(cleSem, opt) {
   const semaine = etat.repas[cleSem] || {};
   const cases = [];
   let absences = 0;
+  let dejaPrevus = 0;      // des repas gardés faute d'avoir coché « Remplacer »
   /* Regeneration CIBLEE (« 🎲 Autre idée » dans la fiche d'un repas) : on ne
      refait que ces cases-la, avec les memes reglages que le generateur, en
      tenant compte du reste de la semaine deja prevu. */
   const cibles = opt.cibles ? new Set(opt.cibles.map((c) => c.jour + "-" + c.moment)) : null;
   JOURS.forEach((j) => {
     ["midi", "soir"].forEach((m) => {
-      /* UN REPAS DEJA VALIDE NE SE REFAIT PAS (14/09/2026). Il a ete
-         cuisine, il a rapporte des points, et une ligne de points ne peut
-         plus etre retiree : changer le plat sous elle laissait la famille
-         avec des points « Repas : gratin » pour un repas devenu autre chose.
-         « Reprendre une semaine » s'en gardait deja ; le generateur, non. */
-      if (etatRepas(cleSem, j, m).statut === "valide") return;
+      /* UN REPAS DÉJÀ CUISINÉ NE SE REFAIT PAS (14/09/2026, élargi le
+         05/10/2026). Un repas VALIDÉ a rapporté des points, et une ligne de
+         points ne peut plus être retirée : changer le plat sous elle laissait
+         la famille avec des points « Repas : gratin » pour un repas devenu
+         autre chose. Un repas seulement COCHÉ « fait » était, lui, refait
+         sans façon : l'administrateur validait ensuite un plat que personne
+         n'avait cuisiné, et le cuisinier perdait ses points. Même règle pour
+         les deux, et « Vider la semaine » s'y range (casesDeLaSemaine). */
+      if (etatRepas(cleSem, j, m).statut !== "afaire") return;
       if (cibles) {
         if (cibles.has(j + "-" + m) && !estAbsence(semaine[j + "-" + m])) cases.push({ jour: j, moment: m });
         return;
@@ -7230,11 +7453,20 @@ function genererMenus(cleSem, opt) {
       /* Une absence n'est jamais remplie, même en mode « remplacer » : c'est
          une décision de la famille, pas une case restée vide. */
       if (estAbsence(semaine[j + "-" + m])) { absences++; return; }
-      if (semaine[j + "-" + m] && !opt.remplacer) return;
+      if (semaine[j + "-" + m] && !opt.remplacer) { dejaPrevus++; return; }
       cases.push({ jour: j, moment: m });
     });
   });
-  if (!cases.length) { toast("Rien à remplir avec ces options"); return null; }
+  if (!cases.length) {
+    /* « Rien à remplir avec ces options » n'aidait personne, et c'est le mur
+       que l'on rencontre le plus souvent : la semaine est déjà complète, et
+       la case qui autorise à la refaire est juste au-dessus du bouton
+       (05/10/2026). On nomme la cause et les deux sorties. */
+    toast(dejaPrevus
+      ? "Tous les repas sont déjà prévus : cochez « Remplacer » ou videz la semaine"
+      : "Rien à remplir avec ces options");
+    return null;
+  }
 
   /* Un nombre demandé (« 2 poissons ») est un nombre exact : la catégorie
      ne réapparaît pas ailleurs dans la semaine. Une catégorie laissée sur
@@ -7514,6 +7746,30 @@ function etatRepas(cleSem, jour, moment) {
 }
 function repasDe(cleSem, jour, moment) {
   return (etat.repas[cleSem] || {})[jour + "-" + moment] || null;
+}
+/* CE QU'ON PEUT REFAIRE OU EFFACER DANS UNE SEMAINE (05/10/2026).
+
+   Une seule règle, lue par le générateur, par le bouton « Vider la semaine »
+   et par la phrase du formulaire — trois endroits qui, chacun de leur côté,
+   auraient fini par ne plus dire la même chose. Sont laissés tranquilles :
+     - les ABSENCES (cantine, resto) : ce n'est pas une case oubliée, c'est
+       une décision de la famille ;
+     - les repas déjà CUISINÉS ou VALIDÉS : ils ont eu lieu, et un repas
+       validé a rapporté des points qu'on ne peut plus retirer.
+   « midi » et « soir » ne sont filtrés que si on les passe (le générateur a
+   ses deux cases ; le bouton « Vider » prend toute la semaine). */
+function casesDeLaSemaine(cleSem, midi, soir) {
+  const sem = etat.repas[cleSem] || {};
+  const prevus = [], libres = [];
+  JOURS.forEach((j) => ["midi", "soir"].forEach((m) => {
+    if (m === "midi" && midi === false) return;
+    if (m === "soir" && soir === false) return;
+    const v = sem[j + "-" + m];
+    if (estAbsence(v)) return;
+    if (etatRepas(cleSem, j, m).statut !== "afaire") return;
+    (v ? prevus : libres).push({ jour: j, moment: m, cle: j + "-" + m });
+  }));
+  return { prevus: prevus, libres: libres };
 }
 
 /* Le tour de cuisine : on ne compte que les personnes qui peuvent vraiment
@@ -8027,6 +8283,7 @@ function rendre() {
    (Relevé le 16/09/2026 : 28 boutons sur 34 n'avaient aucun nom.) */
 const NOMS_ICONES = {
   "tache-editer": "Modifier la tâche",
+  "tache-reporter": "Reporter la tâche à demain",
   "tache-refuser": "Refuser la tâche",
   "course-editer": "Modifier l'article",
   "course-suppr": "Supprimer l'article",
@@ -8410,7 +8667,11 @@ document.addEventListener("click", (e) => {
     case "fermer": fermerFeuille(); break;
 
     case "tache-fait": Actions.marquerFaite(v); break;
-    case "tache-annuler": Actions.annulerFaite(v); break;
+    /* Le jour de la case, comme pour « Valider » : sans lui, annuler une
+       tâche cochée la veille ne faisait rien du tout (01/10/2026). */
+    case "tache-annuler": Actions.annulerFaite(v, b.dataset.date || null); break;
+    case "tache-reporter": Actions.reporter(v, b.dataset.date || null); break;
+    case "tache-report-annuler": Actions.annulerReport(v, b.dataset.date || null); break;
     case "tache-valider": Actions.valider(v, b.dataset.date || null); break;
     case "tache-refuser": Actions.refuser(v, b.dataset.date || null); break;
     case "tache-attribuer": Formulaires.attribuer(v, b.dataset.date); break;
@@ -8478,6 +8739,7 @@ document.addEventListener("click", (e) => {
     case "repas-case": Formulaires.repas(b.dataset.jour, b.dataset.moment); break;
     case "menus-generer": Formulaires.generateur(); break;
     case "menus-reprendre": Formulaires.reprendreSemaine(); break;
+    case "menus-vider": Actions.viderSemaine(ui.semaine); break;
     case "menus-afficher": Formulaires.menuAAfficher(); break;
     case "bilan-semaine": Formulaires.bilanSemaine(b.dataset.valeur || ui.semaine); break;
     case "menus-courses": Formulaires.ingredientsVersCourses(); break;

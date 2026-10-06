@@ -238,8 +238,33 @@ function carteMaContribution() {
    Le badge d'une tribu qui en a déjà un s'affiche partout : c'est une donnée
    vraie. La réservation, elle, ne se propose que là où le programme tourne —
    jamais sur le site d'essai, qui partage la base de la production. */
+/* LES PLACES SONT TOUTES PRISES (29/09/2026, demandé par Amandine).
+
+   Jusqu'ici, une famille arrivée après la centième ne voyait RIEN : ni
+   place, ni explication. On le dit, et on dit aussi la seule chose utile —
+   une place peut se libérer, et l'application la prendra toute seule. */
+function carteProgrammeComplet() {
+  return '<div class="carte">' +
+    '<div class="carte-titre">🏅 Familles Fondatrices</div>' +
+    '<p class="aide" style="margin:0">Les ' + PROGRAMME.places +
+    " places sont prises : vous arrivez juste après. MaTribu vous est ouverte " +
+    "exactement de la même façon — le programme ne donnait qu'un numéro et " +
+    "quelques attentions, jamais une fonction de plus.</p>" +
+    '<p class="aide" style="margin:.55rem 0 0">Une place peut se libérer, ' +
+    "quand une famille ne confirme pas la sienne. L'application regarde à " +
+    "chaque ouverture : si c'est le cas, elle vous en attribue une " +
+    "automatiquement, sans rien avoir à demander.</p></div>";
+}
+
 function carteFondatrice() {
   const p = placeFondatrice();
+  /* Pas de place ET le pot était vide à la dernière tentative : on explique.
+     Seul un administrateur voit ce message — c'est lui qui tente de réserver,
+     et lui seul a la réponse du serveur. */
+  if ((!p || !p.numero) && programmeActif() && estAdmin()
+      && genreDeLaTribu() === "fondatrice" && placesToutesPrises()) {
+    return carteProgrammeComplet();
+  }
   if (!p || !p.numero) return "";
   const pionniere = p.genre === "pionniere";
   const nom = pionniere ? "Famille Pionnière" : "Famille Fondatrice";
@@ -767,14 +792,32 @@ function ligneTache(x, compact) {
   /* Mode planning, brique 2 : la personne du tour n'est pas là et aucun parent
      n'a encore choisi — la tâche attend qu'on l'attribue. Pas de « Fait » :
      les points iraient à celui qui coche. */
-  const absent = et.statut === "afaire" ? absentDuTour(t, x.d || new Date()) : null;
-  if (et.statut === "afaire") {
+  const jourIci = isoDate(x.d || new Date());
+  /* REPORTÉE À DEMAIN (01/10/2026) : la ligne reste — une tâche qui disparaît
+     sans un mot, c'est justement ce qu'on voulait éviter — mais elle ne
+     propose plus « Fait » : ce n'est plus pour aujourd'hui. Juste de quoi
+     annuler. Et l'autre bout du report : d'où vient ce passage. */
+  const reporte = et.statut === "afaire" ? reporteLe(t, x.d || new Date()) : "";
+  const venu = et.statut === "afaire" && !reporte ? reportArrivant(t, x.d || new Date()) : null;
+  const absent = et.statut === "afaire" && !reporte ? absentDuTour(t, x.d || new Date()) : null;
+  if (reporte) {
+    if (estAdmin()) {
+      boutons.push('<button class="btn mini" data-action="tache-report-annuler" data-id="' + t.id +
+        '" data-date="' + jourIci + '">Annuler</button>');
+    }
+  } else if (et.statut === "afaire") {
     if (absent) {
       if (estAdmin()) {
         boutons.push('<button class="btn mini principal" data-action="tache-attribuer" data-id="' + t.id +
-          '" data-date="' + isoDate(x.d || new Date()) + '">Attribuer</button>');
+          '" data-date="' + jourIci + '">Attribuer</button>');
       }
     } else if (jeSuisAssigne || estAdmin()) {
+      /* « Pas aujourd'hui, demain », en un geste. Un membre ordinaire ne peut
+         pas écrire les tâches : le bouton est pour les administrateurs. */
+      if (estAdmin() && !compact) {
+        boutons.push('<button class="btn mini icone" data-action="tache-reporter" data-id="' + t.id +
+          '" data-date="' + jourIci + '">⏭️</button>');
+      }
       boutons.push('<button class="btn mini principal" data-action="tache-fait" data-id="' + t.id + '">Fait</button>');
     }
   } else if (et.statut === "fait") {
@@ -790,7 +833,8 @@ function ligneTache(x, compact) {
     }
   }
 
-  let statutHtml = absent ? '<span class="etiquette chaud">à attribuer</span>' : "";
+  let statutHtml = reporte ? '<span class="etiquette">⏭️ reportée ' + esc(motDuReport(reporte)) + "</span>"
+    : absent ? '<span class="etiquette chaud">à attribuer</span>' : "";
   if (et.statut === "fait") statutHtml = '<span class="etiquette chaud">à valider</span>';
   else if (et.statut === "valide") statutHtml = '<span class="etiquette vert">✓ validée</span>';
 
@@ -815,9 +859,12 @@ function ligneTache(x, compact) {
     ? '<button class="lien" style="font-size:inherit" data-action="tache-attribuer" data-id="' +
       esc(t.id) + '" data-date="' + isoDate(x.d || new Date()) + '">' + esc(nomQui) + "</button>"
     : esc(nomQui);
+  /* Un passage arrivé par un report : on dit d'où il vient, sinon la tâche
+     apparaît un jour où elle n'est pas prévue sans qu'on sache pourquoi. */
+  const origine = venu ? "⏭️ reportée " + motDOrigine(venu.de) : "";
   const sous = compact
     ? esc([quand, gain, libellePeriode(t.frequence)].filter(Boolean).join(" • "))
-    : [esc(autreJour), esc(quand), quiHtml, esc(gain)].filter(Boolean).join(" • ");
+    : [esc(origine), esc(autreJour), esc(quand), quiHtml, esc(gain)].filter(Boolean).join(" • ");
   /* Brique 3 : une tâche répartie dit pourquoi cette personne — et un parent
      la change d'un geste. */
   const rep = !compact && et.statut === "afaire" && !absent ? passageReparti(t, x.d || new Date()) : null;
@@ -916,7 +963,14 @@ function blocSemaineTaches(seulementMoi) {
       const m = membre(!aFaire && x.et.parQui ? x.et.parQui : x.qui);
       /* Brique 3 : pourquoi l'appli a choisi cette personne, en bref. */
       const rep = aFaire && !passe ? passageReparti(x.t, d) : null;
+      /* Reportée : le jour de départ le dit, le jour d'arrivée aussi — sans
+         quoi la tâche apparaîtrait un jour non prévu, ou serait annoncée
+         « pas faite » alors qu'elle a été repoussée (01/10/2026). */
+      const parti = aFaire ? reporteLe(x.t, d) : "";
+      const arrive = aFaire && !parti ? reportArrivant(x.t, d) : null;
       const marque = x.et.statut === "valide" ? " ✓" : x.et.statut === "fait" ? " · à valider"
+        : parti ? " · reportée " + motDuReport(parti)
+        : arrive ? " · reportée " + motDOrigine(arrive.de)
         : semaine ? (rep && rep.jour === k ? " · jour conseillé" : " · cette semaine")
         : passe ? " · pas faite" : "";
       return nom + (m ? " — " + lien(esc(m.prenom)) : "") +
@@ -1013,8 +1067,13 @@ Vues.taches = function () {
     const g = liste.filter((x) => x.t.frequence === f);
     if (!g.length) return;
     const faites = g.filter((x) => x.et.statut === "valide").length;
-    h.push('<div class="sous-titre"><h3>' + titre + "</h3><span class=\"etiquette\">" +
-      faites + "/" + g.length + " ✓</span></div>");
+    /* Une tâche reportée ne compte plus dans le total du jour : sinon « 1/3 »
+       laisserait croire qu'il en reste deux à faire. Et quand tout est
+       reporté, « 0/0 » ne voudrait rien dire : l'étiquette s'efface. */
+    const prevues = g.filter((x) => !x.reporte).length;
+    h.push('<div class="sous-titre"><h3>' + titre + "</h3>" +
+      (prevues ? '<span class="etiquette">' + faites + "/" + prevues + " ✓</span>" : "") +
+      "</div>");
     h.push('<div class="carte">' + g.map((x) => ligneTache(x, false)).join("") + "</div>");
   });
 
@@ -1323,6 +1382,14 @@ Vues.menus = function () {
   h.push('<div class="rangee-btn" style="margin-bottom:1rem">' +
     '<button class="btn doux" data-action="menus-reprendre">📋 Reprendre une semaine</button>' +
     '<button class="btn doux" data-action="menus-afficher">🖨️ Afficher</button></div>');
+
+  /* VIDER LA SEMAINE (05/10/2026) : seulement quand il y a quelque chose à
+     effacer. Un bouton qui ne peut rien faire n'a rien à faire là, et celui-ci
+     disparaît de lui-même dès que la semaine est repartie de zéro. */
+  if (casesDeLaSemaine(ui.semaine).prevus.length) {
+    h.push('<div class="rangee-btn" style="margin-bottom:1rem">' +
+      '<button class="btn doux" data-action="menus-vider">🗑️ Vider la semaine</button></div>');
+  }
 
   /* Ce que donne la semaine, en un coup d'oeil : c'est le meilleur retour
      sur les nombres demandés au générateur. */
