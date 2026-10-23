@@ -28,6 +28,24 @@ function blocAncre(ancre, titre, contenu, lienTexte, lienAction, lienVue) {
   return html ? html.replace('<div class="carte">', '<div class="carte" id="admin-' + ancre + '">') : html;
 }
 
+/* L'ADMINISTRATION EST UN MENU, PAS UN MUR (18/10/2026, demande d'Amandine :
+   « le menu admin commence à être lourd »).
+
+   Douze cartes, quatre écrans de défilement — le code le disait lui-même en
+   posant ses raccourcis. Chaque carte se replie, et toutes le sont au départ :
+   l'écran tient sur une page et se lit comme les réglages d'un téléphone. Le
+   titre EST le bouton ; ce qu'on ouvre est gardé sur l'appareil. */
+const CARTES_ADMIN = ["membres", "inviter", "aide", "appareils", "taches", "cadeaux",
+  "recettes", "reglages", "objectif", "rayons", "onglets", "donnees"];
+function carteAdmin(ancre, titre, contenu) {
+  const ouvert = (ui.adminOuverts || []).indexOf(ancre) !== -1;
+  return '<div class="carte" id="admin-' + ancre + '">' +
+    '<button class="carte-pliable" data-action="admin-replier" data-valeur="' + esc(ancre) +
+    '" aria-expanded="' + (ouvert ? "true" : "false") + '"><span>' + titre +
+    '</span><span class="chevron">' + (ouvert ? "▾" : "▸") + "</span></button>" +
+    (ouvert ? contenu : "") + "</div>";
+}
+
 function bloc(titre, contenu, lienTexte, lienAction, lienVue) {
   /* Une carte qui renvoie vers un onglet masqué n'a plus lieu d'être : sinon
      son bouton « Tout voir » ramènerait bêtement à l'accueil. */
@@ -724,7 +742,8 @@ Vues.accueil = function () {
   /* Ce que la réserve a à dire. Ces deux alertes existaient déjà, mais il
      fallait ouvrir Courses ▸ Ma réserve pour les découvrir — autant dire
      jamais. Un anti-gaspi qu'on ne croise pas ne sert à rien. */
-  const sousMini = stockSousMinimum();
+  /* L'accueil ne réclame que ce qui n'est pas encore noté (06/10/2026). */
+  const sousMini = stockARacheter();
   const bientotPerime = stockBientotPerime();
   let alerteReserve = "";
   if (sousMini.length || bientotPerime.length) {
@@ -777,6 +796,24 @@ Vues.accueil = function () {
       "Récompenses", "aller", "points"));
   }
 
+  /* LE PROCHAIN ÉVÉNEMENT (18/10/2026) : c'est tout l'intérêt de l'option —
+     voir arriver la date sans avoir à y penser. Les trente jours d'avant
+     seulement : plus tôt, ce n'est pas encore un sujet. */
+  if (typeof evenementsActifs === "function" && evenementsActifs()) {
+    const prochain = evenementsAVenir()[0];
+    if (prochain && joursEntre(isoDate(new Date()), prochain.date) <= 30) {
+      const t = infoTypeEvenement(prochain.type);
+      h.push(bloc(t.emoji + " " + esc(prochain.nom || t.nom),
+        '<button class="ligne" style="width:100%;background:none;border:none;text-align:left" ' +
+        'data-action="evenement-ouvrir" data-id="' + esc(prochain.id) + '">' +
+        '<span style="font-size:1.4rem">📅</span><span class="ligne-corps">' +
+        "<b>" + esc(decompteEvenement(prochain)) + "</b><small>" +
+        esc(dateJolie(prochain.date, true) +
+          (menuVide(prochain) ? " • menu à préparer" : " • menu prêt")) +
+        "</small></span></button>", "Ouvrir", "aller", "evenements"));
+    }
+  }
+
   h.push(carteActu());
 
   return h.join("");
@@ -793,6 +830,9 @@ function ligneTache(x, compact) {
      n'a encore choisi — la tâche attend qu'on l'attribue. Pas de « Fait » :
      les points iraient à celui qui coche. */
   const jourIci = isoDate(x.d || new Date());
+  /* Une ligne d'un jour passé (le bloc « Oubliées ») : on la coche encore,
+     mais on ne la reporte plus — demain, pour elle, c'est déjà hier. */
+  const passe = jourIci < isoDate(new Date());
   /* REPORTÉE À DEMAIN (01/10/2026) : la ligne reste — une tâche qui disparaît
      sans un mot, c'est justement ce qu'on voulait éviter — mais elle ne
      propose plus « Fait » : ce n'est plus pour aujourd'hui. Juste de quoi
@@ -814,11 +854,14 @@ function ligneTache(x, compact) {
     } else if (jeSuisAssigne || estAdmin()) {
       /* « Pas aujourd'hui, demain », en un geste. Un membre ordinaire ne peut
          pas écrire les tâches : le bouton est pour les administrateurs. */
-      if (estAdmin() && !compact) {
+      if (estAdmin() && !compact && !passe) {
         boutons.push('<button class="btn mini icone" data-action="tache-reporter" data-id="' + t.id +
           '" data-date="' + jourIci + '">⏭️</button>');
       }
-      boutons.push('<button class="btn mini principal" data-action="tache-fait" data-id="' + t.id + '">Fait</button>');
+      /* Le jour de la case part avec le bouton : cocher une tâche d'hier doit
+         remplir la case d'hier, et payer le bon jour (12/10/2026). */
+      boutons.push('<button class="btn mini principal" data-action="tache-fait" data-id="' + t.id +
+        '" data-date="' + jourIci + '">Fait</button>');
     }
   } else if (et.statut === "fait") {
     /* Le jour de la case, transmis aux boutons : une tâche faite mercredi se
@@ -848,7 +891,7 @@ function ligneTache(x, compact) {
   const quand = heureTache(t);
   /* Une tâche en retard de validation vient d'un autre jour : on le dit, sinon
      on valide sans savoir de quand il s'agit (28/09/2026). */
-  const autreJour = x.d && et.statut === "fait" ? quandFaite(t, x.d) : "";
+  const autreJour = x.d && (et.statut === "fait" || passe) ? quandFaite(t, x.d) : "";
   /* LE PRÉNOM SE TOUCHE (28/09/2026). Pour un administrateur, c'est le chemin
      le plus court vers « Qui s'en occupe ? » : un geste, et la tâche change de
      main pour CE passage — sans toucher à la tâche elle-même. Rien quand la
@@ -1009,6 +1052,19 @@ function blocPlusTard(seulementMoi) {
   return '<div class="sous-titre"><h3>⏭️ Plus tard</h3></div><div class="carte">' + lignes.join("") + "</div>";
 }
 
+/* OUBLIÉES CES DERNIERS JOURS (12/10/2026) : ce que personne n'a coché les
+   trois jours d'avant. Rangé en bas, à côté de « Plus tard » : ce n'est ni une
+   alerte ni une liste de reproches, c'est un rattrapage — et il disparaît de
+   lui-même dès qu'il n'y a rien. */
+function blocOubliees(seulementMoi) {
+  const l = tachesOubliees().filter((x) => !seulementMoi || x.assigne === moi.id);
+  if (!l.length) return "";
+  return '<div class="sous-titre"><h3>🗓️ Oubliées ces derniers jours</h3></div>' +
+    '<p class="aide" style="margin:-.35rem 0 .55rem">Cochez celles qui ont bien été ' +
+    "faites : les points iront au jour concerné.</p>" +
+    '<div class="carte">' + l.map((x) => ligneTache(x, false)).join("") + "</div>";
+}
+
 Vues.taches = function () {
   const h = [];
   h.push('<div class="segments">' +
@@ -1033,7 +1089,8 @@ Vues.taches = function () {
      sans aucune tâche — c'est justement là qu'on veut voir ce qui vient. */
   const semaine = blocSemaineTaches(ui.filtreTaches === "moi");
   const plusTard = blocPlusTard(ui.filtreTaches === "moi");
-  if (!toutes.length && !semaine && !plusTard) {
+  const oubliees = blocOubliees(ui.filtreTaches === "moi");
+  if (!toutes.length && !semaine && !plusTard && !oubliees) {
     h.push(rienDu("🧹", estAdmin()
       ? "Aucune tâche pour l'instant.<br>Appuyez sur <b>Nouvelle tâche</b>, juste au-dessus."
       : "Aucune tâche pour l'instant."));
@@ -1057,6 +1114,7 @@ Vues.taches = function () {
     h.push(rienDu("🎉", semaine ? "Rien d'autre à faire aujourd'hui."
       : !toutes.length ? "Rien à faire en ce moment."     // tout est « plus tard »
       : "Aucune tâche ne vous est attribuée en ce moment."));
+    h.push(oubliees);
     h.push(plusTard);
     return h.join("");
   }
@@ -1077,16 +1135,21 @@ Vues.taches = function () {
     h.push('<div class="carte">' + g.map((x) => ligneTache(x, false)).join("") + "</div>");
   });
 
+  h.push(oubliees);
   h.push(plusTard);
   return h.join("");
 };
+
 
 /* ================================ COURSES ================================ */
 
 Vues.courses = function () {
   const h = [];
   const surStock = ui.ongletCourses === "stock";
-  const bas = stockSousMinimum().length;
+  /* Ce qui reste à NOTER, et non ce qui est sous le minimum : une fois
+     l'article porté sur une liste, la pastille n'a plus rien à réclamer
+     (06/10/2026). */
+  const bas = stockARacheter().length;
 
   h.push('<div class="segments">' +
     '<button class="' + (!surStock ? "on" : "") + '" data-action="courses-onglet" data-valeur="liste">' +
@@ -1141,10 +1204,17 @@ function vueListeCourses() {
       "pas dans les rappels de l'accueil.</div></div>");
   }
 
-  const bas = stockSousMinimum();
+  /* Ce qui reste à noter, toutes listes confondues : le bandeau réapparaissait
+     sur CHAQUE liste et faisait noter trois fois la même farine (06/10/2026).
+     Et il ne vise plus « cette liste » : la fenêtre demande laquelle. */
+  const bas = stockARacheter();
   if (bas.length && t.alerte) {
-    h.push('<div class="bandeau">🥫<div><b>' + pluriel(bas.length, "article", "articles") + " sous le minimum</b> dans votre réserve. " +
-      '<button class="lien" data-action="stock-racheter">Les ajouter à cette liste</button></div></div>');
+    h.push('<div class="bandeau">🥫<div><b>' + pluriel(bas.length, "article", "articles") +
+      " sous le minimum</b> dans votre réserve. " +
+      '<button class="lien" data-action="stock-racheter">' +
+      (bas.length > 1 ? "Les ajouter" : "L'ajouter") +
+      (listes.length > 1 ? " à une liste" : " à ma liste") +
+      "</button></div></div>");
   }
 
   /* L'ajout se pose juste au-dessus de la liste, comme dans le cahier de
@@ -1251,10 +1321,22 @@ function vueReserve() {
       "Le générateur de menus proposera en priorité les plats qui les utilisent.</div></div>");
   }
 
-  const bas = stockSousMinimum();
+  /* Depuis cet écran, « la liste de courses » ne voulait rien dire quand il y
+     en a plusieurs : on dit maintenant qu'on va choisir. Et ce qui est déjà
+     noté ne se réclame plus — il se rappelle, une ligne plus bas. */
+  const bas = stockARacheter();
+  const notes = stockSousMinimum().filter((s) => listesOuFigure(s.nom).length);
   if (bas.length) {
     h.push('<div class="bandeau">⚠️<div><b>À racheter : ' + esc(bas.map((s) => s.nom).join(", ")) + "</b>" +
-      '<br><button class="lien" data-action="stock-racheter">Ajouter à la liste de courses</button></div></div>');
+      '<br><button class="lien" data-action="stock-racheter">' +
+      (listesCourses().length > 1
+        ? "Choisir une liste et " + (bas.length > 1 ? "les ajouter" : "l'ajouter")
+        : "Ajouter à ma liste de courses") +
+      "</button></div></div>");
+  } else if (notes.length) {
+    h.push('<div class="bandeau info">📝<div>' +
+      esc(pluriel(notes.length, "article sous le minimum est déjà noté",
+        "articles sous le minimum sont déjà notés")) + " sur vos listes.</div></div>");
   } else {
     h.push('<div class="bandeau info">✅<div>Tout est au-dessus du minimum.</div></div>');
   }
@@ -1457,7 +1539,7 @@ function caseRepas(jour, moment, contenu) {
    liste « Changer le plat » d'un repas. */
 function filtresRecettesBase() {
   const s = infoSaison(saisonActuelle());
-  return [
+  const l = [
     ["saison", s.emoji + " De saison"],
     ["thermomix", "🍲 Thermomix"],
     ["monde", "🌍 Du monde"],
@@ -1470,6 +1552,13 @@ function filtresRecettesBase() {
     ["plat", "🍽️ Plats"],
     ["dessert", "🍰 Desserts"]
   ];
+  /* Le cahier des petits ne se propose qu'aux familles qui en ont un, et
+     seulement s'il a quelque chose à montrer (18/10/2026). */
+  if (typeof bebeVisible === "function" &&
+      etat.recettes.some((r) => estPourBebe(r) && bebeVisible(r))) {
+    l.push(["bebe", "👶 Pour bébé"]);
+  }
+  return l;
 }
 function nomFiltreRecette(v) {
   if (v.indexOf("sante:") === 0) {
@@ -1873,20 +1962,16 @@ Vues.admin = function () {
     return h.join("");
   }
 
-  /* Dix cartes, quatre écrans : sans raccourcis, changer un réglage demande
-     de faire défiler tout le reste à chaque fois. */
-  h.push('<div class="puces" style="margin-bottom:.9rem">' +
-    [["membres", "👨‍👩‍👧 Membres"], ["inviter", "✉️ Inviter"], ["taches", "🧹 Tâches"],
-     ["cadeaux", "🎁 Cadeaux"], ["recettes", "📖 Recettes"], ["reglages", "⚙️ Réglages"],
-     ["objectif", "🤝 Objectif"], ["onglets", "📱 Onglets"], ["donnees", "🔒 Données"]]
-      /* Un raccourci vers un bloc absent ne mène nulle part : les cadeaux
-         suivent les compteurs personnels, l'objectif le système de points. */
-      .filter(([a2]) => a2 === "cadeaux" ? pointsPersoActifs()
-        : a2 === "objectif" ? pointsActifs() : true)
-      .map(([a2, l]) => '<button class="puce" data-action="admin-aller" data-valeur="' + a2 + '">' +
-        l + "</button>").join("") + "</div>");
+  /* La rangée de raccourcis a disparu avec le défilement qu'elle servait à
+     éviter (18/10/2026) : les cartes repliées SONT le sommaire. Reste de quoi
+     tout ouvrir d'un coup, comme dans la réserve. */
+  const toutOuvert = (ui.adminOuverts || []).length >= 3;
+  h.push('<div class="rangee-btn" style="margin-bottom:.9rem">' +
+    '<button class="btn doux" data-action="admin-tout-replier" data-valeur="' +
+    (toutOuvert ? "replier" : "ouvrir") + '">' +
+    (toutOuvert ? "▸ Tout replier" : "▾ Tout ouvrir") + "</button></div>");
 
-  h.push(blocAncre("membres", "👨‍👩‍👧 Membres de la famille",
+  h.push(carteAdmin("membres", "👨‍👩‍👧 Membres de la famille",
     etat.membres.map((m) =>
       '<div class="ligne">' + avatarDe(m) +
       '<div class="ligne-corps"><b>' + esc(m.prenom) + "</b><small>" +
@@ -1901,7 +1986,7 @@ Vues.admin = function () {
       '<button class="btn mini icone" data-action="membre-editer" data-id="' + m.id + '">✏️</button></div>').join(""),
     "Ajouter", "membre-nouveau"));
 
-  h.push(blocAncre("inviter", "✉️ Inviter quelqu'un",
+  h.push(carteAdmin("inviter", "✉️ Inviter quelqu'un",
     '<p class="aide">Pour ajouter une personne — ou un nouveau téléphone pour quelqu\'un qui est ' +
     "déjà dans la famille — créez une invitation. C'est un lien <b>à usage unique</b> qui expire " +
     "au bout de quelques jours.</p>" +
@@ -1910,7 +1995,7 @@ Vues.admin = function () {
     "qui sont personnels — un par membre.</p>" +
     '<button class="btn plein principal" data-action="inviter" style="margin-top:.8rem">Créer une invitation</button>'));
 
-  h.push(bloc("❓ Comment ça marche",
+  h.push(carteAdmin("aide", "❓ Comment ça marche",
     '<div class="ligne"><span class="etape">1</span><div class="ligne-corps">' +
     "<b>Vous créez la famille</b><small>C'est fait : vous en êtes administratrice.</small></div></div>" +
     '<div class="ligne"><span class="etape">2</span><div class="ligne-corps">' +
@@ -1922,7 +2007,7 @@ Vues.admin = function () {
     '<button class="lien" data-action="revoir-conseils" style="margin-top:.7rem">' +
     "Revoir les premiers pas sur l'accueil</button>"));
 
-  h.push(bloc("📱 Appareils autorisés",
+  h.push(carteAdmin("appareils", "📱 Appareils autorisés",
     '<p class="aide">' + ((etat.membresUid || []).length > 1
       ? (etat.membresUid || []).length + " appareils peuvent"
       : (etat.membresUid || []).length + " appareil peut") + " ouvrir cette famille. " +
@@ -1933,7 +2018,7 @@ Vues.admin = function () {
     '<p class="aide" style="margin-top:.5rem">💡 Prévoyez <b>deux administrateurs</b> : si le seul ' +
     "administrateur perd son accès, plus personne ne peut valider les tâches.</p>"));
 
-  h.push(blocAncre("taches", "🧹 Tâches (" + etat.taches.length + ")",
+  h.push(carteAdmin("taches", "🧹 Tâches (" + etat.taches.length + ")",
     etat.taches.length
       ? etat.taches.map((t) =>
         '<div class="ligne"><span style="font-size:1.2rem">' + esc(t.emoji || "🧹") + "</span>" +
@@ -1952,7 +2037,7 @@ Vues.admin = function () {
   /* Renouveler la liste proposée par l'application : le bouton n'apparaît que
      s'il y a vraiment quelque chose à changer. */
   const majCadeaux = cadeauxAremplacer();
-  if (pointsPersoActifs()) h.push(blocAncre("cadeaux", "🎁 Cadeaux (" + etat.cadeaux.length + ")",
+  if (pointsPersoActifs()) h.push(carteAdmin("cadeaux", "🎁 Cadeaux (" + etat.cadeaux.length + ")",
     (etat.cadeaux.length
       ? etat.cadeaux.map((c) =>
         '<div class="ligne"><span style="font-size:1.2rem">' + esc(c.emoji || "🎁") + "</span>" +
@@ -1970,7 +2055,7 @@ Vues.admin = function () {
 
   const aCompleter = etat.recettes.filter((r) => r.saisons === undefined).length;
   const nouvelles = recettesManquantes().length;
-  h.push(blocAncre("recettes", "📖 Recettes (" + etat.recettes.length + ")",
+  h.push(carteAdmin("recettes", "📖 Recettes (" + etat.recettes.length + ")",
     '<p class="aide">La bibliothèque de plats sert au générateur de menus.</p>' +
     (aCompleter
       ? '<div class="bandeau" style="margin-top:.6rem">🔄<div><b>' + pluriel(aCompleter, "recette", "recettes") +
@@ -1985,7 +2070,7 @@ Vues.admin = function () {
     '<button class="btn plein" data-action="recettes-maj" style="margin-top:.5rem">🔄 Mettre à jour les recettes fournies</button>'));
 
   const g = reglagesFamille();
-  h.push(blocAncre("reglages", "⚙️ Réglages de la famille",
+  h.push(carteAdmin("reglages", "⚙️ Réglages de la famille",
     '<div class="ligne"><span style="font-size:1.3rem">🍽️</span>' +
     '<div class="ligne-corps"><b>' + g.convives + " personne" + (g.convives > 1 ? "s" : "") +
     " à table</b><small>Les quantités des recettes sont ajustées à ce nombre.</small></div></div>" +
@@ -2026,7 +2111,7 @@ Vues.admin = function () {
     '<button class="btn plein doux" data-action="admin-reglages" style="margin-top:.7rem">Modifier</button>'));
 
   const ob = objectifFamille();
-  if (pointsActifs()) h.push(blocAncre("objectif", "🤝 Objectif commun",
+  if (pointsActifs()) h.push(carteAdmin("objectif", "🤝 Objectif commun",
     '<p class="aide">Le classement met chacun contre les autres ; l’objectif ' +
     "commun met toute la maison du même côté. Facultatif.</p>" +
     (ob.actif
@@ -2049,7 +2134,7 @@ Vues.admin = function () {
   const caches = ongletsMasques();
   /* Les rayons : ceux de l'application, et ceux que la famille ajoute. */
   const perso = rayonsPerso();
-  h.push(blocAncre("rayons", "🗂️ Rayons (" + rayonsTous().length + ")",
+  h.push(carteAdmin("rayons", "🗂️ Rayons (" + rayonsTous().length + ")",
     '<p class="aide">Ils rangent la réserve et la liste de courses. Chacun appartient ' +
     "à un côté : 🥫 alimentaire ou 🧴 maison. Seuls « À catégoriser » et « Autre » 🗂️ " +
     "apparaissent des deux côtés.</p>" +
@@ -2069,11 +2154,16 @@ Vues.admin = function () {
       : '<p class="aide" style="margin-top:.7rem">Vous n’avez ajouté aucun rayon.</p>'),
     "Ajouter", "rayon-nouveau"));
 
-  h.push(blocAncre("onglets", "📱 Onglets visibles",
+  h.push(carteAdmin("onglets", "📱 La barre du bas",
     '<p class="aide">Ce que la famille voit dans la barre du bas. Masquer un onglet ' +
     "ne supprime rien : le contenu est simplement rangé hors de vue.</p>" +
     '<div class="puces" style="margin-top:.7rem">' +
-    ONGLETS.map((o) =>
+    /* UN ONGLET QUI N'EXISTE PAS NE SE MONTRE PAS, MÊME EN APERÇU
+       (23/10/2026). Cet aperçu parcourait ONGLETS brut : le socle déposé
+       sans le module des événements affichait quand même « 🎉 Événements »,
+       et allumé, par-dessus le marché. La feuille « Choisir les onglets »
+       filtrait déjà, elle ; c'est la carte qui avait été oubliée. */
+    ONGLETS.filter((o) => !o.si || o.si()).map((o) =>
       '<span class="puce ' + (o.obligatoire || caches.indexOf(o.vue) === -1 ? "on" : "") + '">' +
       o.emoji + " " + esc(o.nom) + "</span>").join("") + "</div>" +
     (caches.length
@@ -2083,7 +2173,7 @@ Vues.admin = function () {
     '<button class="btn plein doux" data-action="admin-onglets" style="margin-top:.7rem">Choisir les onglets</button>'));
   /* Les deux droits du RGPD qu'on ne peut pas se contenter d'écrire sur une
      page : récupérer ses données, et les faire effacer. */
-  h.push(blocAncre("donnees", "🔒 Vos données",
+  h.push(carteAdmin("donnees", "🔒 Vos données",
     '<p class="aide">Ce que la loi vous garantit, à portée de main : récupérer tout ' +
     "ce que MaTribu garde sur votre famille, ou tout effacer pour de bon.</p>" +
     '<button class="btn plein doux" data-action="admin-exporter" style="margin-top:.7rem">' +
@@ -2752,7 +2842,7 @@ const Connexion = {
         }, verrou)];
         donnees.appareils = { [Store.uid]: moiId };
         donnees.appareilsInfos = { [Store.uid]: infoAppareil("creation") };
-        donnees.recettes = (window.RECETTES_DEPART || [])
+        donnees.recettes = recettesFournies()
           .map((r) => Object.assign({ id: id(), origine: "depart" }, r));
         donnees.taches = tachesDeDepart(moiId);
         donnees.cadeaux = cadeauxDeDepart();

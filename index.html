@@ -49,7 +49,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="styles.css?v=19">
+<link rel="stylesheet" href="styles.css?v=20">
 
 <!-- Demarrage : les modules Firebase viennent de gstatic, et app.js ne les
      demande qu'une fois les 880 Ko de l'application analyses — soit environ
@@ -184,6 +184,7 @@ setTimeout(function () {
     <section class="vue" id="vue-notes"></section>
     <section class="vue" id="vue-points"></section>
     <section class="vue" id="vue-recettes"></section>
+    <section class="vue" id="vue-evenements"></section>
     <section class="vue" id="vue-admin"></section>
   </main>
 
@@ -210,10 +211,16 @@ setTimeout(function () {
      donc l'ouverture de l'application (mesure du 12/09/2026). -->
 <script src="recettes.js?v=5" defer></script>
 <script src="nutrition.js?v=1" defer></script>
-<script src="vues.js?v=40" defer></script>
-<script src="formulaires.js?v=34" defer></script>
+<script src="vues.js?v=48" defer></script>
+<script src="formulaires.js?v=44" defer></script>
 <script src="mots5.js?v=1" defer></script>
 <script src="motdujour.js?v=2" defer></script>
-<script src="app.js?v=44" defer></script>
+<!-- Module « Les petits à table » (18/10/2026). Retirer cette ligne et le
+     fichier suffit à retirer la fonction : tous ses appels sont protégés. -->
+<script src="petits.js?v=3" defer></script>
+<!-- Le cahier des petits : 46 recettes de bébé. Il appartient au module
+     « Les petits à table » — sans petits.js, rien ne les affiche. -->
+<script src="recettes-bebe.js?v=1" defer></script>
+<script src="app.js?v=58" defer></script>
 </body>
 </html>

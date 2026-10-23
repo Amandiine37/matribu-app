@@ -112,7 +112,7 @@ function estAbsence(c) { return !!(c && c.absent); }
 
 /* Réglages de la famille et leurs valeurs par défaut. Déclarés ici, avec les
    autres constantes : `etatVide()` s'en sert dès le chargement du fichier. */
-const REGLAGES_DEFAUT = { convives: 4, points: true, pointsRepas: 15, antiGaspi: true, macros: false, planning: false, motDuJour: false };
+const REGLAGES_DEFAUT = { convives: 4, points: true, pointsRepas: 15, antiGaspi: true, macros: false, planning: false, motDuJour: false, evenements: false };
 
 /* Les palettes de couleurs (styles.css). Choisies PAR APPAREIL, comme le mode
    clair/sombre : chacun la sienne, sans droits particuliers — un réglage rangé
@@ -138,7 +138,11 @@ const PORTIONS_BASE = 4;      // les recettes fournies sont écrites pour 4
 /* Les grilles d'icones. Elles sont volontairement fournies : c'est ce qui
    permet a chacun de se reconnaitre du premier coup d'oeil dans les listes. */
 const EMOJIS_MEMBRES = [
+  /* 👶 et 🍼 manquaient : on ne pouvait pas donner une figure au bébé de la
+     maison (retour d'un parent, 18/10/2026). 🧒 comble l'autre trou — il n'y
+     avait que 👦 et 👧 entre l'enfant et l'adulte. */
   "😀", "😄", "😎", "🥳", "🤓", "🙂", "😺", "🧑", "👦", "👧",
+  "👶", "🍼", "🧒",
   "🦊", "🐻", "🐼", "🦁", "🐨", "🐧", "🦉", "🐬", "🐢", "🦄",
   "🐯", "🐰", "🐥", "🦋", "🐝", "🐙", "🐳", "🦖", "🐴", "🐶",
   "🌻", "🌷", "🌺", "🍀", "🌵", "🍄", "🌈", "⭐", "🔥", "⚡",
@@ -148,9 +152,16 @@ const EMOJIS_MEMBRES = [
 const EMOJIS_TACHES = [
   "🧹", "🧽", "🧼", "🪣", "🧴", "🧻", "🪥", "🚿", "🛁", "🚽",
   "🍽️", "🧑‍🍳", "🧊", "🗑️", "♻️", "📦", "🛏️", "🛋️", "🪑", "🪟",
-  "🧺", "👕", "🧦", "👟", "🖼️", "🕯️", "💡", "🔌", "🔋", "🚪",
-  "🌱", "🌳", "🍂", "🌾", "❄️", "🏡", "🚗", "🚲", "📬", "📮",
-  "🛒", "🐕", "🐈", "🐟", "🐹", "🔧", "🔨", "🪛", "🧰", "🧯"];
+  /* LA CHAMBRE DES ENFANTS (18/10/2026, retour d'un parent). Le jouet, le
+     livre, le puzzle et la peinture manquaient : tout le rangement d'une
+     chambre se faisait au balai. Les vêtements et le linge sale, eux,
+     existaient — mais perdus entre la fenêtre et la bougie, et le parent ne
+     les avait pas trouvés. Ils rejoignent la même rangée : ce qu'un enfant
+     range se cherche d'un seul regard. */
+  "🧸", "📚", "🧩", "🎨", "👕", "🧦", "👟", "🧺", "🩳", "🧢",
+  "🖼️", "🕯️", "💡", "🔌", "🔋", "🚪", "🌱", "🌳", "🍂", "🌾",
+  "❄️", "🏡", "🚗", "🚲", "📬", "📮", "🛒", "🐕", "🐈", "🐟",
+  "🐹", "🔧", "🔨", "🪛", "🧰", "🧯"];
 
 const EMOJIS_CADEAUX = [
   "🎁", "🌟", "🎟️", "🎫", "🛍️", "💶", "🧸", "🎲", "🃏", "🧩",
@@ -172,7 +183,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.65 bêta";
+const VERSION = "0.68 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -209,7 +220,7 @@ const FAMILLES_UNITES = {
    `etats` et `journal` sont a part : ils ont leurs propres regles de securite. */
 const CLES_DOC = ["famille", "membres", "membresUid", "adminsUid", "appareils", "appareilsInfos", "taches",
   "bareme", "courses", "listesCourses", "stock", "repas", "notes", "cadeaux",
-  "tarifs", "echanges", "reglages", "jetonUtilise"];
+  "tarifs", "echanges", "reglages", "jetonUtilise", "evenements"];
 
 /* LES RECETTES VIVENT A PART (12/09/2026).
 
@@ -305,6 +316,121 @@ const CALENDRIER = {
    Ni correctif, ni sécurité, ni « sous le capot » : cette page ne parle que
    de ce que la famille peut voir et utiliser. */
 const ACTUS = [
+  {
+    version: "0.68",
+    date: "2026-10-23",
+    titre: "Les petits à table",
+    points: [
+      {
+        quoi: "👶 Les repères de l'âge sous chaque recette",
+        court: "la texture et ce qu'il faut adapter, sans rien demander sur l'enfant",
+        detail: "<p>Dans <i>Administration › Réglages de la famille</i>, cochez les âges " +
+          "présents à la maison — de 4 mois à 5 ans. Chaque recette porte alors sa partie " +
+          "<b>Pour les petits</b> : la texture attendue, et ce qu'il faut adapter (pas de " +
+          "miel, bien cuit, pas de sel ajouté…).</p>" +
+          "<p><b>Rien n'est rattaché à un enfant</b> : ni prénom, ni date de naissance. " +
+          "C'est une caractéristique du foyer, rien de plus.</p>" +
+          "<p>Ce sont des repères généraux de la diversification. Ils ne remplacent ni " +
+          "votre médecin, ni votre PMI, et ne savent rien d'une allergie.</p>",
+        si: () => typeof cartePetits === "function",
+        ou: { libelle: "Cocher les âges", action: "admin-reglages", admin: true }
+      },
+      {
+        quoi: "🥣 Un cahier de 46 recettes de bébé",
+        court: "des premières purées aux plats qu'on réclame à quatre ans",
+        detail: "<p>Quarante-six recettes écrites pour les tout-petits et rangées par " +
+          "âge : premières purées à une seule saveur, compotes sans sucre, premiers " +
+          "morceaux à attraper, puis les plats de la famille en plus doux.</p>" +
+          "<p>Aucun sel, aucun sucre ajouté avant un an, aucun miel, rien de cru, rien " +
+          "de rond et dur.</p>" +
+          "<p>Elles n'apparaissent que si vous avez coché un âge, et seulement pour les " +
+          "âges qui vous concernent. Elles ne partent <b>jamais</b> dans le menu de la " +
+          "semaine. Pour les recevoir : <i>Administration › Mettre à jour les recettes " +
+          "fournies</i>.</p>",
+        si: () => typeof cartePetits === "function",
+        ou: { libelle: "Ouvrir le cahier", action: "aller", vue: "recettes" }
+      },
+      {
+        quoi: "🍽️ Le même légume, cuisiné pour chacun",
+        court: "purée de carotte pour bébé, carottes autrement pour la famille",
+        detail: "<p>Un seul panier, deux repas. Sous une recette de bébé, l'application " +
+          "propose des plats de la famille avec <b>le même légume</b> ; sous un plat de " +
+          "la famille, elle propose la version pour bébé. Et quand le repas de la semaine " +
+          "est choisi, elle dit ce que bébé peut manger ce jour-là.</p>" +
+          "<p>Trois propositions au plus, celles de saison d'abord.</p>",
+        si: () => typeof cartePetits === "function"
+      },
+      {
+        quoi: "🧸 Des icônes pour les enfants, et la barre du bas qu'on range",
+        court: "jouets, livres, vêtements — et les onglets dans l'ordre qui vous arrange",
+        detail: "<p>De nouvelles icônes pour les membres (👶 🍼 🧒) et pour les tâches " +
+          "(🧸 les jouets, 📚 les livres, 🧩 🎨, 🩳 🧢 les vêtements) : les tâches des " +
+          "enfants se reconnaissent d'un coup d'œil.</p>" +
+          "<p>La <b>barre du bas</b> se range : masquez ce que la famille n'utilise pas, " +
+          "et mettez le reste dans l'ordre qui vous arrange. L'écran <i>Administration</i> " +
+          "se replie en cartes au lieu de dérouler une page interminable.</p>" +
+          "<p>Et dans le générateur de menus, vous pouvez demander la <b>viande et le " +
+          "poisson plutôt le midi</b> : beaucoup de familles préfèrent les dîners légers.</p>",
+        ou: { libelle: "Ranger la barre du bas", action: "admin-onglets", admin: true }
+      }
+    ]
+  },
+  {
+    version: "0.67",
+    date: "2026-10-18",
+    /* Toute cette version parle du module des événements : sans le fichier,
+       elle n'a rien à raconter (23/10/2026). */
+    si: () => typeof evenementsActifs === "function",
+    titre: "MaTribu Événements",
+    points: [
+      {
+        quoi: "🎉 Préparer les fêtes sans y penser",
+        court: "un événement, son menu par services, ses courses et les envies de chacun",
+        detail: "<p>Un administrateur active <b>« Les événements »</b> dans <i>Administration › " +
+          "Réglages de la famille</i>. Un onglet apparaît ; décochée, il disparaît et rien " +
+          "n'est perdu.</p>" +
+          "<p>On choisit le <b>type</b> — 🎄 Noël, 🎂 anniversaire, 🎆 Nouvel An, repas de " +
+          "famille, fête — la date, le lieu et le nombre de convives. L'accueil affiche le " +
+          "<b>décompte des jours</b> dans le mois qui précède.</p>" +
+          "<p>Le <b>menu se compose par services</b> : apéritif, entrée, plat, accompagnement, " +
+          "fromage, dessert, boissons. Chacun prend un plat du cahier ou s'écrit librement " +
+          "(la bûche de la boulangerie n'est pas une recette). <b>🛒 Aux courses</b> " +
+          "additionne tout pour le nombre de convives de la soirée, en tenant compte de votre " +
+          "réserve.</p>" +
+          "<p>Et <b>76 plats de fête</b> rejoignent le cahier : apéritifs, entrées festives, " +
+          "plats de réveillon, bûches. Ils ne sont <b>jamais</b> proposés par le générateur de " +
+          "la semaine — uniquement dans le menu d'un événement.</p>" +
+          "<p><b>🎁 Les envies</b> (la liste au père Noël) se notent pour chaque membre, et " +
+          "aussi pour quelqu'un hors de la tribu. Chacun écrit la sienne et lit celles des " +
+          "autres. En revanche <b>qui offre quoi</b> et <b>ce qui est acheté</b> ne se voient " +
+          "que du côté des <b>administrateurs</b> — et un code facultatif permet de les cacher " +
+          "même là, pour qu'un téléphone posé sur la table ne raconte pas tout. C'est un " +
+          "rideau pour ne pas gâcher la surprise, pas un coffre-fort.</p>",
+        ou: { libelle: "Activer les événements", action: "admin-reglages", admin: true }
+      }
+    ]
+  },
+  {
+    version: "0.66",
+    date: "2026-10-12",
+    titre: "Rattraper une tâche oubliée",
+    points: [
+      {
+        quoi: "🗓️ Oubliées ces derniers jours",
+        court: "une tâche faite hier mais jamais cochée ne se perd plus",
+        detail: "<p>Jusqu'ici, une tâche du jour que personne n'avait cochée disparaissait " +
+          "à minuit : impossible de dire le lendemain qu'elle avait bien été faite, et les " +
+          "points étaient perdus.</p>" +
+          "<p>En bas de l'onglet <i>Tâches</i>, un bloc <b>🗓️ Oubliées ces derniers jours</b> " +
+          "rassemble celles des <b>trois jours précédents</b> que personne n'a cochées. " +
+          "Appuyez sur <b>Fait</b> : les points vont à la bonne personne et au <b>bon jour</b>.</p>" +
+          "<p>Il n'apparaît que s'il y a quelque chose à rattraper, et ne concerne que les " +
+          "tâches de chaque jour ou de certains jours — celles de la semaine et du mois ont " +
+          "encore leur case ouverte.</p>",
+        ou: { libelle: "Ouvrir les tâches", action: "aller", vue: "taches" }
+      }
+    ]
+  },
   {
     version: "0.65",
     date: "2026-10-05",
@@ -460,7 +586,22 @@ const ACTUS = [
 /* Ce que cet appareil a déjà lu. Sur l'appareil, pas dans la famille : on ne
    va pas marquer la nouvelle comme lue pour tout le monde parce qu'une seule
    personne l'a ouverte. */
-function actuDerniere() { return ACTUS[0] || null; }
+/* LES NOUVEAUTÉS QU'ON A LE DROIT D'ANNONCER (23/10/2026).
+
+   Une note de version est du CONTENU : les garde-fous `typeof` posés sur le
+   code ne la retenaient pas. Le socle déposé sans evenements.js annonçait
+   donc « MaTribu Événements », avec un bouton vers une case inexistante.
+
+   La condition se pose sur une version ENTIÈRE (`si`) ou sur un POINT
+   précis — une même version peut apporter du livré et du non livré. Une
+   version dont tous les points ont disparu ne s'affiche plus du tout. */
+function pointsVisibles(a) {
+  return ((a && a.points) || []).filter((p) => !p.si || p.si());
+}
+function actusVisibles() {
+  return ACTUS.filter((a) => (!a.si || a.si()) && pointsVisibles(a).length);
+}
+function actuDerniere() { return actusVisibles()[0] || null; }
 function actuANoter() {
   const d = actuDerniere();
   if (!d) return false;
@@ -540,9 +681,16 @@ function propre(v) { return JSON.parse(JSON.stringify(v)); }
      fichier. Une étape réécrite par la famille part en ligne comme avant ;
    - un plat que la famille a créé n'est jamais concerné. */
 let _refDepart = null;
+/* Tout ce que l'application fournit : le cahier commun, et le cahier des
+   petits si le module a été livré (18/10/2026). Sans recettes-bebe.js, la
+   seconde liste n'existe pas et la fonction rend exactement ce qu'elle
+   rendait avant. */
+function recettesFournies() {
+  return (window.RECETTES_DEPART || []).concat(window.RECETTES_BEBE || []);
+}
 function recetteFournie(nom) {
   if (!_refDepart) {
-    _refDepart = new Map((window.RECETTES_DEPART || [])
+    _refDepart = new Map(recettesFournies()
       .map((r) => [String(r.nom || "").toLowerCase().trim(), r]));
   }
   return _refDepart.get(String(nom || "").toLowerCase().trim()) || null;
@@ -1158,7 +1306,7 @@ function etatVide() {
     famille: { nom: "", code: "", creeLe: "", version: 2 },
     membres: [], membresUid: [], adminsUid: [], appareils: {}, appareilsInfos: {},
     taches: [], bareme: {}, etats: {},
-    courses: [], listesCourses: [], stock: [], recettes: [], repas: {}, notes: [],
+    courses: [], listesCourses: [], stock: [], recettes: [], repas: {}, notes: [], evenements: [],
     cadeaux: [], tarifs: {}, echanges: [], journal: [],
     /* Les parties du « mot du jour », une par membre (0.60). Hors de
        CLES_DOC, comme etats et journal : en ligne, elles vivent dans leur
@@ -1194,6 +1342,10 @@ const ui = {
   /* Rayons repliés de la réserve : une longue réserve devenait un mur à faire
      défiler. Gardés sur l'appareil d'une ouverture à l'autre. */
   rayonsReplies: lireListeMemorisee("tribu:rayonsReplies") || [],
+  /* Les cartes de l'Administration OUVERTES (et non les repliées) : la liste
+     vide veut dire « tout replié », ce qui est l'état de départ voulu — un
+     écran qui tient sur une page (18/10/2026). */
+  adminOuverts: lireListeMemorisee("tribu:adminOuverts") || [],
   /* "perso", "vege", "rapide", "leger"… gardés sur l'appareil d'une ouverture
      à l'autre (avant, ils se perdaient à chaque rechargement). */
   filtresRecettes: (() => {
@@ -1207,12 +1359,35 @@ const ui = {
 
 /* Les plats fournis avec l'application : on ne les propose pas au partage,
    toutes les familles les ont déjà. Le reste est considéré comme « à vous ». */
-const NOMS_DEPART = new Set((window.RECETTES_DEPART || [])
+const NOMS_DEPART = new Set(recettesFournies()
   .map((r) => r.nom.toLowerCase().trim()));
 
 /* Un dessert n'est pas un plat : il n'a rien à faire dans le générateur de
    menus du midi et du soir. On le range à part, sans le cacher. */
 function estDessert(r) { return !!r && r.plat === "dessert"; }
+/* LA PLACE D'UN PLAT AU REPAS (18/10/2026, avec le cahier de fête).
+
+   Avant, un plat était « dessert » ou rien. Les services d'un repas de fête
+   demandaient davantage : un toast au foie gras n'est pas un plat principal, et
+   personne ne veut le voir proposé un mardi soir.
+
+   ATTENTION, `!r.plat` ne suffit pas pour reconnaître un plat principal : la
+   fiche d'une recette écrit « principal » dès qu'on l'enregistre. */
+function placeAuRepas(r) { return (r && r.plat) || "principal"; }
+function estPlatPrincipal(r) { return placeAuRepas(r) === "principal"; }
+/* Le cahier de fête ne sort QUE dans le menu d'un événement : le vivier du
+   générateur de la semaine reste exactement celui d'avant, et tout ce qui a été
+   mesuré en septembre (variété, soupes, bases répétées) tient toujours. */
+function estDeFete(r) { return !!r && r.fete === true; }
+/* LE CAHIER DES PETITS (18/10/2026). Une recette de bébé n'est pas un plat
+   de la table : elle ne part jamais au tirage de la semaine, ne se propose
+   pas pour un repas, ni pour un menu de fête. */
+function estPourBebe(r) { return !!r && r.bebe === true; }
+/* Et c'est le module « Les petits à table » qui décide de ce qui se montre :
+   sans lui, aucune recette de bébé n'apparaît nulle part. */
+function cahierBebeOuvert(r) {
+  return typeof bebeVisible === "function" && bebeVisible(r);
+}
 
 function estRecettePerso(r) {
   if (r.origine === "perso") return true;
@@ -1373,7 +1548,7 @@ function cuisineDe(r) {
   if (!r) return "";
   if (r.cuisine) return r.cuisine;
   if (!_cuisinesDepart) {
-    _cuisinesDepart = new Map((window.RECETTES_DEPART || []).filter((x) => x.cuisine)
+    _cuisinesDepart = new Map(recettesFournies().filter((x) => x.cuisine)
       .map((x) => [x.nom.toLowerCase().trim(), x.cuisine]));
   }
   return _cuisinesDepart.get(String(r.nom || "").toLowerCase().trim()) || "";
@@ -1393,6 +1568,7 @@ function recetteCorrespond(r, recherche, f) {
      l'étiquette « importée » de la liste : les deux ne peuvent pas diverger. */
   if (f.includes("importee") && r.origine !== "importee") return false;
   if (f.includes("favori") && !estFavori(r)) return false;
+  if (f.includes("bebe") && !estPourBebe(r)) return false;
   if (f.includes("vege") && !r.vegetarien) return false;
   if (f.includes("rapide") && !r.rapide) return false;
   if (f.includes("leger") && r.type !== "leger") return false;
@@ -1410,7 +1586,11 @@ function recetteCorrespond(r, recherche, f) {
 }
 
 function recettesFiltrees() {
-  return etat.recettes.filter((r) => recetteCorrespond(r, ui.rechercheRecette, ui.filtresRecettes))
+  return etat.recettes
+    /* Les recettes de bébé ne se montrent qu'aux familles concernées, et
+       seulement aux âges qui les concernent (18/10/2026). */
+    .filter((r) => !estPourBebe(r) || cahierBebeOuvert(r))
+    .filter((r) => recetteCorrespond(r, ui.rechercheRecette, ui.filtresRecettes))
     .sort(comparerRecettes(ui.triRecettes));
 }
 
@@ -2287,8 +2467,59 @@ function tachesAValider() {
   }
   return liste;
 }
+/* LES OUBLIÉES DES JOURS PASSÉS (12/10/2026, demandé par Amandine).
+
+   « À valider » rattrape quinze jours, mais seulement ce qui a été COCHÉ. Une
+   tâche que personne n'a cochée disparaît, elle, à minuit : une tâche du jour
+   vit dans la case de son jour, et plus rien ne l'affiche le lendemain. Aucun
+   geste ne permettait de dire « si, elle a été faite » — les points étaient
+   perdus.
+
+   C'est le pendant du report : celui-ci pousse en avant, celle-ci rattrape en
+   arrière.
+
+   TROIS JOURS, pas quinze : assez pour un week-end oublié, assez court pour
+   que l'écran reste un rattrapage et non un mur de reproches.
+
+   Et seulement les tâches qui vivent AU JOUR : « chaque semaine » et « chaque
+   mois » ont encore leur case ouverte, elles ne sont perdues pour personne.
+   On saute ce qui a été reporté (le passage a changé de jour, il n'est pas
+   oublié) et les jours antérieurs à la tâche elle-même. */
+const JOURS_OUBLIEES = 3;
+function tachesOubliees() {
+  const auj = new Date();
+  const aujIso = isoDate(auj);
+  const liste = [];
+  for (let k = 1; k <= JOURS_OUBLIEES; k++) {
+    const d = new Date(auj.getFullYear(), auj.getMonth(), auj.getDate() - k, 12);
+    const iso = isoDate(d);
+    etat.taches.forEach((t) => {
+      if (t.actif === false) return;
+      if (t.frequence !== "jour" && t.frequence !== "jours") return;
+      /* Le planning ne remonte pas avant le jour où la tâche existe, ni avant
+         le jour où ses jours ont été choisis — même règle que « La semaine ». */
+      const depuis = t.joursDepuis || String(t.creeLe || "").slice(0, 10);
+      if (depuis && iso < depuis) return;
+      if (iso >= aujIso) return;
+      if (!prevueLe(t, d) || reporteLe(t, d)) return;
+      if (etatTache(t, d).statut !== "afaire") return;
+      liste.push({ t: t, d: d, assigne: assigneDe(t, d), et: etatTache(t, d) });
+    });
+  }
+  return liste;
+}
 function echangesEnAttente() {
   return etat.echanges.filter((e) => e.statut === "demande");
+}
+
+/* LE MODULE « LES PETITS À TABLE » RÉPOND-IL ? (18/10/2026)
+
+   Deux conditions, et les deux comptent : le fichier « petits.js » doit être
+   livré, ET la famille doit avoir dit qu'il y a un tout-petit chez elle. Le
+   premier point est ce qui permettra d'en faire une partie payante : sans le
+   fichier, la fonction n'existe pas, et rien ailleurs ne s'en aperçoit. */
+function petitsActifs() {
+  return typeof cartePetits === "function" && (reglagesFamille().petits || []).length > 0;
 }
 
 /* --- Notes --- */
@@ -5517,10 +5748,13 @@ async function accesPerdu(code) {
 const Actions = {
 
   /* --- Taches --- */
-  async marquerFaite(tacheId) {
+  /* « quand » (aaaa-mm-jj) : le jour de la case visée, comme pour « Valider ».
+     Sans lui, on ne pouvait cocher qu'aujourd'hui — et une tâche d'hier que
+     personne n'avait cochée était perdue (12/10/2026). */
+  async marquerFaite(tacheId, quand) {
     const t = etat.taches.find((x) => x.id === tacheId);
     if (!t) return;
-    const d = new Date();
+    const d = jourVise(quand);
     const cle = cleEtat(t, d);
     if ((etat.etats[cle] || {}).statut === "valide") return;
 
@@ -5544,7 +5778,7 @@ const Actions = {
     await Store.ecrireEtat(cle, etat.etats[cle]);
 
     if (directe) {
-      const credite = await crediterTache(t, cle, beneficiaire);
+      const credite = await crediterTache(t, cle, beneficiaire, d);
       rendre();
       const m = membre(beneficiaire);
       /* On n'annonce des points que s'ils ont vraiment été donnés : annoncer
@@ -5619,7 +5853,7 @@ const Actions = {
     etat.etats[cle] = e;
     await Store.ecrireEtat(cle, e);
 
-    const credite = await crediterTache(t, cle, gagnant);
+    const credite = await crediterTache(t, cle, gagnant, d);
     rendre();
     const m = membre(gagnant);
     toast(credite && m ? "+" + t.points + " points pour " + m.prenom + " 🌟"
@@ -6002,44 +6236,37 @@ const Actions = {
     sauver("stock");
   },
 
-  /* Envoie dans les courses tout ce qui est passé sous le minimum. */
-  async racheterSousMinimum() {
+  /* RÉAPPROVISIONNER (revu le 06/10/2026). La liste est CHOISIE — elle était
+     devinée d'après l'écran, ce qui ne voulait rien dire depuis l'onglet
+     Réserve. La fenêtre qui précède (Formulaires.racheter) montre ce qui part
+     et où ; il n'y a donc plus de question à poser ici.
+
+     Deux garde-fous :
+     - jamais deux fois la même ligne sur la liste visée (comparaison
+       tolérante : « Oeufs » et « Œufs », c'est le même article) ;
+     - ce qui est déjà noté sur une AUTRE liste n'est ajouté que si on l'a
+       demandé. Deux magasins, deux listes, cela se défend — mais c'était un
+       accident, c'est devenu un choix. */
+  racheterSousMinimum(listeId, aussiAilleurs) {
+    const liste = listesCourses().find((l) => l.id === listeId) || listeCourante();
     const bas = stockSousMinimum();
     if (!bas.length) { toast("Rien à racheter, tout est au-dessus du minimum"); return; }
-    const liste = listeCourante();
-    const cible = liste.id;
-    /* « Déjà là » se juge sur LA LISTE OÙ L'ON AJOUTE, pas sur toutes à la
-       fois : la farine notée sur la liste du drive ne doit pas empêcher de la
-       remettre sur celle du supermarché, sinon on repart sans.
-       La comparaison reste tolérante : « Oeufs » et « Œufs », c'est le même
-       article, on ne l'ajoute pas deux fois. */
-    const dejaLa = new Set(etat.courses
-      .filter((c) => !c.coche && listeDe(c) === cible)
+    const surCetteListe = new Set(etat.courses
+      .filter((c) => listeDe(c) === liste.id)
       .map((c) => cleArticle(c.nom)));
-    const aAjouter = bas.filter((s) => !dejaLa.has(cleArticle(s.nom)));
-    if (!aAjouter.length) {
-      toast("Ils sont déjà dans « " + liste.nom + " »");
-      return;
-    }
-    const ok = await confirmer("Ajouter " + pluriel(aAjouter.length, "article", "articles") + " à « " + liste.nom + " » ?",
-      { titre: "Réapprovisionner", ok: "Ajouter" });
-    if (!ok) return;
+    const aAjouter = bas.filter((s) => !surCetteListe.has(cleArticle(s.nom))
+      && (aussiAilleurs || !listesOuFigure(s.nom).length));
+    if (!aAjouter.length) { toast("Ils sont déjà notés"); return; }
     aAjouter.slice().reverse().forEach((s) => {
-      /* Ce qui MANQUE pour revenir au minimum, pas le minimum lui-même : avec
-         200 g de farine et un minimum d'1 kg, on achète 800 g, pas 1 kg.
-         Quand la quantité en réserve n'est pas un nombre (« un peu »), on ne
-         peut rien soustraire : on propose alors le minimum entier. */
-      const mini = nombre(s.mini) || 0;
-      const q = nombre(s.qte);
-      const manque = q === null ? mini : Math.max(mini - q, 0);
       etat.courses.unshift({
-        id: id(), nom: s.nom, qte: texteNombre(manque || mini), unite: s.unite || "",
-        rayon: s.rayon || "Autre", coche: false, listeId: cible, vrac: !!s.vrac,
+        id: id(), nom: s.nom, qte: quantiteARacheter(s), unite: s.unite || "",
+        rayon: s.rayon || "Autre", coche: false, listeId: liste.id, vrac: !!s.vrac,
         parQui: moi && moi.id, creeLe: new Date().toISOString()
       });
     });
     sauver("courses");
-    toast(pluriel(aAjouter.length, "article ajouté", "articles ajoutés") + " 🛒");
+    toast(pluriel(aAjouter.length, "article ajouté", "articles ajoutés") +
+      " à « " + liste.nom + " » 🛒");
   },
 
   /* --- Repas --- */
@@ -6114,11 +6341,17 @@ const Actions = {
       { titre: "Vider la semaine", ok: "Vider", danger: true });
     if (!ok) return;
     if (!etat.repas[cleSem]) etat.repas[cleSem] = {};
+    /* On se souvient des plats retirés : sans cela, « Générer » juste après
+       reproposerait les mêmes — ce sont eux qui gagnent, réserve à l'appui
+       (06/10/2026). */
+    noterPlatsEcartes(cleSem, c.prevus
+      .map((x) => (sem[x.cle] || {}).recetteId).filter(Boolean));
     c.prevus.forEach((x) => { etat.repas[cleSem][x.cle] = null; });
     sauver("repas");
     toast(pluriel(c.prevus.length, "repas effacé", "repas effacés") +
       " — 🎲 Générer pour une nouvelle semaine");
   },
+
 
   /* --- Notes --- */
   basculerNote(nid) {
@@ -6256,6 +6489,12 @@ const Actions = {
   }
 };
 
+/* LE MODULE « ÉVÉNEMENTS » GREFFE SES ACTIONS ICI (18/10/2026).
+   app.js est chargé en dernier : si le fichier evenements.js a été livré,
+   ses actions existent déjà et rejoignent les autres. Sinon, cette ligne ne
+   fait rien — et aucun bouton ne les réclame, puisqu'aucun ne s'affiche. */
+if (typeof ACTIONS_EVENEMENTS === "object") Object.assign(Actions, ACTIONS_EVENEMENTS);
+
 /* Credite les points d'une tache validee, une seule fois par periode. */
 /* Une tache a-t-elle deja ete payee dans la periode en cours ?
 
@@ -6264,14 +6503,30 @@ const Actions = {
    semaine » changeait la cle, et le meme travail pouvait etre credite une
    seconde fois dans la meme journee. On regarde donc les DATES du journal,
    qui ne mentent pas, plutot que la forme de la cle. */
-function dejaPayeeDansLaPeriode(t) {
+/* DÉJÀ PAYÉE POUR CETTE CASE ? (élargi le 12/10/2026)
+
+   On comparait la DATE D'ÉCRITURE de la ligne au début de la période en cours.
+   Tant qu'on ne payait que le jour même, c'était juste. Depuis qu'on peut
+   valider une tâche cochée la veille (28/09), ce ne l'était plus : la ligne
+   écrite aujourd'hui pour la case d'hier passait pour le paiement
+   d'aujourd'hui, et la vraie tâche du jour se voyait refuser ses points.
+
+   On compare donc la CASE — celle-là même que la ligne du journal porte. Et on
+   garde l'ancien contrôle par la date pour la période en cours, lui seul sait
+   attraper le cas où la fréquence a changé depuis, et la clé avec elle. */
+function dejaPayeeDansLaPeriode(t, d) {
+  const jour = d || new Date();
+  const cle = cleEtat(t, jour).replace(/\|/g, "__");
+  const enCours = clePeriode(t.frequence, jour) === clePeriode(t.frequence, new Date());
   const debut = debutDePeriode(t.frequence, new Date());
   return (etat.journal || []).some((e) =>
     e.type === "tache" && e.refId === t.id && e.delta > 0 &&
-    e.date && new Date(e.date) >= debut);
+    (e.cleEtat === cle || (enCours && e.date && new Date(e.date) >= debut)));
 }
 
-async function crediterTache(t, cle, beneficiaire) {
+/* « d » : le jour de la case qu'on paie — hier quand on rattrape. Sans lui,
+   la ligne du journal portait la période d'aujourd'hui (12/10/2026). */
+async function crediterTache(t, cle, beneficiaire, d) {
   if (!beneficiaire || !t.points) return false;
   /* POINTS ETEINTS = AUCUN POINT (14/09/2026). Le reglage masquait le
      compteur, le classement et les cadeaux, mais les lignes continuaient
@@ -6280,9 +6535,9 @@ async function crediterTache(t, cle, beneficiaire) {
      « c'est fait » et la validation continuent : c'est la comptabilite qui
      s'arrete, et l'historique d'avant ne bouge pas. */
   if (!pointsActifs()) return false;
-  if (dejaPayeeDansLaPeriode(t)) return false;
+  if (dejaPayeeDansLaPeriode(t, d)) return false;
   return await ajouterAuJournal({
-    id: "t|" + t.id + "|" + clePeriode(t.frequence, new Date()),
+    id: "t|" + t.id + "|" + clePeriode(t.frequence, d || new Date()),
     type: "tache", refId: t.id, cleEtat: cle.replace(/\|/g, "__"),
     membreId: beneficiaire, delta: t.points, motif: "Tâche : " + t.nom
   });
@@ -6495,7 +6750,7 @@ function normaliserUnite(txt) {
 }
 
 function reparerRecettes() {
-  const reference = new Map((window.RECETTES_DEPART || [])
+  const reference = new Map(recettesFournies()
     .map((r) => [r.nom.toLowerCase().trim(), r]));
   let saisonsAjoutees = 0;
   let unitesSeparees = 0;
@@ -6562,7 +6817,7 @@ function reparerRecettes() {
    On ne les ajoute JAMAIS d'office : une famille a pu en supprimer exprès. */
 function recettesManquantes() {
   const presentes = new Set(etat.recettes.map((r) => String(r.nom || "").toLowerCase().trim()));
-  return (window.RECETTES_DEPART || [])
+  return recettesFournies()
     .filter((r) => !presentes.has(r.nom.toLowerCase().trim()));
 }
 
@@ -6584,7 +6839,7 @@ function ajouterRecettesManquantes() {
    chacune de leur côté, elles finissaient par se contredire — la pastille
    restait allumée alors que la fenêtre annonçait « rien à faire ». */
 function diagnosticRecettes() {
-  const reference = new Map((window.RECETTES_DEPART || [])
+  const reference = new Map(recettesFournies()
     .map((r) => [r.nom.toLowerCase().trim(), r]));
   const manqueChamp = (r) =>
     r.saisons === undefined || r.thermomix === undefined || r.etapes === undefined;
@@ -7234,6 +7489,11 @@ const PRINCIPAUX = ["poulet", "dinde", "canard", "boeuf", "veau", "porc", "agnea
   "poisson blanc", "fruit de mer", "morue", "daurade", "sole", "saint jacques",
   "gamba", "encornet", "steak", "poule", "hareng", "boudin",
   "rouget", "merlan", "anchois", "poulpe", "rosbif", "raie",
+  /* Les bases du cahier de fête (18/10/2026) : sans elles, un menu pouvait
+     enchaîner chapon, poularde et pintade sans que rien ne s'en aperçoive. */
+  "chapon", "poularde", "pintade", "caille", "biche", "chevreuil", "homard",
+  "langoustine", "lotte", "foie gras", "huitre", "escargot", "gesier", "crabe",
+  "bacon", "lard",
   "oeuf",
   /* LES BASES VÉGÉTALES (16/09/2026). Elles manquaient : une semaine pouvait
      servir un dahl de lentilles, une salade de lentilles et un petit salé aux
@@ -7355,6 +7615,34 @@ function etalerPlan(l) {
   return l;
 }
 
+/* CE QU'ON VIENT D'ÉCARTER (06/10/2026, signalé par Amandine).
+
+   « Je vide la semaine, je regénère, et il me fait le même menu. » Mesuré avec
+   une réserve de 35 produits courants : 6,9 plats sur 14 revenaient — la
+   moitié. Ce n'est pas le hasard qui manque, c'est qu'il ne pèse rien :
+   « j'ai les ingrédients » vaut jusqu'à +10, l'anti-gaspillage +14, le hasard
+   1,5. Les quinze meilleurs plats se tiennent en 2 points, et ce sont toujours
+   les mêmes quinze — le hasard ne fait que les brasser entre eux.
+
+   On retient donc les plats qu'on vient de retirer de cette semaine, et le
+   générateur les laisse de côté au tour suivant. C'est la règle qui existait
+   pour « 🎲 Autre idée » — ne pas reproposer le plat qu'on vient d'écarter —
+   étendue à la semaine entière.
+
+   EN MÉMOIRE VIVE SEULEMENT. C'est une envie du moment (« pas ça »), pas une
+   donnée de la famille : rien n'est enregistré, rien ne part en ligne, rien ne
+   se synchronise, et rouvrir l'application repart de zéro.
+
+   Plafonné à quatre semaines de repas : sur 737 plats c'est peu, et cela évite
+   d'étrangler le choix d'une famille au cahier plus court. */
+const PLAFOND_ECARTES = 56;
+const _ecartes = {};
+function noterPlatsEcartes(cleSem, ids) {
+  const l = (_ecartes[cleSem] || []).filter((x) => ids.indexOf(x) === -1).concat(ids);
+  _ecartes[cleSem] = l.slice(-PLAFOND_ECARTES);
+}
+function platsEcartes(cleSem) { return new Set(_ecartes[cleSem] || []); }
+
 function recettesUtiliseesRecemment(cleSem, nbSemaines) {
   const vus = new Set();
   const lundi = lundiDeCle(cleSem);
@@ -7399,7 +7687,8 @@ function genererMenus(cleSem, opt) {
   opt = opt || {};
   const regime = opt.regime || "libre";
   /* Les desserts restent en dehors : on remplit des midis et des soirs. */
-  let pool = etat.recettes.filter((r) => !estDessert(r));
+  let pool = etat.recettes.filter((r) =>
+    estPlatPrincipal(r) && !estDeFete(r) && !estPourBebe(r));
   if (!pool.length) { toast("Ajoutez d'abord des recettes"); return null; }
 
   /* Le régime, lui, n'est pas une préférence : les plats écartés le sont
@@ -7491,6 +7780,17 @@ function genererMenus(cleSem, opt) {
     const k = c.jour + "-" + c.moment;
     avant[k] = semaine[k] ? Object.assign({}, semaine[k]) : null;
   });
+  /* Les plats qu'on retire à l'instant rejoignent ceux qu'on a déjà écartés
+     pour cette semaine : « encore une autre idée » doit donner encore autre
+     chose (06/10/2026). Une semaine vidée a noté les siens de son côté. */
+  const retires = [];
+  cases.forEach((c) => {
+    const r = recetteDeCase(avant[c.jour + "-" + c.moment]);
+    if (r) retires.push(r.id);
+  });
+  if (retires.length) noterPlatsEcartes(cleSem, retires);
+  const ecartes = platsEcartes(cleSem);
+
   /* En regeneration ciblee, une case garde la categorie du plat qu'elle
      remplace quand vous en aviez fixe le nombre (« 2 poissons ») : changer un
      poisson donne un autre poisson, et le compte de la semaine reste juste. */
@@ -7571,11 +7871,12 @@ function genererMenus(cleSem, opt) {
       let s = Math.random() * 1.5;
       const cat = categorieRepas(r);
       if (utilises.has(r.id)) s -= 40;
-      /* « Autre idée » : jamais le plat qu'on vient d'ecarter. */
-      if (cibles) {
-        const a = recetteDeCase(avant[c.jour + "-" + c.moment]);
-        if (a && a.id === r.id) s -= 100;
-      }
+      /* Ce qu'on vient d'écarter passe derrière tout le reste : c'est la
+         demande « donne-moi autre chose ». Un malus, pas une interdiction —
+         si le choix est vraiment court, le plat peut revenir plutôt que de
+         laisser une case vide. Remplace le cas particulier d'« Autre idée »,
+         qui ne regardait que la case qu'on refaisait (06/10/2026). */
+      if (ecartes.has(r.id)) s -= 100;
       if (recents.has(r.id)) s -= 6;
       /* Déjà servi ces douze dernières semaines : on laisse la place aux
          autres, sans jamais l'interdire (16/09/2026). */
@@ -7607,6 +7908,28 @@ function genererMenus(cleSem, opt) {
       if (opt.saisons !== false && !saisonsToutelAnnee(r) && estDeSaison(r)) s += 1.5;
       if (opt.soirLeger && c.moment === "soir" && r.type === "leger") s += 2.5;
       if (opt.soirLeger && c.moment === "midi" && r.type === "consistant") s += 1.5;
+      /* LA PROTÉINE ANIMALE AU MOMENT CHOISI (18/10/2026, retour d'un parent).
+
+         « Plats plus légers le soir » ne regarde que la TEXTURE : un poisson
+         est souvent léger, il partait au dîner. Mesuré sur 20 semaines, même
+         cette case cochée laissait 45 % de la protéine animale au soir.
+
+         Celui-ci regarde ce qu'il y a dans l'assiette. LE DOSAGE A ÉTÉ MESURÉ,
+         et il compte : les scores du générateur se tiennent dans un mouchoir
+         (la réserve vaut jusqu'à +10, les quinze meilleurs plats sont à deux
+         points les uns des autres), si bien qu'un poids de 8 ne « penche » pas
+         — il TRANCHE. À 8, les quatorze dîners d'une semaine devenaient
+         végétariens. Mesuré sur 20 semaines, viande puis poisson :
+           0 / 0 (témoin)  viande le soir 21 %, poisson 71 %, dîners végé 54 %
+           1 / 1           viande  1 %, poisson 57 %, végé 74 %
+           2 / 1  RETENU   viande  0 %, poisson 66 %, végé 76 %
+           8 / 8           viande  0 %, poisson  0 %, végé 100 %  ← trop
+         La viande pèse le double du poisson : c'est elle que la digestion du
+         soir supporte le moins, et un poisson léger a sa place au dîner. */
+      if (opt.proteine && (cat === "viande" || cat === "poisson")) {
+        const poids = cat === "viande" ? 2 : 1;
+        s += (c.moment === opt.proteine ? poids : -poids);
+      }
       if (opt.rapideSemaine && c.jour !== "samedi" && c.jour !== "dimanche" && r.rapide) s += 2.5;
       if (opt.thermomix && r.thermomix) s += 3;
       /* Ce dont on a déjà les ingrédients passe devant : moins de courses,
@@ -7914,6 +8237,9 @@ async function crediterRepas(cleSem, jour, moment, beneficiaire) {
      l'inscrit avant, sinon le serveur refuserait la ligne sans qu'on
      comprenne pourquoi. */
   if (!etat.reglages || etat.reglages.pointsRepas === undefined) {
+    /* Les familles d'avant la 0.67 n'ont pas de rubrique « evenements » : on
+       la pose vide plutôt que de semer des gardes partout (18/10/2026). */
+    if (!Array.isArray(etat.evenements)) etat.evenements = [];
     etat.reglages = Object.assign({}, REGLAGES_DEFAUT, etat.reglages || {});
     if (estAdmin()) await Store.ecrire(["reglages"]);
   }
@@ -8182,6 +8508,41 @@ function stockSousMinimum() {
   });
 }
 
+/* OÙ CET ARTICLE EST-IL DÉJÀ NOTÉ ? (06/10/2026, demandé par Amandine)
+
+   Toutes listes confondues, et COCHÉ COMPRIS : cocher, c'est « je l'ai mis dans
+   le caddie », pas « il n'est plus prévu ». Sans cela, le bandeau se réveillait
+   en plein magasin et proposait de noter une deuxième fois ce qu'on venait de
+   prendre. La ligne cochée disparaît d'elle-même à « Terminer les courses », et
+   la réserve repasse alors au-dessus du minimum. */
+function listesOuFigure(nom) {
+  const cle = cleArticle(nom);
+  const ids = new Set(etat.courses
+    .filter((c) => cleArticle(c.nom) === cle).map((c) => listeDe(c)));
+  return listesCourses().filter((l) => ids.has(l.id));
+}
+/* CE QU'IL RESTE VRAIMENT À NOTER : sous le minimum, ET sur aucune liste.
+
+   Noter un article ne remonte pas le niveau de la réserve — on ne l'a pas
+   encore acheté. Les bandeaux, eux, ne regardaient que le minimum : ils
+   réapparaissaient donc sur CHAQUE liste et proposaient les mêmes articles,
+   qu'on finissait par noter trois fois et acheter trois fois. C'est cette
+   liste-ci qu'ils comptent désormais ; une fois l'article noté quelque part,
+   ils se taisent — partout. */
+function stockARacheter() {
+  return stockSousMinimum().filter((s) => !listesOuFigure(s.nom).length);
+}
+/* Ce qu'il faut racheter pour revenir au minimum : avec 200 g de farine et un
+   minimum d'un kilo, on achète 800 g, pas un kilo. Quand la quantité en réserve
+   n'est pas un nombre (« un peu »), on ne peut rien soustraire : on propose
+   alors le minimum entier. */
+function quantiteARacheter(s) {
+  const mini = nombre(s.mini) || 0;
+  const q = nombre(s.qte);
+  const manque = q === null ? mini : Math.max(mini - q, 0);
+  return texteNombre(manque || mini);
+}
+
 /* Ce qu'il reste vraiment à acheter pour un ingrédient, compte tenu du stock.
    Renvoie { manque, unite, connu } — `connu` est faux quand les unités ne se
    convertissent pas (on ne devine pas, on le dit). */
@@ -8216,6 +8577,7 @@ const TITRES = {
   notes: ["Rappels", "À ne pas oublier"],
   points: ["Points & cadeaux", "Les moments à partager"],
   recettes: ["Mes recettes", "Bibliothèque de plats"],
+  evenements: ["Événements", "Ce qu'on prépare ensemble"],
   admin: ["Administration", "Réglages de la famille"]
 };
 
@@ -8282,6 +8644,12 @@ function rendre() {
    affichage. Un bouton qui porte déjà un mot lisible n'est pas touché.
    (Relevé le 16/09/2026 : 28 boutons sur 34 n'avaient aucun nom.) */
 const NOMS_ICONES = {
+  /* Les écrans Événements (18/10/2026) : ＋, ✏️, 🤫 et ✅ ne disent rien tout
+     seuls — un lecteur d'écran annonçait « plus », « crayon », « chut ». */
+  "plat-ajouter": "Ajouter un plat à ce service",
+  "souhait-editer": "Modifier cette envie",
+  "souhait-reserver": "Je m'occupe de ce cadeau",
+  "souhait-achete": "Marquer ce cadeau comme acheté",
   "tache-editer": "Modifier la tâche",
   "tache-reporter": "Reporter la tâche à demain",
   "tache-refuser": "Refuser la tâche",
@@ -8376,7 +8744,12 @@ const ONGLETS = [
   { vue: "reserve", nom: "Réserve", emoji: "🥫" },
   { vue: "menus", nom: "Menus", emoji: "🍽️" },
   { vue: "recettes", nom: "Recettes", emoji: "📖" },
-  { vue: "notes", nom: "Rappels", emoji: "🔔" }
+  { vue: "notes", nom: "Rappels", emoji: "🔔" },
+  /* L'onglet n'existe que si la famille a coché « Les événements » : une
+     maison qui ne fête rien ne doit pas porter un onglet de plus (18/10/2026). */
+  { vue: "evenements", nom: "Événements", emoji: "🎉",
+    /* Le module livré, ET l'option cochée (18/10/2026). */
+    si: () => typeof evenementsActifs === "function" && evenementsActifs() }
 ];
 /* --- Les réglages de la famille ---
    Rangés dans `reglages`, que seuls les administrateurs peuvent écrire
@@ -8576,8 +8949,30 @@ function ongletsMasques() {
 function ongletMasque(vue) {
   return ongletsMasques().indexOf(vue) !== -1;
 }
+/* L'ORDRE DE LA BARRE (18/10/2026, demande d'Amandine). Il était figé dans
+   le code ; il devient un réglage de la famille, comme la liste des masqués.
+
+   Trois garde-fous :
+   - l'ACCUEIL reste en tête, toujours : c'est le chemin de retour ;
+   - un onglet absent du réglage se range à la FIN, dans son ordre d'origine —
+     une version qui en ajoute un (les Événements l'ont fait) ne le fait pas
+     disparaître chez ceux qui avaient déjà rangé leur barre ;
+   - un nom qui ne correspond à aucun onglet est simplement ignoré. */
+function ordreOnglets() {
+  const l = (etat.reglages && etat.reglages.ordreOnglets) || [];
+  return Array.isArray(l) ? l : [];
+}
+function ongletsOrdonnes() {
+  const voulu = ordreOnglets();
+  const rang = (o) => {
+    if (o.obligatoire) return -1;
+    const i = voulu.indexOf(o.vue);
+    return i === -1 ? 500 + ONGLETS.indexOf(o) : i;
+  };
+  return ONGLETS.slice().sort((a, b) => rang(a) - rang(b));
+}
 function ongletsVisibles() {
-  return ONGLETS.filter((o) => o.obligatoire || !ongletMasque(o.vue));
+  return ongletsOrdonnes().filter((o) => (o.obligatoire || !ongletMasque(o.vue)) && (!o.si || o.si()));
 }
 
 /* Le bouton flottant ＋ se pose en bas à droite — juste au-dessus des petits
@@ -8613,6 +9008,10 @@ function aller(vue) {
   /* Points éteints : l'écran Points & cadeaux n'est plus atteignable, même
      par un vieux raccourci ou par la vue mémorisée. */
   if (vue === "points" && !pointsPersoActifs()) vue = "accueil";
+  /* Option décochée : l'écran des événements n'existe plus, même par un vieux
+     raccourci ou par la vue mémorisée (18/10/2026). */
+  if (vue === "evenements" &&
+      !(typeof evenementsActifs === "function" && evenementsActifs())) vue = "accueil";
   ui.vue = vue;
   memoriserVue();
   window.scrollTo({ top: 0 });
@@ -8645,6 +9044,10 @@ function restaurerVue() {
   if (!v.le || Date.now() - v.le > DELAI_REPRISE_VUE) return;
   /* L'administration n'a pas de sens pour un membre ordinaire. */
   if (v.vue === "admin" && !estAdmin()) return;
+  /* Et l'écran des événements n'existe plus si la famille a décoché l'option :
+     la vue mémorisée ne doit pas passer devant (18/10/2026). */
+  if (v.vue === "evenements" &&
+      !(typeof evenementsActifs === "function" && evenementsActifs())) return;
   ui.vue = v.vue;
   if (v.ongletCourses) ui.ongletCourses = v.ongletCourses;
   if (v.listeActive) ui.listeActive = v.listeActive;
@@ -8662,11 +9065,16 @@ document.addEventListener("click", (e) => {
   const a = b.dataset.action;
   const v = b.dataset.id;
 
+  /* Le module « Événements » prend ses clics avant tout le monde
+     (18/10/2026). Sans le fichier, aucun de ces boutons n'existe à l'écran :
+     il n'y a rien à router. */
+  if (typeof routerEvenements === "function" && routerEvenements(a, v, b)) return;
+
   switch (a) {
     case "aller": aller(b.dataset.vue); break;
     case "fermer": fermerFeuille(); break;
 
-    case "tache-fait": Actions.marquerFaite(v); break;
+    case "tache-fait": Actions.marquerFaite(v, b.dataset.date || null); break;
     /* Le jour de la case, comme pour « Valider » : sans lui, annuler une
        tâche cochée la veille ne faisait rien du tout (01/10/2026). */
     case "tache-annuler": Actions.annulerFaite(v, b.dataset.date || null); break;
@@ -8709,7 +9117,7 @@ document.addEventListener("click", (e) => {
     case "stock-editer": Formulaires.stock(v); break;
     case "stock-plus": Actions.ajusterStock(v, 1); break;
     case "stock-moins": Actions.ajusterStock(v, -1); break;
-    case "stock-racheter": Actions.racheterSousMinimum(); break;
+    case "stock-racheter": Formulaires.racheter(); break;
 
     /* retours */
     case "retour": Formulaires.retour(); break;
@@ -8808,8 +9216,21 @@ document.addEventListener("click", (e) => {
     case "admin-onglets": Formulaires.onglets(); break;
     case "admin-exporter": Formulaires.exporterDonnees(); break;
     case "admin-supprimer-famille": Formulaires.supprimerFamille(); break;
-    case "admin-aller": {
-      allerAuBloc(document.getElementById("admin-" + b.dataset.valeur));
+    case "admin-replier": {
+      const a = b.dataset.valeur;
+      const l = (ui.adminOuverts || []).slice();
+      const k = l.indexOf(a);
+      if (k === -1) l.push(a); else l.splice(k, 1);
+      ui.adminOuverts = l;
+      memoriserListe("tribu:adminOuverts", l);
+      rendre();
+      if (l.indexOf(a) !== -1) allerAuBloc(document.getElementById("admin-" + a));
+      break;
+    }
+    case "admin-tout-replier": {
+      ui.adminOuverts = b.dataset.valeur === "ouvrir" ? CARTES_ADMIN.slice() : [];
+      memoriserListe("tribu:adminOuverts", ui.adminOuverts);
+      rendre();
       break;
     }
     case "admin-reglages": Formulaires.reglagesFamille(); break;

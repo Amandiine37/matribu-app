@@ -459,6 +459,77 @@ Formulaires.stock = function (sid) {
   });
 };
 
+/* RÉAPPROVISIONNER : ON MONTRE, ET ON CHOISIT (06/10/2026).
+
+   Avant, le bouton ajoutait d'un coup à la liste affichée, après une simple
+   question « Ajouter 4 articles à « Mes courses » ? ». Depuis l'onglet
+   Réserve, on ne savait même pas de quelle liste il s'agissait.
+
+   Maintenant la fenêtre dit ce qui part (avec les quantités), où cela va, et
+   ce qu'elle laisse de côté parce que c'est déjà noté ailleurs. */
+Formulaires.racheter = function () {
+  const sous = stockSousMinimum();
+  if (!sous.length) { toast("Rien à racheter, tout est au-dessus du minimum"); return; }
+  const listes = listesCourses();
+  const aNoter = [], ailleurs = [];
+  sous.forEach((s) => {
+    const ou = listesOuFigure(s.nom);
+    (ou.length ? ailleurs : aNoter).push({ s: s, ou: ou });
+  });
+  /* Tout est déjà noté : on le dit, et on n'ouvre rien. C'est le cas qui
+     faisait noter les mêmes articles sur chaque liste. */
+  if (!aNoter.length) {
+    toast(pluriel(ailleurs.length, "article est déjà noté", "articles sont déjà notés") +
+      " sur vos listes");
+    return;
+  }
+  let cible = listeCourante().id;
+
+  const ligne = (x) =>
+    '<div class="ligne"><span style="font-size:1.1rem">🥫</span>' +
+    '<div class="ligne-corps"><b>' + esc(x.s.nom) + "</b><small>" +
+    esc(formaterQte(quantiteARacheter(x.s), x.s.unite)) + "</small></div></div>";
+
+  const html =
+    '<p class="aide" style="margin:0 0 .8rem">Ces articles sont passés sous le minimum ' +
+    "de votre réserve.</p>" +
+    '<div class="carte" style="margin-bottom:1rem">' + aNoter.map(ligne).join("") + "</div>" +
+    (listes.length > 1
+      ? '<div class="sous-titre"><h3>Dans quelle liste ?</h3></div>' +
+        '<div class="puces" id="choix-liste" style="margin-bottom:1rem">' +
+        listes.map((l) => '<button type="button" class="puce' + (l.id === cible ? " on" : "") +
+          '" data-liste="' + esc(l.id) + '">' +
+          esc((l.emoji || typeListe(l).emoji) + " " + l.nom) + "</button>").join("") + "</div>"
+      : "") +
+    (ailleurs.length
+      ? '<label class="champ" style="display:flex;gap:.6rem;align-items:flex-start">' +
+        '<input type="checkbox" id="aussi-ailleurs" style="width:auto;margin-top:.25rem">' +
+        '<span style="margin:0">Ajouter aussi ' +
+        esc(ailleurs.map((x) => x.s.nom).join(", ")) +
+        '<br><small style="font-weight:400">Déjà noté sur ' +
+        esc([...new Set(ailleurs.map((x) => x.ou.map((l) => l.nom).join(", ")))].join(" · ")) +
+        ".</small></span></label>"
+      : "") +
+    '<div class="rangee-btn">' +
+    '<button type="button" class="btn" data-action="fermer">Annuler</button>' +
+    '<button type="button" class="btn principal" data-role="ok">Ajouter</button></div>';
+
+  ouvrirFeuille("Réapprovisionner", html, (f) => {
+    const zone = f.querySelector("#choix-liste");
+    if (zone) zone.onclick = (ev) => {
+      const b = ev.target.closest("[data-liste]");
+      if (!b) return;
+      cible = b.dataset.liste;
+      zone.querySelectorAll(".puce").forEach((p) => p.classList.toggle("on", p === b));
+    };
+    f.querySelector('[data-role="ok"]').onclick = () => {
+      const aussi = f.querySelector("#aussi-ailleurs");
+      fermerFeuille();
+      Actions.racheterSousMinimum(cible, !!(aussi && aussi.checked));
+    };
+  });
+};
+
 /* Fin des courses : ce qu'on vient d'acheter rejoint la réserve. */
 Formulaires.terminerCourses = function () {
   const cible = listeCourante().id;
@@ -652,7 +723,10 @@ Formulaires.retour = function () {
 Formulaires.repas = function (jour, moment) {
   const cle = jour + "-" + moment;
   const actuel = (etat.repas[ui.semaine] || {})[cle] || null;
-  const liste = etat.recettes.slice().sort((a, b) => a.nom.localeCompare(b.nom));
+  /* Pas de purée de bébé dans le choix d'un repas de la semaine
+     (18/10/2026). */
+  const liste = etat.recettes.filter((r) => !estPourBebe(r))
+    .sort((a, b) => a.nom.localeCompare(b.nom));
   const r = actuel && actuel.recetteId ? etat.recettes.find((x) => x.id === actuel.recetteId) : null;
   const e = etatRepas(ui.semaine, jour, moment);
   /* Points éteints : plus aucune mention de points dans la fiche d'un repas
@@ -687,6 +761,10 @@ Formulaires.repas = function (jour, moment) {
       '<div class="ligne-corps"><b>' + esc(r ? r.nom : (actuel.texte || "Repas")) + "</b>" +
       (actuel.restes ? "<small>restes — aucune course, aucune réserve entamée</small>" : "") + "</div>" +
       (r ? '<button class="btn mini doux" data-role="consulter">📖</button>' : "") + "</div>" +
+
+      /* « Si tu prévois ça, voilà pour bébé » (18/10/2026) : le même panier,
+         deux repas. Rien sans le module, rien sans tout-petit à la maison. */
+      (typeof ligneBebeDuRepas === "function" ? ligneBebeDuRepas(r) : "") +
 
       /* --- qui cuisine --- */
       '<div class="sous-titre" style="margin:.6rem 0 .4rem"><h3>Qui cuisine ?</h3>' +
@@ -1068,6 +1146,25 @@ Formulaires.reglagesFamille = function () {
     "trouver en 6 essais, le même pour toute la tribu. Chacun voit qui a trouvé, jamais le " +
     "mot des autres. Décoché, le jeu disparaît.</small></span></label>" +
 
+    /* LES PETITS À TABLE (18/10/2026) — une caractéristique du FOYER, jamais
+       d'un enfant : pas de prénom, pas de date de naissance. Le bloc entier
+       disparaît si le module n'est pas livré. */
+    (typeof TRANCHES_PETITS === "undefined" ? "" :
+      '<div class="sous-titre" style="margin-top:.4rem"><h3>👶 Les petits à table</h3></div>' +
+      '<p class="aide" style="margin:-.3rem 0 .6rem">Cochez les âges présents à la maison. ' +
+      "Chaque recette portera alors sa partie « pour les petits » : la texture, et ce qu'il " +
+      "faut adapter. <b>Rien n'est rattaché à un enfant</b> — ni prénom, ni date de " +
+      "naissance.</p>" +
+      '<div class="puces" style="margin-bottom:1rem">' +
+      TRANCHES_PETITS.map((t) => '<label class="puce' +
+        (((g.petits || []).indexOf(t.val) !== -1) ? " on" : "") + '">' +
+        '<input type="checkbox" name="petits" value="' + t.val + '"' +
+        (((g.petits || []).indexOf(t.val) !== -1) ? " checked" : "") +
+        ' style="width:auto;margin-right:.3rem">' + t.emoji + " " + esc(t.nom) +
+        "</label>").join("") + "</div>") +
+
+    (typeof blocOptionEvenements === "function" ? blocOptionEvenements(g) : "") +
+
     boutonsFormulaire("Enregistrer", false) + "</form>";
 
   ouvrirFeuille("Réglages de la famille", html, (f) => {
@@ -1102,7 +1199,15 @@ Formulaires.reglagesFamille = function () {
         antiGaspi: !!d.get("antiGaspi"),
         macros: !!d.get("macros"),
         planning: !!d.get("planning"),
-        motDuJour: !!d.get("motDuJour")
+        motDuJour: !!d.get("motDuJour"),
+        /* Sans le module, la case n'est pas à l'écran : on garde la valeur
+           déjà enregistrée au lieu de la remettre à faux (18/10/2026). */
+        evenements: typeof blocOptionEvenements === "function"
+          ? !!d.get("evenements") : (g.evenements === true),
+        /* Les tranches cochées, et rien d'autre : une liste de six valeurs
+           possibles, aucune donnée nominative (18/10/2026). */
+        petits: typeof TRANCHES_PETITS === "undefined" ? (g.petits || [])
+          : d.getAll("petits").map(String).filter((v) => TRANCHES_PETITS.some((t) => t.val === v))
       });
       fermerFeuille();
       sauver("reglages");
@@ -1121,6 +1226,10 @@ const REGLAGES_GEN_DEFAUT = {
   midi: true, soir: true, remplacer: false,
   regime: "libre", poisson: "", viande: "", vege: "", profil: "",
   saisons: true, reserve: true, soirLeger: true, rapide: true, thermomix: false,
+  /* « plutôt le midi » d'origine : c'est déjà, à peu près, ce que faisait
+     l'application pour une famille qui n'avait rien touché — et cela protège
+     en plus le poisson, que personne ne tenait à l'écart du soir. */
+  proteine: "midi",
   /* Les favoris comptent d'office (16/09/2026) : sans étoile nulle part, cela
      ne change rien ; avec des étoiles, c'est ce que la famille aime. */
   favoris: true, cuisinier: false,
@@ -1161,6 +1270,8 @@ function resumeReglagesGenerateur() {
   if (g.thermomix) l.push("Thermomix de préférence");
   if (g.rapide) l.push("rapide en semaine");
   if (g.soirLeger) l.push("léger le soir");
+  if (g.proteine === "midi") l.push("viande et poisson le midi");
+  else if (g.proteine === "soir") l.push("viande et poisson le soir");
   if (g.reserve) l.push("ma réserve d’abord");
   if (g.favoris) l.push("favoris ⭐ d’abord");
   if (g.cuisinier) l.push("chacun son tour en cuisine");
@@ -1217,8 +1328,9 @@ Formulaires.actu = function () {
       "</div></details></li>";
   };
 
-  html += ACTUS.map((a, i) => {
-    const corps = "<ul>" + a.points.map(pointActu).join("") + "</ul>";
+  /* On n'annonce que ce qui est livré, point par point (23/10/2026). */
+  html += actusVisibles().map((a, i) => {
+    const corps = "<ul>" + pointsVisibles(a).map(pointActu).join("") + "</ul>";
     if (i === 0) {
       return '<div class="actu actu-neuve">' +
         '<div class="actu-tete"><span class="etiquette chaud">Version ' + esc(a.version) +
@@ -1323,6 +1435,16 @@ Formulaires.generateur = function () {
         ? "Les plats dont vous avez déjà les ingrédients passent devant (" + pluriel(nbStock, "article", "articles") + " en réserve)."
         : "Votre réserve est vide pour l'instant : cette option ne changera rien.") +
     ligneCase("soirLeger", "Plats plus légers le soir") +
+    '<label class="champ"><span>Viande et poisson, plutôt…</span><select name="proteine">' +
+    [["midi", "🌞 Le midi"], ["soir", "🌙 Le soir"], ["", "Peu importe"]]
+      .map(([v, l]) => '<option value="' + v + '"' +
+        ((g.proteine || "") === v ? " selected" : "") + ">" + l + "</option>").join("") +
+    "</select></label>" +
+    '<p class="aide" style="margin:-.6rem 0 1rem">La protéine animale demande plus de ' +
+    "travail à la digestion : beaucoup de familles la préfèrent au déjeuner. " +
+    "La <b>viande</b> suit ce choix de près, le <b>poisson</b> plus souplement — léger, " +
+    "il a sa place le soir. « Plats plus légers le soir », juste au-dessus, ne regarde " +
+    "que la texture du plat ; celui-ci regarde ce qu'il y a dedans.</p>" +
     ligneCase("rapide", "Plats rapides du lundi au vendredi") +
     ligneCase("thermomix", "Privilégier les recettes Thermomix",
       pluriel(nbThermo, "recette", "recettes") + " de votre cahier " +
@@ -1447,6 +1569,7 @@ Formulaires.generateur = function () {
         vege: d.get("vege") === null ? "" : d.get("vege"),
         saisons: !!d.get("saisons"), reserve: !!d.get("reserve"),
         soirLeger: !!d.get("soirLeger"), rapide: !!d.get("rapide"),
+        proteine: String(d.get("proteine") || ""),
         favoris: !!d.get("favoris"), cuisinier: !!d.get("cuisinier"),
         thermomix: !!d.get("thermomix"),
         semaines: Number(d.get("semaines")) || 3
@@ -1480,10 +1603,16 @@ Formulaires.generateur = function () {
 
 /* Les ingrédients de la semaine, moins ce que vous avez déjà en réserve.
    C'est le lien entre les menus et le stock. */
-Formulaires.ingredientsVersCourses = function () {
-  const ing = ingredientsDeLaSemaine(ui.semaine);
+/* « source.evenement » : le menu d'un événement au lieu de la semaine
+   (18/10/2026). Tout le reste — la réserve, le placard, le choix de la liste,
+   les unités — est exactement le même travail : on ne l'écrit pas deux fois. */
+Formulaires.ingredientsVersCourses = function (source) {
+  const ev = source && source.evenement;
+  const ing = ev && typeof ingredientsDeLEvenement === "function"
+    ? ingredientsDeLEvenement(ev) : ingredientsDeLaSemaine(ui.semaine);
   if (!ing.length) {
-    toast("Aucun plat de la bibliothèque prévu cette semaine");
+    toast(ev ? "Aucun plat du cahier dans ce menu"
+      : "Aucun plat de la bibliothèque prévu cette semaine");
     return;
   }
   /* « Déjà présent » se juge sur LA LISTE VISÉE, pas sur toutes à la fois.
@@ -1627,7 +1756,7 @@ Formulaires.ingredientsVersCourses = function () {
     '<button class="btn" data-action="fermer">Annuler</button>' +
     '<button class="btn principal" data-role="ok">Ajouter aux courses</button></div></div>';
 
-  ouvrirFeuille("Ingrédients de la semaine", html, (f) => {
+  ouvrirFeuille(ev ? "Ingrédients — " + (ev.nom || "l'événement") : "Ingrédients de la semaine", html, (f) => {
     /* Changer de liste change ce qui s'y trouve déjà : on relit les cases et
        les mentions, sinon l'écran parlerait d'une autre liste que celle visée. */
     const champListe0 = f.querySelector("#choix-liste");
@@ -1724,10 +1853,22 @@ Formulaires.recette = function (rid) {
     '<label class="puce"><input type="checkbox" name="vege" style="width:auto"' + (cour.vegetarien ? " checked" : "") + "> Végétarien</label>" +
     '<label class="puce"><input type="checkbox" name="rapide" style="width:auto"' + (cour.rapide ? " checked" : "") + "> Rapide</label>" +
     '<label class="puce"><input type="checkbox" name="thermomix" style="width:auto"' + (cour.thermomix ? " checked" : "") + "> 🍲 Robot</label>" +
-    '<label class="puce"><input type="checkbox" name="dessert" style="width:auto"' + (cour.plat === "dessert" ? " checked" : "") + "> 🍰 Dessert</label>" +
     "</div>" +
-    '<p class="aide" style="margin:-.6rem 0 1rem">Un dessert n’est jamais proposé ' +
-    "par le générateur de menus : il se range à part, dans le cahier.</p>" +
+    /* UN CHOIX, PLUS UNE CASE (18/10/2026). La case « Dessert » écrivait
+       « principal » dès qu'elle était décochée : un apéritif modifié devenait
+       un plat. Et les services d'un repas de fête en demandaient davantage. */
+    '<label class="champ"><span>Place au repas</span><select name="place">' +
+    [["principal", "🍽️ Plat principal"], ["apero", "🥂 Apéritif"], ["entree", "🥗 Entrée"],
+      ["accompagnement", "🥔 Accompagnement"], ["dessert", "🍰 Dessert"], ["boisson", "🍷 Boisson"]]
+      .map(([v, l]) => '<option value="' + v + '"' +
+        ((cour.plat || "principal") === v ? " selected" : "") + ">" + l + "</option>").join("") +
+    "</select></label>" +
+    '<p class="aide" style="margin:-.6rem 0 1rem">Seuls les <b>plats principaux</b> sont ' +
+    "proposés par le générateur de menus de la semaine. Les autres se rangent dans le " +
+    /* Sans le module, il n'y a pas de menu d'événement : on ne le promet
+       pas (23/10/2026). */
+    "cahier" + (typeof evenementsActifs === "function" ?
+      " et servent aux menus des événements" : "") + ".</p>" +
     '<label class="champ"><span>Saisons</span></label>' +
     puceMultiple("saisons", SAISONS.map((x) => ({ val: x.val, html: x.emoji + " " + x.nom })),
       cour.saisons || []) +
@@ -1867,7 +2008,7 @@ Formulaires.recette = function (rid) {
         vegetarien: !!d.get("vege"),
         rapide: !!d.get("rapide"),
         thermomix: !!d.get("thermomix"),
-        plat: d.get("dessert") ? "dessert" : "principal",
+        plat: String(d.get("place") || "principal"),
         portions: Math.max(1, Math.min(30, Number(d.get("portions")) || PORTIONS_BASE)),
         lien: String(d.get("lien") || "").trim(),
         saisons: valeursMulti(f, "saisons"),
@@ -1885,6 +2026,7 @@ Formulaires.recette = function (rid) {
 };
 
 /* ================================ RAPPEL ================================ */
+
 
 Formulaires.note = function (nid) {
   const n = nid ? etat.notes.find((x) => x.id === nid) : null;
@@ -3956,6 +4098,9 @@ Formulaires.consulterRecette = function (rid) {
   }
 
   html += carteMacros(r);          // rien si l'option est décochée
+  /* Module « Les petits à table » : rien si le fichier n'est pas livré, rien
+     si la famille n'a coché aucune tranche (18/10/2026). */
+  html += (typeof cartePetits === "function" ? cartePetits(r) : "");
   html += '<div class="sous-titre" style="margin-top:.4rem"><h3>Ingrédients</h3>' +
     '<span class="etiquette">' + ings.length + "</span></div>";
   html += ings.length
@@ -4362,52 +4507,109 @@ function explicationProfils(r) {
    données restent, elles sont simplement rangées hors de vue, et un
    administrateur peut les faire revenir à tout moment. */
 
+/* LA BARRE DU BAS : CHOISIR, ET RANGER (18/10/2026, demande d'Amandine).
+
+   On pouvait masquer un onglet, jamais le déplacer. La fenêtre montre
+   maintenant un APERÇU de la barre qui se réorganise pendant qu'on touche —
+   c'est l'effet « widgets » demandé — et chaque ligne porte ses flèches.
+
+   Des flèches et non un glisser-déposer : il n'y en a nulle part ailleurs dans
+   l'application, c'est délicat au doigt sur une ligne étroite, et cela se teste
+   mal. L'accueil ne bouge pas et ne se masque pas. */
 Formulaires.onglets = function () {
   if (!estAdmin()) { toast("Seul un administrateur peut changer les onglets"); return; }
-  const caches = ongletsMasques();
+  /* On travaille sur une copie : rien n'est enregistré avant « Enregistrer ». */
+  let ordre = ongletsOrdonnes().filter((o) => !o.obligatoire).map((o) => o.vue);
+  let caches = ongletsMasques().slice();
 
   const html = '<div id="f-onglets">' +
-    '<p class="aide" style="margin-bottom:.9rem">Décochez ce que la famille n’utilise ' +
-    "pas. L’accueil reste toujours là : c’est le chemin de retour.</p>" +
-    '<div class="carte">' + ONGLETS.map((o) => {
-      const actif = o.obligatoire || caches.indexOf(o.vue) === -1;
-      return '<label class="ligne" style="cursor:pointer">' +
-        '<input type="checkbox" data-vue="' + o.vue + '"' +
-        (actif ? " checked" : "") + (o.obligatoire ? " disabled" : "") +
-        ' style="width:auto;flex:0 0 auto">' +
-        '<span style="font-size:1.3rem">' + o.emoji + "</span>" +
-        '<span class="ligne-corps"><b>' + esc(o.nom) + "</b>" +
-        (o.obligatoire ? "<small>toujours visible</small>" : "") + "</span></label>";
-    }).join("") + "</div>" +
+    '<p class="aide" style="margin-bottom:.7rem">Décochez ce que la famille n’utilise ' +
+    "pas, et rangez le reste avec les flèches. L’accueil reste en tête : c’est le " +
+    "chemin de retour.</p>" +
+    '<div id="apercu-barre"></div>' +
+    '<div class="carte" id="liste-onglets"></div>' +
     '<p class="aide" id="onglets-note"></p>' +
     '<div class="rangee-btn" style="margin-top:1rem">' +
     '<button class="btn" data-action="fermer">Annuler</button>' +
     '<button class="btn principal" data-role="ok">Enregistrer</button></div></div>';
 
-  ouvrirFeuille("Onglets visibles", html, (f) => {
+  ouvrirFeuille("La barre du bas", html, (f) => {
     const note = f.querySelector("#onglets-note");
-    const cases = () => Array.from(f.querySelectorAll("input[type=checkbox][data-vue]"));
+    const info = (v) => ONGLETS.find((o) => o.vue === v) || { nom: v, emoji: "•" };
+    /* Un onglet conditionnel éteint (les événements) n'est ni montré ni rangé :
+       on ne range pas ce qui n'existe pas. */
+    const rangeables = () => ordre.filter((v) => { const o = info(v); return !o.si || o.si(); });
+    const visibles = () => [ONGLETS.find((o) => o.obligatoire).vue]
+      .concat(rangeables().filter((v) => caches.indexOf(v) === -1));
+
     const maj = () => {
-      const off = cases().filter((c) => !c.checked).map((c) => c.dataset.vue);
-      note.innerHTML = off.length
-        ? "Masqués : <b>" + off.map((v) =>
-          esc((ONGLETS.find((o) => o.vue === v) || {}).nom || v)).join(", ") + "</b>. " +
-          "Leur contenu n’est pas supprimé."
-        : "Tous les onglets sont visibles.";
+      const off = rangeables().filter((v) => caches.indexOf(v) !== -1);
+      const n = visibles().length;
+      const bouts = [];
+      if (off.length) {
+        bouts.push("Masqués : <b>" + off.map((v) => esc(info(v).nom)).join(", ") +
+          "</b>. Leur contenu n’est pas supprimé.");
+      }
+      if (n > 7) {
+        bouts.push("<b>" + n + " onglets</b> : au-delà de sept, les noms se coupent sur " +
+          "un téléphone étroit.");
+      }
+      note.innerHTML = bouts.join("<br>") || "Tous les onglets sont visibles.";
     };
-    cases().forEach((c) => { c.onchange = maj; });
-    maj();
+
+    const dessiner = () => {
+      f.querySelector("#apercu-barre").innerHTML = '<div class="apercu-barre">' +
+        visibles().map((v) => { const o = info(v);
+          return "<span><b>" + o.emoji + "</b><i>" + esc(o.nom) + "</i></span>"; }).join("") +
+        "</div>";
+      const l = rangeables();
+      f.querySelector("#liste-onglets").innerHTML = l.map((v, k) => {
+        const o = info(v);
+        return '<div class="ligne">' +
+          '<input type="checkbox" data-vue="' + esc(v) + '"' +
+          (caches.indexOf(v) === -1 ? " checked" : "") + ' style="width:auto;flex:0 0 auto">' +
+          '<span style="font-size:1.3rem">' + o.emoji + "</span>" +
+          '<span class="ligne-corps"><b>' + esc(o.nom) + "</b></span>" +
+          '<button type="button" class="btn mini icone" data-bouger="-1" data-vue="' + esc(v) + '"' +
+          (k === 0 ? " disabled" : "") + ' aria-label="Monter">↑</button>' +
+          '<button type="button" class="btn mini icone" data-bouger="1" data-vue="' + esc(v) + '"' +
+          (k === l.length - 1 ? " disabled" : "") + ' aria-label="Descendre">↓</button></div>';
+      }).join("");
+      maj();
+    };
+
+    /* Un seul écouteur sur la carte : elle est redessinée à chaque geste. */
+    f.querySelector("#liste-onglets").onclick = (ev) => {
+      const b = ev.target.closest("[data-bouger]");
+      if (!b || b.disabled) return;
+      const v = b.dataset.vue, pas = Number(b.dataset.bouger);
+      const i = ordre.indexOf(v), j = i + pas;
+      if (i === -1 || j < 0 || j >= ordre.length) return;
+      ordre.splice(j, 0, ordre.splice(i, 1)[0]);
+      dessiner();
+    };
+    f.querySelector("#liste-onglets").onchange = (ev) => {
+      const c = ev.target.closest("input[type=checkbox][data-vue]");
+      if (!c) return;
+      const v = c.dataset.vue, k = caches.indexOf(v);
+      if (c.checked) { if (k !== -1) caches.splice(k, 1); }
+      else if (k === -1) caches.push(v);
+      dessiner();
+    };
+    dessiner();
 
     f.querySelector('[data-role="ok"]').onclick = () => {
-      const off = cases().filter((c) => !c.checked).map((c) => c.dataset.vue);
       if (!etat.reglages) etat.reglages = {};
-      etat.reglages.ongletsMasques = off;
+      etat.reglages.ongletsMasques = caches.slice();
+      etat.reglages.ordreOnglets = ordre.slice();
       /* Si on vient de masquer l'onglet ouvert, on ne laisse pas l'écran
          dans un état impossible : retour à l'accueil. */
-      if (off.indexOf(ui.vue) !== -1) ui.vue = "accueil";
+      if (caches.indexOf(ui.vue) !== -1) ui.vue = "accueil";
       fermerFeuille();
       sauver("reglages");
-      toast(off.length ? pluriel(off.length, "onglet masqué", "onglets masqués") : "Tous les onglets sont visibles");
+      toast(caches.length
+        ? pluriel(caches.length, "onglet masqué", "onglets masqués")
+        : "Barre du bas enregistrée");
     };
   });
 };
