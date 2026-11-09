@@ -183,7 +183,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.69 bêta";
+const VERSION = "0.70 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -316,6 +316,31 @@ const CALENDRIER = {
    Ni correctif, ni sécurité, ni « sous le capot » : cette page ne parle que
    de ce que la famille peut voir et utiliser. */
 const ACTUS = [
+  {
+    version: "0.70",
+    date: "2026-11-09",
+    titre: "À plusieurs sur la même tâche",
+    points: [
+      {
+        quoi: "🤝 Ensemble, et les points se partagent",
+        court: "ranger le salon à deux, c'est deux fois moins long — et chacun y gagne",
+        detail: "<p>Dans la fiche d'une tâche, à côté de « chacun son tour », une " +
+          "nouvelle case : <b>🤝 Ensemble</b>. La tâche est alors à tout le monde en " +
+          "même temps, au lieu de passer d'une personne à l'autre.</p>" +
+          "<p>En appuyant sur <b>Fait</b>, on dit <b>qui s'en est occupé</b> : soi-même, " +
+          "et ceux qui ont aidé. Les points se partagent entre les personnes cochées. " +
+          "<b>10 points à trois</b> donnent 4, 3 et 3 — le point en trop va à la première " +
+          "personne cochée, celle qui s'y est mise. Jamais un point créé, jamais un point " +
+          "perdu.</p>" +
+          "<p>Et si finalement une seule personne a tout fait, elle coche son nom seul : " +
+          "<b>elle prend les points entiers</b>, comme avant.</p>" +
+          "<p>Rien ne change pour vos autres tâches : « chacun son tour » continue de " +
+          "tourner exactement comme aujourd'hui. La case ne se propose qu'à partir de " +
+          "deux personnes.</p>",
+        ou: { libelle: "Ouvrir les tâches", action: "aller", vue: "taches" }
+      }
+    ]
+  },
   {
     version: "0.69",
     date: "2026-11-03",
@@ -2144,6 +2169,41 @@ function calageRotation(t, n) {
 function participantsValides(t) {
   return (t.participants || []).filter((x) => membre(x));
 }
+
+/* ============== UNE TÂCHE FAITE ENSEMBLE (09/11/2026) ==============
+
+   Deux façons de s'y mettre à plusieurs, et il ne faut pas les confondre :
+   « chacun son tour » fait tourner UNE personne d'une fois sur l'autre ;
+   « ensemble » les met TOUTES sur le même passage. Le second mode n'a de
+   sens qu'à partir de deux personnes. */
+function estEnsemble(t) {
+  return !!t && t.ensemble === true && participantsValides(t).length > 1;
+}
+/* L'équipe du jour : les participants, moins ceux qui ne sont pas là en
+   mode planning. Si l'absence vide l'équipe, on garde tout le monde — mieux
+   vaut une tâche cochable qu'une tâche bloquée. */
+function equipeDe(t, d) {
+  const tous = participantsValides(t);
+  if (!estEnsemble(t)) return tous.slice(0, 1);
+  const la = tous.filter((x) => presentPendant(x, t, d || new Date()));
+  return la.length ? la : tous;
+}
+/* Les points d'une tâche, partagés en `sur` parts. Le reste va aux
+   PREMIERS — celui qui a coché en premier d'abord. 10 à 3 : 4, 3, 3.
+   Jamais un point créé, jamais un point perdu : c'est cette même formule
+   que les règles Firestore recalculent pour vérifier chaque ligne. */
+/* « 4 pour Papa · 3 pour Léa · 3 pour Tom » : on montre le partage en
+   toutes lettres, sinon personne ne comprend pourquoi il a 3 et pas 10. */
+function partagePointsEnMots(t, equipe) {
+  return equipe.map((id, k) => {
+    const m = membre(id);
+    return partDesPoints(t.points, equipe.length, k) + " pour " + ((m && m.prenom) || "?");
+  }).join(" · ");
+}
+function partDesPoints(total, sur, rang) {
+  const n = Math.max(1, Number(sur) || 1);
+  return Math.floor((Number(total || 0) + n - 1 - Number(rang || 0)) / n);
+}
 /* La personne que désigne « chacun son tour », sans regarder les absences. */
 function tourDe(t, d) {
   const p = participantsValides(t);
@@ -2158,6 +2218,10 @@ function tourDe(t, d) {
    personne, la tâche est « à attribuer » (choix d'Amandine, 18/09/2026). */
 function assigneDe(t, d) {
   if (!participantsValides(t).length) return null;
+  /* En équipe, personne n'est « de corvée » : on rend la première de
+     l'équipe pour que les écrans aient un visage à montrer, mais ce n'est
+     plus elle qui décide des points — c'est qui a coché (09/11/2026). */
+  if (estEnsemble(t)) return equipeDe(t, d)[0] || null;
   const choix = attributionDe(t, d);
   if (choix) return choix;
   /* Un passage reporté garde la personne du jour prévu (01/10/2026). */
@@ -2482,6 +2546,14 @@ function quandFaite(t, d) {
 }
 function etatTache(t, d) {
   return etat.etats[cleEtat(t, d)] || { statut: "afaire" };
+}
+/* CEUX QUI L'ONT FAITE, dans l'ordre (09/11/2026). `parQui` reste le
+   premier — c'est le champ que connaissent les versions d'avant — et
+   `avecQui` porte les autres. On filtre les membres partis et les doublons :
+   une part de points ne doit jamais aller à un fantôme. */
+function faiseursDe(e) {
+  const l = [].concat((e && e.parQui) || [], (e && e.avecQui) || []);
+  return l.filter((x, k) => x && membre(x) && l.indexOf(x) === k);
 }
 /* L'HEURE D'UNE TÂCHE (24/09/2026) : « sortir les poubelles à 20 h ».
    Facultative, et purement indicative — elle ne fait rien sonner. Écrite
@@ -5823,36 +5895,56 @@ const Actions = {
   /* « quand » (aaaa-mm-jj) : le jour de la case visée, comme pour « Valider ».
      Sans lui, on ne pouvait cocher qu'aujourd'hui — et une tâche d'hier que
      personne n'avait cochée était perdue (12/10/2026). */
-  async marquerFaite(tacheId, quand) {
+  async marquerFaite(tacheId, quand, equipe) {
     const t = etat.taches.find((x) => x.id === tacheId);
     if (!t) return;
     const d = jourVise(quand);
     const cle = cleEtat(t, d);
     if ((etat.etats[cle] || {}).statut === "valide") return;
 
+    /* EN ÉQUIPE (09/11/2026) : `equipe` vient de la feuille « Qui l'a
+       faite ? » — ceux qui s'en sont vraiment occupés, le premier en tête,
+       car c'est lui qui prendra le reste de la division. Hors équipe, rien
+       ne change : une seule personne, comme depuis toujours. */
+    const faiseurs = [].concat(equipe || []).filter((x) => membre(x));
+    const enEquipe = estEnsemble(t) && faiseurs.length > 0;
+
     /* Les points reviennent a la personne a qui la tache est attribuee.
        Si un parent coche a la place d'un enfant, c'est l'enfant qui gagne. */
-    const assigne = assigneDe(t, d);
+    const assigne = enEquipe ? faiseurs[0] : assigneDe(t, d);
     const beneficiaire = assigne || (moi && moi.id);
-    const gere = !!(assigne && estGere(assigne));
+    /* Validation directe : seulement si TOUTE l'équipe est faite d'enfants
+       gérés par un parent. Un adulte dans le lot ⇒ on passe par la
+       validation, comme avant. */
+    const gere = enEquipe ? faiseurs.every((x) => estGere(x))
+      : !!(assigne && estGere(assigne));
 
     /* Un enfant sans telephone ne peut pas valider lui-meme : quand le parent
        coche pour lui, cela vaut validation, sinon la tache resterait bloquee. */
     const directe = estAdmin() && gere;
 
-    etat.etats[cle] = {
+    const etatNeuf = {
       statut: directe ? "valide" : "fait",
       parQui: beneficiaire,
       faitLe: new Date().toISOString(),
       valideLe: directe ? new Date().toISOString() : null,
       valideePar: directe ? moi.id : null
     };
+    /* `avecQui` n'apparaît que s'il y a vraiment quelqu'un d'autre : le
+       document des familles qui ne s'en servent pas reste mot pour mot
+       celui d'avant (09/11/2026). */
+    if (enEquipe && faiseurs.length > 1) etatNeuf.avecQui = faiseurs.slice(1);
+    etat.etats[cle] = etatNeuf;
     await Store.ecrireEtat(cle, etat.etats[cle]);
 
     if (directe) {
-      const credite = await crediterTache(t, cle, beneficiaire, d);
+      const credite = await crediterTache(t, cle, enEquipe ? faiseurs : beneficiaire, d);
       rendre();
       const m = membre(beneficiaire);
+      if (credite && enEquipe && faiseurs.length > 1) {
+        toast("Validé — " + partagePointsEnMots(t, faiseurs) + " 🌟");
+        return;
+      }
       /* On n'annonce des points que s'ils ont vraiment été donnés : annoncer
          « +15 points » sans rien créditer est le meilleur moyen de perdre la
          confiance des enfants. */
@@ -5918,16 +6010,22 @@ const Actions = {
     const e = etat.etats[cle];
     if (!e || e.statut !== "fait") return;
 
-    const gagnant = e.parQui || assigneDe(t, d);
+    /* En équipe, les points vont à TOUS ceux qui ont coché (09/11/2026). */
+    const gagnants = faiseursDe(e);
+    const gagnant = gagnants[0] || assigneDe(t, d);
     e.statut = "valide";
     e.valideLe = new Date().toISOString();
     e.valideePar = moi.id;
     etat.etats[cle] = e;
     await Store.ecrireEtat(cle, e);
 
-    const credite = await crediterTache(t, cle, gagnant, d);
+    const credite = await crediterTache(t, cle, gagnants.length > 1 ? gagnants : gagnant, d);
     rendre();
     const m = membre(gagnant);
+    if (credite && gagnants.length > 1) {
+      toast("Validé — " + partagePointsEnMots(t, gagnants) + " 🌟");
+      return;
+    }
     toast(credite && m ? "+" + t.points + " points pour " + m.prenom + " 🌟"
       : !pointsActifs() ? "Validé ✅"
         : t.points ? "Validé — points déjà donnés pour cette période"
@@ -6586,19 +6684,32 @@ if (typeof ACTIONS_EVENEMENTS === "object") Object.assign(Actions, ACTIONS_EVENE
    On compare donc la CASE — celle-là même que la ligne du journal porte. Et on
    garde l'ancien contrôle par la date pour la période en cours, lui seul sait
    attraper le cas où la fréquence a changé depuis, et la clé avec elle. */
-function dejaPayeeDansLaPeriode(t, d) {
+/* PAYÉE POUR QUI ? (09/11/2026) — la question est devenue personnelle.
+   Tant qu'une tâche n'avait qu'un bénéficiaire, « déjà payée » suffisait.
+   En équipe, chacun a sa part : Papa peut être payé et Léa pas encore, si
+   elle s'ajoute après coup. On regarde donc ligne par ligne, personne par
+   personne. Sans `membreId`, on retombe sur l'ancienne question. */
+function dejaPayeeDansLaPeriode(t, d, membreId) {
   const jour = d || new Date();
   const cle = cleEtat(t, jour).replace(/\|/g, "__");
   const enCours = clePeriode(t.frequence, jour) === clePeriode(t.frequence, new Date());
   const debut = debutDePeriode(t.frequence, new Date());
   return (etat.journal || []).some((e) =>
     e.type === "tache" && e.refId === t.id && e.delta > 0 &&
+    (!membreId || e.membreId === membreId) &&
     (e.cleEtat === cle || (enCours && e.date && new Date(e.date) >= debut)));
 }
 
 /* « d » : le jour de la case qu'on paie — hier quand on rattrape. Sans lui,
    la ligne du journal portait la période d'aujourd'hui (12/10/2026). */
+/* `beneficiaire` accepte désormais une LISTE : les points se partagent
+   entre ceux qui l'ont faite. Une seule personne ⇒ une seule ligne, du
+   même identifiant et du même montant qu'avant : rien ne change pour les
+   familles qui ne se servent pas du mode équipe (09/11/2026). */
 async function crediterTache(t, cle, beneficiaire, d) {
+  const equipe = [].concat(beneficiaire || []).filter(Boolean);
+  if (equipe.length > 1) return await crediterEnEquipe(t, cle, equipe, d);
+  beneficiaire = equipe[0] || null;
   if (!beneficiaire || !t.points) return false;
   /* POINTS ETEINTS = AUCUN POINT (14/09/2026). Le reglage masquait le
      compteur, le classement et les cadeaux, mais les lignes continuaient
@@ -6607,12 +6718,39 @@ async function crediterTache(t, cle, beneficiaire, d) {
      « c'est fait » et la validation continuent : c'est la comptabilite qui
      s'arrete, et l'historique d'avant ne bouge pas. */
   if (!pointsActifs()) return false;
-  if (dejaPayeeDansLaPeriode(t, d)) return false;
+  if (dejaPayeeDansLaPeriode(t, d, beneficiaire)) return false;
   return await ajouterAuJournal({
     id: "t|" + t.id + "|" + clePeriode(t.frequence, d || new Date()),
     type: "tache", refId: t.id, cleEtat: cle.replace(/\|/g, "__"),
     membreId: beneficiaire, delta: t.points, motif: "Tâche : " + t.nom
   });
+}
+
+/* UNE LIGNE PAR PERSONNE, chacune avec sa part (09/11/2026).
+
+   L'identifiant porte le membre : sans cela, la deuxième ligne écraserait
+   la première, et le partage se serait vu comme une perte de points.
+   `sur` et `rang` voyagent avec la ligne pour que le SERVEUR puisse
+   recalculer la part et refuser tout ce qui ne colle pas. */
+async function crediterEnEquipe(t, cle, equipe, d) {
+  if (!t.points || !pointsActifs()) return false;
+  const periode = clePeriode(t.frequence, d || new Date());
+  let credite = false;
+  for (let k = 0; k < equipe.length; k++) {
+    if (dejaPayeeDansLaPeriode(t, d, equipe[k])) continue;
+    /* Une part nulle (1 point a trois) ne vaut pas une ligne : elle ne
+       donnerait rien et brouillerait l'historique. */
+    if (partDesPoints(t.points, equipe.length, k) <= 0) continue;
+    const ok = await ajouterAuJournal({
+      id: "t|" + t.id + "|" + periode + "|" + equipe[k],
+      type: "tache", refId: t.id, cleEtat: cle.replace(/\|/g, "__"),
+      membreId: equipe[k], delta: partDesPoints(t.points, equipe.length, k),
+      sur: equipe.length, rang: k,
+      motif: "Tâche : " + t.nom + " (à " + equipe.length + ")"
+    });
+    if (ok) credite = true;
+  }
+  return credite;
 }
 
 /* Ajoute une ligne au journal des points.
@@ -9146,7 +9284,17 @@ document.addEventListener("click", (e) => {
     case "aller": aller(b.dataset.vue); break;
     case "fermer": fermerFeuille(); break;
 
-    case "tache-fait": Actions.marquerFaite(v, b.dataset.date || null); break;
+    case "tache-fait": {
+      /* En équipe, on demande d'abord QUI s'en est occupé : c'est ce geste
+         qui décide du partage des points (09/11/2026). */
+      const tf = etat.taches.find((x) => x.id === v);
+      if (tf && estEnsemble(tf) && typeof Formulaires.quiLaFaite === "function") {
+        Formulaires.quiLaFaite(v, b.dataset.date || null);
+      } else {
+        Actions.marquerFaite(v, b.dataset.date || null);
+      }
+      break;
+    }
     /* Le jour de la case, comme pour « Valider » : sans lui, annuler une
        tâche cochée la veille ne faisait rien du tout (01/10/2026). */
     case "tache-annuler": Actions.annulerFaite(v, b.dataset.date || null); break;

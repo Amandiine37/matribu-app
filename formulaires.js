@@ -133,8 +133,18 @@ Formulaires.tache = function (tid) {
         "l'appli confie chaque passage à la personne présente qui a le moins à faire, toutes tâches " +
         "comprises. Un parent peut toujours changer.</small></span></label>"
       : "") +
+    /* ENSEMBLE (09/11/2026) : le contraire de « chacun son tour ». Les deux
+       ne peuvent pas être vrais en même temps, l'écran le montre en cachant
+       l'autre. */
+    '<label class="champ" id="zone-ensemble" style="display:flex;gap:.6rem;align-items:flex-start">' +
+    '<input type="checkbox" name="ensemble" style="width:auto;margin-top:.2rem"' +
+    (cour.ensemble === true ? " checked" : "") + ">" +
+    "<span style=\"margin:0\">🤝 Ensemble<br><small style=\"font-weight:400\">La tâche est à " +
+    "tout le monde en même temps, au lieu de tourner. En cochant « Fait », on dit qui s'en " +
+    "est occupé, et <b>les points se partagent</b> entre eux. Une seule personne cochée : " +
+    "elle prend tout.</small></span></label>" +
     '<label class="champ" id="zone-rotation" style="display:flex;gap:.6rem;align-items:flex-start"' +
-    (estRepartie(cour) ? " hidden" : "") + ">" +
+    (estRepartie(cour) || cour.ensemble === true ? " hidden" : "") + ">" +
     '<input type="checkbox" name="rotation" style="width:auto;margin-top:.2rem"' + (cour.rotation !== false ? " checked" : "") + ">" +
     "<span style=\"margin:0\">Chacun son tour<br><small style=\"font-weight:400\">La personne assignée change automatiquement à chaque " +
     "période. Si décoché, c'est toujours la première personne sélectionnée.</small></span></label>" +
@@ -206,6 +216,19 @@ Formulaires.tache = function (tid) {
       zoneRep.querySelector("input").addEventListener("change", majRepartition);
       if (gFreq) gFreq.addEventListener("click", majRepartition);
     }
+    /* « Ensemble » et « chacun son tour » s'excluent : cocher l'un cache
+       l'autre, plutôt que de laisser deux réponses contradictoires à
+       l'écran (09/11/2026). */
+    const zoneEns = f.querySelector("#zone-ensemble");
+    if (zoneEns) {
+      const majEnsemble = () => {
+        const ens = zoneEns.querySelector("input").checked;
+        if (zoneRot) zoneRot.hidden = ens || (zoneRep && !zoneRep.hidden && zoneRep.querySelector("input").checked);
+        if (zoneRep) zoneRep.hidden = ens || valeursMulti(f, "freq")[0] === "mois";
+      };
+      zoneEns.querySelector("input").addEventListener("change", majEnsemble);
+      majEnsemble();
+    }
 
     const bt = f.querySelector('[data-role="tourner"]');
     if (bt) bt.onclick = () => {
@@ -256,6 +279,9 @@ Formulaires.tache = function (tid) {
         const heure = String(d.get("heure") || "").trim();
         if (heure) t.heure = heure; else delete t.heure;
         t.rotation = !!d.get("rotation");
+        /* Le mode équipe ne vaut qu'à partir de deux personnes : au-dessous,
+           on ne laisse pas un réglage qui ne fait rien (09/11/2026). */
+        if (d.get("ensemble") && part.length > 1) t.ensemble = true; else delete t.ensemble;
         /* Brique 3 : la case n'existe qu'en mode planning ; sans elle, on garde. */
         if (f.querySelector('[name="repartition"]')) {
           if (!d.get("repartition")) { delete t.repartition; delete t.repartieDepuis; }
@@ -270,6 +296,7 @@ Formulaires.tache = function (tid) {
              que la tâche compte normalement si les points reviennent. */
           points: pointsActifs() ? (Number(d.get("points")) || 0) : 10,
           participants: part, rotation: !!d.get("rotation"),
+          ensemble: !!d.get("ensemble") && part.length > 1,
           decalage: 0, actif: !d.get("pause"), creeLe: new Date().toISOString()
         };
         // on cale la rotation pour que la 1re personne choisie commence maintenant
@@ -2329,6 +2356,60 @@ Formulaires.frequence = function (tid) {
       if (!b) return;
       b.classList.toggle("on");
       poser("jours");
+    };
+  });
+};
+
+/* QUI L'A FAITE ? (09/11/2026)
+
+   La feuille qui décide du partage. Sont cochés d'avance : ceux qui ont
+   déjà dit « fait » de leur côté, et celui qui appuie s'il fait partie de
+   l'équipe. L'ordre compte — le premier coché prend le reste de la
+   division — alors on garde l'ordre d'arrivée, pas celui de la liste.
+
+   Un parent peut cocher pour des enfants sans téléphone : c'est le même
+   geste, et c'est pour cela qu'on ne demande pas à chacun de cocher de son
+   côté. */
+Formulaires.quiLaFaite = function (tid, iso) {
+  const t = etat.taches.find((x) => x.id === tid);
+  if (!t) return;
+  const d = jourVise(iso);
+  const equipe = equipeDe(t, d);
+  const deja = faiseursDe(etatTache(t, d));
+  const prets = deja.slice();
+  if (moi && equipe.indexOf(moi.id) !== -1 && prets.indexOf(moi.id) === -1) prets.push(moi.id);
+  if (!prets.length && equipe.length) prets.push(equipe[0]);
+
+  const html = '<form id="f-qui-faite">' +
+    '<p class="aide" style="margin:0 0 .8rem"><b>' + esc((t.emoji || "🧹") + " " + t.nom) +
+    "</b></p>" +
+    '<label class="champ"><span>Qui s\u0027en est occupé ?</span></label>' +
+    puceMultiple("faiseurs", equipe.map((x) => {
+      const m = membre(x);
+      return { val: x, html: esc((m.emoji || "🙂") + " " + m.prenom) };
+    }), prets) +
+    (t.points && pointsActifs()
+      ? '<p class="aide" style="margin:-.4rem 0 .6rem">Les <b>' + t.points +
+        " points</b> se partagent entre les personnes cochées. Une seule cochée : " +
+        "elle prend tout.</p>"
+      : "") +
+    boutonsFormulaire("C\u0027est fait", false) + "</form>";
+
+  ouvrirFeuille("Qui l\u0027a faite ?", html, (fe) => {
+    const form = fe.querySelector("#f-qui-faite");
+    /* Les pastilles ne se cochent que branchees : sans cela, elles ne
+       repondaient pas au doigt (trouve a l\'essai, 09/11/2026). */
+    brancherMulti(form, "faiseurs", false);
+    form.onsubmit = async (ev) => {
+      ev.preventDefault();
+      /* L'ordre d'arrivée : ceux qui avaient déjà coché d'abord, les autres
+         ensuite, dans l'ordre de l'équipe. */
+      const choisis = valeursMulti(form, "faiseurs");
+      const ordre = deja.filter((x) => choisis.indexOf(x) !== -1)
+        .concat(choisis.filter((x) => deja.indexOf(x) === -1));
+      if (!ordre.length) { toast("Cochez au moins une personne"); return; }
+      fermerFeuille();
+      await Actions.marquerFaite(tid, iso, ordre);
     };
   });
 };

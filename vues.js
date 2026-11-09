@@ -823,7 +823,10 @@ Vues.accueil = function () {
 
 function ligneTache(x, compact) {
   const t = x.t, et = x.et;
-  const jeSuisAssigne = x.assigne === moi.id;
+  /* En équipe, chacun peut cocher : le bouton « Fait » ne doit pas être
+     réservé au visage affiché (09/11/2026). */
+  const jeSuisAssigne = x.assigne === moi.id ||
+    (estEnsemble(x.t) && equipeDe(x.t, x.d || new Date()).indexOf(moi.id) !== -1);
   const boutons = [];
 
   /* Mode planning, brique 2 : la personne du tour n'est pas là et aucun parent
