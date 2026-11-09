@@ -183,7 +183,7 @@ const EMOJIS_LISTES = [
   "🥩", "🧊", "🧽", "🧼", "🧴", "💊", "🎁", "🎂", "🎄", "🎒",
   "✏️", "🏕️", "🌻", "🔧", "📦", "👶", "🐾", "🐶", "🍼", "🎨"];
 
-const VERSION = "0.68 bêta";
+const VERSION = "0.69 bêta";
 
 /* ---------- Demenagement vers matribu-app.fr ----------
    L'application vit a DEUX adresses pendant la transition : l'ancienne
@@ -316,6 +316,46 @@ const CALENDRIER = {
    Ni correctif, ni sécurité, ni « sous le capot » : cette page ne parle que
    de ce que la famille peut voir et utiliser. */
 const ACTUS = [
+  {
+    version: "0.69",
+    date: "2026-11-03",
+    titre: "Le mot du jour, à la taille de chacun",
+    /* Inutile d'annoncer les niveaux d'un jeu que la famille n'a pas activé. */
+    si: () => typeof motDuJourActif === "function" && motDuJourActif(),
+    points: [
+      {
+        quoi: "🐣 ⭐ 🔥 Trois niveaux, et chacun choisit le sien",
+        court: "4 lettres pour les petits, 5 comme avant, 6 pour ceux qui veulent chercher",
+        detail: "<p>Le mot du jour se joue maintenant à <b>trois niveaux</b> : " +
+          "<b>🐣 Facile</b> avec des mots de 4 lettres qu'un enfant lit d'un coup d'œil, " +
+          "<b>⭐ Normal</b> avec les mots de 5 lettres de toujours, et " +
+          "<b>🔥 Difficile</b> avec des mots de 6 lettres, plus riches.</p>" +
+          "<p>Toujours <b>six essais</b>, quel que soit le niveau. Et chacun choisit le " +
+          "sien, en bas de l'écran du jeu, sous « Mon niveau » : un enfant qui progresse " +
+          "passe en Normal tout seul.</p>" +
+          "<p>Si vous ne changez rien, vous continuez en Normal avec exactement les mêmes " +
+          "mots qu'avant.</p>",
+        ou: { libelle: "Choisir mon niveau", action: "mot-jour" }
+      },
+      {
+        quoi: "🗓️ Les trois mots du jour parlent de la même chose",
+        court: "le 2 février, « pâte » pour les petits et « farine » pour les grands",
+        detail: "<p>Aux dates qui comptent, les trois niveaux tournent autour du même " +
+          "sujet : le 25 décembre, c'est <b>noël</b>, <b>bûche</b> et <b>cadeau</b> ; " +
+          "le 6 janvier, <b>fève</b>, <b>reine</b> et <b>prince</b>.</p>" +
+          "<p>On peut donc en parler à table sans jouer au même niveau — et sans se " +
+          "vendre le mot.</p>"
+      },
+      {
+        quoi: "💡 Les aides suivent le niveau",
+        court: "tout de suite en Facile, un peu plus tard en Difficile",
+        detail: "<p>La devinette et la première lettre sont là <b>dès le début</b> en " +
+          "Facile : pour un enfant qui commence à lire, l'important est de jouer.</p>" +
+          "<p>En Normal, elles s'ouvrent après 2 et 4 essais, comme avant. En Difficile, " +
+          "après 3 et 5 : elles se méritent.</p>"
+      }
+    ]
+  },
   {
     version: "0.68",
     date: "2026-10-23",

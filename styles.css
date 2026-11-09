@@ -1116,13 +1116,25 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
   :root:not([data-theme="light"]){--mj-absent:#4B504C;}
 }
 :root[data-theme="dark"]{--mj-absent:#4B504C;}
+/* La taille d'une case dépend du NIVEAU : quatre grandes cases pour les
+   petits, six plus serrées pour les grands. Les trois valeurs tiennent sur
+   un écran de 320 px de large, grille ET clavier visibles d'un coup. */
 .mj{--mj-case:min(3.2rem,12.5vw,6vh);}
 @supports (height:1dvh){ .mj{--mj-case:min(3.2rem,12.5vw,6dvh);} }
+/* Facile : des cases un peu plus grandes LÀ OÙ IL Y A LA PLACE. La part de
+   hauteur reste celle du niveau normal (6 %) — mesuré sur un écran de
+   320 × 640, au-delà le clavier passait sous le bord, et c'est justement
+   l'enfant qui ne doit pas avoir à faire défiler. */
+.mj[data-niveau="facile"]{--mj-case:min(3.4rem,16vw,6vh);}
+@supports (height:1dvh){ .mj[data-niveau="facile"]{--mj-case:min(3.4rem,16vw,6dvh);} }
+.mj[data-niveau="difficile"]{--mj-case:min(2.9rem,10.5vw,5.4vh);}
+@supports (height:1dvh){ .mj[data-niveau="difficile"]{--mj-case:min(2.9rem,10.5vw,5.4dvh);} }
 .mj-tete{display:flex;align-items:center;justify-content:space-between;gap:.5rem;min-height:2.1rem;margin:-.5rem 0 .2rem;}
 .mj-indice{min-height:1.2em;margin:0 0 .45rem;text-align:center;font-size:.84rem;color:var(--ink-muted);}
 .mj-indice b{color:var(--ink);}
 .mj-grille{display:grid;gap:.3rem;justify-content:center;}
-.mj-rangee{display:grid;grid-template-columns:repeat(5,var(--mj-case));gap:.3rem;}
+/* `--n` = le nombre de lettres, posé par le jeu selon le niveau. */
+.mj-rangee{display:grid;grid-template-columns:repeat(var(--n,5),var(--mj-case));gap:.3rem;}
 .mj-case{
   width:var(--mj-case);height:var(--mj-case);box-sizing:border-box;
   display:flex;align-items:center;justify-content:center;
@@ -1140,6 +1152,8 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
 @keyframes mj-secoue{20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
 @media (prefers-reduced-motion: reduce){ .mj-case.revele,.mj-rangee.secoue{animation:none;} }
 .mj-message{min-height:1.25em;margin:.35rem 0;text-align:center;font-size:.84rem;font-weight:600;color:var(--danger);}
+/* Tout n'est pas un refus : changement de niveau, passage de minuit. */
+.mj-message.info{color:var(--accent-strong);}
 .mj-clavier{display:flex;flex-direction:column;gap:.32rem;margin-bottom:.5rem;}
 .mj-rang{display:flex;justify-content:center;gap:.24rem;}
 .mj-touche{
@@ -1162,10 +1176,18 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:1.1rem 0;}
 .mj-legende i.v{background:var(--mj-bien);}
 .mj-legende i.o{background:var(--mj-ailleurs);border-radius:50%;}
 .mj-legende i.g{background:var(--mj-absent);}
+/* Le choix du niveau, sous le jeu : il ne prend pas la place de la grille
+   et du clavier, qui tiennent tout juste sur un petit téléphone (0.69). */
+.mj-niveaux{border-top:1px solid var(--border);padding-top:.6rem;margin-bottom:.7rem;}
+.mj-niveaux-titre{font-weight:700;font-size:.9rem;margin-bottom:.4rem;}
+/* Le nombre de lettres passe à la ligne SOUS le nom : dans une puce, qui
+   est en flex, un simple display:block le laisserait à côté. */
+.mj-niveaux .puce{font-size:.8rem;flex-wrap:wrap;justify-content:center;padding:.35rem .7rem;}
+.mj-niveaux .puce small{flex:0 0 100%;text-align:center;font-weight:400;font-size:.68rem;opacity:.75;}
 .mj-tribu{border-top:1px solid var(--border);padding-top:.7rem;}
 .mj-tribu-titre{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.2rem .6rem;font-weight:700;font-size:.9rem;}
 .mj-mini{display:grid;gap:2px;flex:none;}
-.mj-mini span{display:grid;grid-template-columns:repeat(5,7px);gap:2px;}
+.mj-mini span{display:grid;grid-template-columns:repeat(var(--n,5),7px);gap:2px;}
 .mj-mini i{width:7px;height:7px;border-radius:1.5px;background:var(--mj-absent);}
 .mj-mini i.v{background:var(--mj-bien);}
 .mj-mini i.o{background:var(--mj-ailleurs);border-radius:50%;}

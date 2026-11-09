@@ -1142,15 +1142,23 @@ Formulaires.reglagesFamille = function () {
     '<label class="champ" style="display:flex;gap:.6rem;align-items:flex-start">' +
     '<input type="checkbox" name="motDuJour"' + (g.motDuJour === true ? " checked" : "") +
     ' style="width:auto;margin-top:.25rem"><span style="margin:0">Le mot du jour' +
-    '<br><small style="font-weight:400">Un petit jeu sur l\'accueil : un mot de 5 lettres à ' +
-    "trouver en 6 essais, le même pour toute la tribu. Chacun voit qui a trouvé, jamais le " +
-    "mot des autres. Décoché, le jeu disparaît.</small></span></label>" +
+    '<br><small style="font-weight:400">Un petit jeu sur l\'accueil : un mot à trouver en ' +
+    "6 essais, le même pour toute la tribu. Chacun choisit son niveau — 4, 5 ou 6 lettres — " +
+    "et voit qui a trouvé, jamais le mot des autres. Décoché, le jeu disparaît." +
+    "</small></span></label>" +
+
+    /* L'ORDRE COMPTE (23/10/2026, son retour : « disposition pas terrible
+       sous les petits »). Les cases à cocher de la famille vont ensemble ;
+       « Les petits à table », seule section à porter un titre, passe en
+       dernier. Avant, la case des événements tombait SOUS ce titre et avait
+       l'air d'appartenir aux petits. */
+    (typeof blocOptionEvenements === "function" ? blocOptionEvenements(g) : "") +
 
     /* LES PETITS À TABLE (18/10/2026) — une caractéristique du FOYER, jamais
        d'un enfant : pas de prénom, pas de date de naissance. Le bloc entier
        disparaît si le module n'est pas livré. */
     (typeof TRANCHES_PETITS === "undefined" ? "" :
-      '<div class="sous-titre" style="margin-top:.4rem"><h3>👶 Les petits à table</h3></div>' +
+      '<div class="sous-titre" style="margin:1.2rem 0 .4rem"><h3>👶 Les petits à table</h3></div>' +
       '<p class="aide" style="margin:-.3rem 0 .6rem">Cochez les âges présents à la maison. ' +
       "Chaque recette portera alors sa partie « pour les petits » : la texture, et ce qu'il " +
       "faut adapter. <b>Rien n'est rattaché à un enfant</b> — ni prénom, ni date de " +
@@ -1162,8 +1170,6 @@ Formulaires.reglagesFamille = function () {
         (((g.petits || []).indexOf(t.val) !== -1) ? " checked" : "") +
         ' style="width:auto;margin-right:.3rem">' + t.emoji + " " + esc(t.nom) +
         "</label>").join("") + "</div>") +
-
-    (typeof blocOptionEvenements === "function" ? blocOptionEvenements(g) : "") +
 
     boutonsFormulaire("Enregistrer", false) + "</form>";
 
