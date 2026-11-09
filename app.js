@@ -642,14 +642,46 @@ function actusVisibles() {
   return ACTUS.filter((a) => (!a.si || a.si()) && pointsVisibles(a).length);
 }
 function actuDerniere() { return actusVisibles()[0] || null; }
-function actuANoter() {
-  const d = actuDerniere();
-  if (!d) return false;
-  try { return localStorage.getItem("tribu:actuVue") !== d.version; } catch (e) { return false; }
+/* CE QUI EST NEUF POUR CETTE FAMILLE (09/11/2026).
+
+   Un seul numéro de version ne suffit plus. Depuis que les notes peuvent
+   être conditionnelles (23/10), une note devient parfois visible BIEN
+   APRÈS sa date : celle des Événements, arrivée le 09/11 sur un dépôt,
+   portait la date du 18/10 — elle passait donc pour déjà lue, repliée en
+   troisième position. Personne ne pouvait la voir arriver.
+
+   On garde donc la liste des versions déjà vues EN ÉTANT VISIBLES. Une
+   note ordinaire reste neuve tant qu'elle est plus récente que le dernier
+   marqueur — rien ne change pour elle ; une note conditionnelle reste
+   neuve jusqu'à ce qu'on l'ait vraiment montrée. */
+function actusDejaVues() {
+  try { return JSON.parse(localStorage.getItem("tribu:actusVues") || "[]"); }
+  catch (e) { return []; }
 }
+function actuNeuve(a) {
+  if (!a) return false;
+  if (actusDejaVues().indexOf(a.version) !== -1) return false;
+  let marque = null;
+  try { marque = localStorage.getItem("tribu:actuVue"); } catch (e) { /* navigation privée */ }
+  /* Famille toute neuve : TOUT est nouveau pour elle, et dix notes
+     dépliées décourageraient la lecture de la première. Seule celle du
+     haut s'ouvre, comme avant. */
+  if (!marque) return ACTUS.indexOf(a) === 0;
+  if (a.si) return true;
+  /* ACTUS va du plus récent au plus ancien : plus neuf = plus haut. */
+  const rangMarque = ACTUS.findIndex((x) => x.version === marque);
+  if (rangMarque === -1) return ACTUS.indexOf(a) === 0;
+  return ACTUS.indexOf(a) < rangMarque;
+}
+function actuANoter() { return actusVisibles().some(actuNeuve); }
 function marquerActuLue() {
+  const vues = actusDejaVues();
+  actusVisibles().forEach((a) => { if (vues.indexOf(a.version) === -1) vues.push(a.version); });
   const d = actuDerniere();
-  try { if (d) localStorage.setItem("tribu:actuVue", d.version); } catch (e) { /* tant pis */ }
+  try {
+    localStorage.setItem("tribu:actusVues", JSON.stringify(vues));
+    if (d) localStorage.setItem("tribu:actuVue", d.version);
+  } catch (e) { /* tant pis */ }
 }
 
 /* LES SAISONS, CÔTÉ MARCHÉ. Le calendrier des fruits et légumes existait déjà

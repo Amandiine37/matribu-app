@@ -1334,10 +1334,14 @@ Formulaires.actu = function () {
       "</div></details></li>";
   };
 
-  /* On n'annonce que ce qui est livré, point par point (23/10/2026). */
+  /* On n'annonce que ce qui est livré, point par point (23/10/2026). Et on
+     déplie TOUT ce qui est neuf pour cette famille, pas seulement la note du
+     haut : une note conditionnelle arrive parfois longtemps après sa date,
+     et repliée, elle passait inaperçue (09/11/2026). */
+  const neuves = actusVisibles().filter(actuNeuve);
   html += actusVisibles().map((a, i) => {
     const corps = "<ul>" + pointsVisibles(a).map(pointActu).join("") + "</ul>";
-    if (i === 0) {
+    if (i === 0 || neuves.indexOf(a) !== -1) {
       return '<div class="actu actu-neuve">' +
         '<div class="actu-tete"><span class="etiquette chaud">Version ' + esc(a.version) +
         "</span><small>" + esc(jour(a.date)) + "</small></div>" +
