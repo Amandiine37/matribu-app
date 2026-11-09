@@ -821,6 +821,34 @@ Vues.accueil = function () {
 
 /* ================================ TACHES ================================ */
 
+/* UNE TÂCHE « ENSEMBLE » SE VOIT À PLUSIEURS (09/11/2026). Retour d'Amandine :
+   « on ne voit pas rapidement qu'il y a 2 personnes sur une tâche ». La ligne
+   n'avait qu'un visage — le premier de l'équipe, rendu par assigneDe() pour
+   que les écrans aient quelqu'un à montrer. On montre désormais TOUTE
+   l'équipe : les visages côte à côte, les prénoms en toutes lettres, et
+   l'étiquette « 🤝 Ensemble ». Faite ou validée, ce sont ceux qui l'ont
+   faite (faiseursDe) — pas l'équipe prévue. */
+function equipeVisible(t, d, et) {
+  if (!estEnsemble(t)) return null;
+  if (et && (et.statut === "fait" || et.statut === "valide") && et.parQui) {
+    const f = faiseursDe(et);
+    if (f.length) return f;
+  }
+  return equipeDe(t, d || new Date());
+}
+/* « Camille et Thomas », « Camille, Thomas et Léa ». */
+function prenomsEnMots(ids) {
+  const p = ids.map(nomDe);
+  return p.length < 2 ? p.join("") : p.slice(0, -1).join(", ") + " et " + p[p.length - 1];
+}
+/* Les visages se chevauchent un peu, trois au plus, puis « +N ». */
+function avatarsEquipe(ids) {
+  const vus = ids.slice(0, 3).map((id) => avatarDe(membre(id))).join("");
+  const reste = ids.length - 3;
+  return '<span class="avatars-equipe">' + vus +
+    (reste > 0 ? '<span class="avatar sm">+' + reste + "</span>" : "") + "</span>";
+}
+
 function ligneTache(x, compact) {
   const t = x.t, et = x.et;
   /* En équipe, chacun peut cocher : le bouton « Fait » ne doit pas être
@@ -889,7 +917,8 @@ function ligneTache(x, compact) {
   const qui = membre((et.statut === "fait" || et.statut === "valide") && et.parQui ? et.parQui : x.assigne);
   /* Sans les points, une tâche n'annonce plus un gain : juste quand elle
      revient, et qui s'en occupe. */
-  const gain = pointsActifs() ? "+" + t.points + " pts" : "";
+  const gain = pointsActifs() ? "+" + t.points + " pts" +
+    (estEnsemble(t) && et.statut === "afaire" ? " à partager" : "") : "";
   /* L'heure d'abord, comme dans l'agenda : c'est ce qu'on cherche du regard. */
   const quand = heureTache(t);
   /* Une tâche en retard de validation vient d'un autre jour : on le dit, sinon
@@ -899,8 +928,11 @@ function ligneTache(x, compact) {
      le plus court vers « Qui s'en occupe ? » : un geste, et la tâche change de
      main pour CE passage — sans toucher à la tâche elle-même. Rien quand la
      personne est absente : la ligne porte déjà son bouton « Attribuer ». */
-  const nomQui = qui ? qui.prenom : absent ? pasLa(absent) : "personne d'assigné";
-  const changeable = estAdmin() && !compact && et.statut === "afaire" && !absent;
+  const equipe = equipeVisible(t, x.d, et);
+  const nomQui = equipe ? prenomsEnMots(equipe)
+    : qui ? qui.prenom : absent ? pasLa(absent) : "personne d'assigné";
+  /* En équipe, il n'y a pas « une » personne à changer pour ce passage. */
+  const changeable = !equipe && estAdmin() && !compact && et.statut === "afaire" && !absent;
   const quiHtml = changeable
     ? '<button class="lien" style="font-size:inherit" data-action="tache-attribuer" data-id="' +
       esc(t.id) + '" data-date="' + isoDate(x.d || new Date()) + '">' + esc(nomQui) + "</button>"
@@ -922,13 +954,14 @@ function ligneTache(x, compact) {
     : "";
 
   return '<div class="ligne' + (et.statut === "valide" ? " fait" : "") + '">' +
-    (compact ? "" : avatarDe(qui)) +
+    (compact ? "" : equipe ? avatarsEquipe(equipe) : avatarDe(qui)) +
     '<div class="ligne-corps"><b>' + esc((t.emoji || "🧹") + " " + t.nom) + "</b>" +
     /* « sous » est déjà échappé morceau par morceau : il porte le bouton du
        prénom, donc on ne l'échappe pas une seconde fois. */
     "<small>" + sous + "</small>" + pourquoi +
     (statutHtml || !compact
       ? '<span class="etiquettes">' + statutHtml +
+        (!compact && estEnsemble(t) ? '<span class="etiquette vert">🤝 Ensemble</span>' : "") +
         (!compact ? etiquetteFrequence(t.frequence, t, true) : "") + "</span>"
       : "") +
     "</div>" +
@@ -987,7 +1020,7 @@ function blocSemaineTaches(seulementMoi) {
     const passages = taches.filter((t) => t.frequence === "semaine" ? prevueLe(t, lundi) && jourDeLaSemaine(t) === k
       : prevueLe(t, d) && iso >= debutPlanning(t))
       .map((t) => ({ t: t, qui: assigneDe(t, d), et: etat.etats[cleEtat(t, d)] || { statut: "afaire" } }))
-      .filter((x) => !seulementMoi || x.qui === moi.id)
+      .filter((x) => !seulementMoi || estPourMoi(x.t, d, x.qui))
       /* Une journée se lit dans l'ordre des heures ; ce qui n'en a pas suit. */
       .sort((a, b) => String(a.t.heure || "99:99").localeCompare(String(b.t.heure || "99:99")));
     if (!passages.length && iso !== auj) continue;
@@ -1019,6 +1052,8 @@ function blocSemaineTaches(seulementMoi) {
         : arrive ? " · reportée " + motDOrigine(arrive.de)
         : semaine ? (rep && rep.jour === k ? " · jour conseillé" : " · cette semaine")
         : passe ? " · pas faite" : "";
+      const eq = equipeVisible(x.t, d, x.et);
+      if (eq) return nom + " — " + esc("🤝 " + prenomsEnMots(eq) + marque);
       return nom + (m ? " — " + lien(esc(m.prenom)) : "") +
         esc((rep && rep.qui ? " · " + raisonRepartition(rep.raison, true) : "") + marque);
     }).join("<br>") : "Rien de prévu";
@@ -1039,11 +1074,12 @@ function blocPlusTard(seulementMoi) {
   const auj = new Date();
   const lignes = etat.taches.filter((t) => t.actif !== false && rythmeDe(t) > 1 && !periodeActive(t, auj))
     .map((t) => { const d = prochaineOccurrence(t, auj); return { t: t, d: d, qui: assigneDe(t, d) }; })
-    .filter((x) => !seulementMoi || x.qui === moi.id)
+    .filter((x) => !seulementMoi || estPourMoi(x.t, x.d, x.qui))
     .sort((a, b) => a.d - b.d)
     .map((x) => {
-      const m = membre(x.qui);
-      return '<div class="ligne">' + avatarDe(m) +
+      const eq = equipeVisible(x.t, x.d, null);
+      const m = eq ? { prenom: "🤝 " + prenomsEnMots(eq) } : membre(x.qui);
+      return '<div class="ligne">' + (eq ? avatarsEquipe(eq) : avatarDe(m)) +
         '<div class="ligne-corps"><b>' + esc((x.t.emoji || "🧹") + " " + x.t.nom) + "</b>" +
         "<small>" + esc((heureTache(x.t) ? heureTache(x.t) + " · " : "") +
           (m ? m.prenom + " · " : "") + quandReviendra(x.t)) + "</small>" +
@@ -1060,7 +1096,7 @@ function blocPlusTard(seulementMoi) {
    alerte ni une liste de reproches, c'est un rattrapage — et il disparaît de
    lui-même dès qu'il n'y a rien. */
 function blocOubliees(seulementMoi) {
-  const l = tachesOubliees().filter((x) => !seulementMoi || x.assigne === moi.id);
+  const l = tachesOubliees().filter((x) => !seulementMoi || estPourMoi(x.t, x.d, x.assigne));
   if (!l.length) return "";
   return '<div class="sous-titre"><h3>🗓️ Oubliées ces derniers jours</h3></div>' +
     '<p class="aide" style="margin:-.35rem 0 .55rem">Cochez celles qui ont bien été ' +
@@ -1110,7 +1146,7 @@ Vues.taches = function () {
   if (semaine) h.push(semaine);
 
   const liste = ui.filtreTaches === "moi"
-    ? toutes.filter((x) => x.assigne === moi.id)
+    ? toutes.filter((x) => estPourMoi(x.t, x.d, x.assigne))
     : toutes;
 
   if (!liste.length) {

@@ -2580,7 +2580,14 @@ function tachesDuMoment() {
    tâches des enfants que le parent coche (01/10/2026). */
 function mesTachesAFaire() {
   return tachesDuMoment().filter((x) =>
-    x.assigne === (moi && moi.id) && x.et.statut === "afaire" && !x.reporte);
+    moi && estPourMoi(x.t, x.d, x.assigne) && x.et.statut === "afaire" && !x.reporte);
+}
+/* « Les miennes », la pastille, « Mes tâches » (09/11/2026) : une tâche faite
+   ENSEMBLE est aussi à moi si je suis de l'équipe, même quand ce n'est pas
+   mon visage qui vient en premier — assigneDe() n'en rend qu'un. */
+function estPourMoi(t, d, assigne) {
+  return !!moi && (assigne === moi.id ||
+    (estEnsemble(t) && equipeDe(t, d || new Date()).indexOf(moi.id) !== -1));
 }
 /* CE QUI ATTEND UNE VALIDATION, Y COMPRIS LES JOURS PASSÉS (28/09/2026).
 
